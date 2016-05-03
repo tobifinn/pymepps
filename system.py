@@ -29,6 +29,9 @@ import datetime
 
 # Internal modules
 import pyMepps
+import pyMepps.station as pyStation
+import pyMepps.station as pyModel
+
 
 __version__ = "0.1"
 
@@ -124,7 +127,14 @@ class System(object):
                 with open(station_path) as f:
                     station_config = json.load(f)
                     for station in station_config:
-                        self.stations.append()
+                        self.stations.append(pyStation.Station(station))
+
+            if "model" in configs:
+                model_path = self.joinPath(config_path, configs["model"])
+                with open(model_path) as f:
+                    model_config = json.load(f)
+                    for model in model_config:
+                        self.models.append(pyModel.Model(model))
 
 
     @staticmethod
