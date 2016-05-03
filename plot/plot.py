@@ -25,10 +25,10 @@ Created for FcstSystem
 # External modules
 
 # Internal modules
-from .base import BaseComponent
+from base import BaseComponent
 
 __version__ = "0.1"
 
 
-class Model(BaseComponent):
+class PlotBase(BaseComponent):
     pass

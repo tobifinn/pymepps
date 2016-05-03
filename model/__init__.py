@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 """
-Created on 23.04.16
-Created for FcstSystem
+Created on 03.05.16
+Created for pyMepps
 
 @author: Tobias Sebastian Finn, tobias.sebastian.finn@studium.uni-hamburg.de
 
@@ -25,18 +25,6 @@ Created for FcstSystem
 # External modules
 
 # Internal modules
-from .base import BaseComponent
+import .model as model
 
-__version__ = "0.1"
-
-
-class ForecastBase(BaseComponent):
-    pass
-
-
-class ForecastPoint(ForecastBase):
-    pass
-
-
-class ForecastGrid(ForecastBase):
-    pass
+__version__ = ""
