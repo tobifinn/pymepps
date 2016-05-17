@@ -25,7 +25,7 @@ Created for FcstSystem
 # External modules
 
 # Internal modules
-from base import BaseComponent
+from pymepps.base import BaseComponent
 
 __version__ = "0.1"
 

@@ -79,6 +79,17 @@ class System(object):
         if os.path.isfile(config):
             self.readConfig(config)
 
+    def addModel(self, name, inits, leads, base_url, data_path):
+        """
+
+        :param name:
+        :param inits:
+        :param leads:
+        :param base_url:
+        :param data_path:
+        :return:
+        """
+
     def readConfig(self, config_path):
         """
         readConfig reads a config file for the forecasting system.
