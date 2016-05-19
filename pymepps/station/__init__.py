@@ -25,6 +25,8 @@ Created for pyMepps
 # External modules
 
 # Internal modules
+from .station import *
 
+__version__ = "0.1"
 
-__version__ = ""
+__all__ = ["Station"]

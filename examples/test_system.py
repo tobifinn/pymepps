@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 """
-Created on 03.05.16
+Created on 17.05.16
 Created for pyMepps
 
 @author: Tobias Sebastian Finn, tobias.sebastian.finn@studium.uni-hamburg.de
@@ -21,18 +21,30 @@ Created for pyMepps
     along with this program.  If not, see <http://www.gnu.org/licenses/>.
 """
 # System modules
+import os.path
+import datetime as dt
 
 # External modules
+import datetime
 
 # Internal modules
-from .system import *
-from .model import *
-from .station import *
-from .forecast import *
-from .verification import *
-from .plot import *
-from .log import *
+import pymepps
+import pymepps.data
 
 __version__ = "0.1"
 
-__all__ = ["System", "Model", "Station", "BaseLogger", "Logger"]
+base_path = "/home/tfinn/test"
+
+wm = pymepps.System("Wettermast_forecast", base_path)
+wm.addModel(name="arome_metno", inits=[0, 6, 12, 18], leads=range(0, 67, 1),
+            server_model=pymepps.data.Internet
+                ("http://thredds.met.no/thredds/fileServer/arome25/"),
+            files=pymepps.data.PathTemplate("arome_metcoop_${text(default,test)}$2_5km_${init(%Y%m%d_%H)}$.nc"),
+            data_path=os.path.join(base_path, "data"),
+            base_logger=pymepps.BaseLogger(os.path.join(base_path, "log")))
+
+now = datetime.datetime.utcnow()
+
+wm.models[0].run(now)
+
+#print(wm.models)

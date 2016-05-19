@@ -79,8 +79,4 @@ setup(
     keywords='statistics meteorology post-processing system forecast verification plotting',
     packages=["pymepps"],
     package_dir={"pymepps": "pymepps"},
-
-    # You can just specify the packages manually here if your project is
-    # simple. Or you can use find_packages().
-    install_requires=['numpy', 'sklearn']
 )

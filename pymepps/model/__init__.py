@@ -25,6 +25,8 @@ Created for pyMepps
 # External modules
 
 # Internal modules
-import .model as model
+from .model import *
 
 __version__ = ""
+
+__all__ = ["Model"]

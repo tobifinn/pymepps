@@ -28,144 +28,141 @@ import json
 import datetime
 
 # Internal modules
-import pyMepps
-import .station as pyStation
-import .model as pyModel
+from .model import Model
 
 
 __version__ = "0.1.5"
 
 
 class System(object):
-    def __init__(self, config=None):
+    def __init__(self, name="", base_path="", data_path="", plot_path="", config=None):
         """
         The system represents the forecasting system with its components.
         The system starts every component of the forecasting system,
         like the stations and the models.
         Args:
-            config (str): path to the config file
-        #    name (str): name of the forecasting system
-        #    stations (list): list with pyMepps.station instances
-        #    models (list): list with pyMepps.model instances
-        #    forecasts (list): list with pyMepps.forecast instances
-        #    verifications (list): list with pyMepps.verification instances
-        #    plots (list): list with pyMepps.plot instances
+            name (str): name of the forecasting system
+            base_path (str): Path to the system base folder.
+            data_path (str): Path to the system data folder.
+            plot_path (str): Path to the system plot folder.
         #    logger (pyMepps.log): initialized pyMepps.log.logger instance
+            config (str): path to the config file
 
         Attributes:
             name (str): name of the forecasting system
             base_path (str): base path of the system
-            stations (list): list with pyMepps.station instances
-            models (list): list with pyMepps.model instances
-            forecasts (list): list with pyMepps.forecast instances
-            verifications (list): list with pyMepps.verification instances
-            plots (list): list with pyMepps.plot instances
-            base_logger (pyMepps.log): initialized pyMepps.log.logger_template
-            logger (pyMepps.log): initialized pyMepps.log.logger
+            stations (list): list with Station instances
+            models (list): list with Model instances
+            forecasts (list): list with Forecast instances
+            verifications (list): list with Verification instances
+            plots (list): list with Plot instances
+            base_logger (pyMepps.log): initialized Logger_template
+            logger (pyMepps.log): initialized Logger
             date (datetime.datetime): the starting date of the system in UTC
+            model_aoi (dict[list[str]]): Model area of interest with
+                latitudinal and longitudinal borders.
+                Value is an area around Hamburg.
         """
-        self.name = ""
+        self.name = name
         self.stations = []
         self.models = []
         self.forecasts = []
         self.verifications = []
         self.plots = []
-        self.base_path = ""
-        self.data_path = ""
-        self.plot_path = ""
+        self.base_path = base_path
+        self.data_path = data_path
+        self.plot_path = plot_path
         self.base_logger = None
         self.logger = None
         self.date = datetime.datetime.utcnow()
-        if os.path.isfile(config):
+        self.model_aoi = {"lat": [53, 54], "lon": [9.5, 10.5]}
+        if isinstance(config, str) and os.path.isfile(config):
             self.readConfig(config)
 
-    def addModel(self, name, inits, leads, base_url, data_path):
+    def addModel(self, **kwargs):
         """
-
-        :param name:
-        :param inits:
-        :param leads:
-        :param base_url:
-        :param data_path:
-        :return:
+        Adds a model to the model layer. For the kwargs please look at the
+        model description.
         """
+        model = Model(**kwargs)
+        self.models.append(model)
 
-    def readConfig(self, config_path):
-        """
-        readConfig reads a config file for the forecasting system.
+    # def readConfig(self, config_path):
+    #     """
+    #     readConfig reads a config file for the forecasting system.
+    #
+    #     Args:
+    #         config_path (str): path to the config file
+    #     """
+    #     with open(config_path) as f:
+    #         data = json.load(f)
+    #     if "name" in data:
+    #         self.name = data["name"]
+    #     if "base_path" in data:
+    #         self.base_path = data["base_path"]
+    #     if "data_path" in data:
+    #         self.data_path = self.joinBasePath(self.base_path,
+    #                                            data["data_path"])
+    #     else:
+    #         self.data_path = os.path.join(self.base_path, "data")
+    #     if "plot_path" in data:
+    #         self.plot_path = self.joinPath(self.base_path,
+    #                                        data["plot_path"])
+    #     else:
+    #         self.plot_path = os.path.join(self.base_path, "graphs")
+    #
+    #     # read the logger
+    #     if "log" in data and data["log"]["logger"]:
+    #         if "path" in data["log"]:
+    #             log_path = self.joinPath(self.base_path,
+    #                                      data["log"]["path"])
+    #         else:
+    #             log_path = os.path.join(self.base_path, "logs")
+    #         self.base_logger = pyMepps.log.LoggerTemplate(log_path,
+    #                                                       data["log"]["file_name"])
+    #         self.logger = self.base_logger.createLogger("system")
+    #
+    #     #read the component configs
+    #     if "components_config" in data:
+    #         configs = data["components_config"]
+    #         if "base_path" in configs:
+    #             config_path = self.joinPath(self.base_path,
+    #                                         configs["base_path"])
+    #         else:
+    #             config_path = os.path.join(self.base_path, "configs")
+    #         # if "station" in configs:
+    #         #     station_path = self.joinPath(config_path, configs["station"])
+    #         #     with open(station_path) as f:
+    #         #         station_config = json.load(f)
+    #         #         for station in station_config:
+    #         #             self.stations.append(pyStation.Station(config=station))
+    #
+    #         if "model" in configs:
+    #             model_path = self.joinPath(config_path, configs["model"])
+    #             with open(model_path) as f:
+    #                 model_config = json.load(f)
+    #                 for model in model_config:
+    #                     self.models.append(pyModel.Model(config=model))
 
-        Args:
-            config_path (str): path to the config file
-        """
-        with open(config_path) as f:
-            data = json.load(f)
-        if "name" in data:
-            self.name = data["name"]
-        if "base_path" in data:
-            self.base_path = data["base_path"]
-        if "data_path" in data:
-            self.data_path = self.joinBasePath(self.base_path,
-                                               data["data_path"])
-        else:
-            self.data_path = os.path.join(self.base_path, "data")
-        if "plot_path" in data:
-            self.plot_path = self.joinPath(self.base_path,
-                                           data["plot_path"])
-        else:
-            self.plot_path = os.path.join(self.base_path, "graphs")
 
-        # read the logger
-        if "log" in data and data["log"]["logger"]:
-            if "path" in data["log"]:
-                log_path = self.joinPath(self.base_path,
-                                         data["log"]["path"])
-            else:
-                log_path = os.path.join(self.base_path, "logs")
-            self.base_logger = pyMepps.log.LoggerTemplate(log_path,
-                                                          data["log"]["file_name"])
-            self.logger = self.base_logger.createLogger("system")
-
-        #read the component configs
-        if "components_config" in data:
-            configs = data["components_config"]
-            if "base_path" in configs:
-                config_path = self.joinPath(self.base_path,
-                                            configs["base_path"])
-            else:
-                config_path = os.path.join(self.base_path, "configs")
-            # if "station" in configs:
-            #     station_path = self.joinPath(config_path, configs["station"])
-            #     with open(station_path) as f:
-            #         station_config = json.load(f)
-            #         for station in station_config:
-            #             self.stations.append(pyStation.Station(config=station))
-
-            if "model" in configs:
-                model_path = self.joinPath(config_path, configs["model"])
-                with open(model_path) as f:
-                    model_config = json.load(f)
-                    for model in model_config:
-                        self.models.append(pyModel.Model(config=model))
-
-
-    @staticmethod
-    def joinPath(base_path, join_path):
-        """
-        If join_path is an absolute path the method returns the path, else
-        the return path will be the base path plus the join path
-
-        Args:
-            base_path (str): the base path
-            join_path (str): path which should be joined to the base path
-
-        Returns:
-            path (str): the absolute path
-        """
-        if os.path.isabs(join_path):
-            path = join_path
-        else:
-            path = os.path.join(base_path, join_path)
-        return path
+    # @staticmethod
+    # def joinPath(base_path, join_path):
+    #     """
+    #     If join_path is an absolute path the method returns the path, else
+    #     the return path will be the base path plus the join path
+    #
+    #     Args:
+    #         base_path (str): the base path
+    #         join_path (str): path which should be joined to the base path
+    #
+    #     Returns:
+    #         path (str): the absolute path
+    #     """
+    #     if os.path.isabs(join_path):
+    #         path = join_path
+    #     else:
+    #         path = os.path.join(base_path, join_path)
+    #     return path
 
     def start(self):
         """

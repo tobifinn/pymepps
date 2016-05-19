@@ -29,3 +29,4 @@ It requires:
 <li>Pandas
 <li>Xarray
 <li>Netcdf-4
+<li>CDO

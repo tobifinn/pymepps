@@ -38,13 +38,13 @@ class BaseComponent(object):
         self.data = None
 
     @abc.abstractmethod
-    def getData(self):
+    def get(self):
         pass
 
     @abc.abstractmethod
-    def processData(self):
+    def process(self):
         pass
 
-    @abc.abstractmeth
-    def writeData(self):
+    @abc.abstractmethod
+    def write(self):
         pass
