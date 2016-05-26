@@ -40,11 +40,14 @@ wm.addModel(name="arome_metno", inits=[0, 6, 12, 18], leads=range(0, 67, 1),
             server_model=pymepps.data.Internet
                 ("http://thredds.met.no/thredds/fileServer/arome25/"),
             files=pymepps.data.PathTemplate("arome_metcoop_${text(default,test)}$2_5km_${init(%Y%m%d_%H)}$.nc"),
-            data_path=os.path.join(base_path, "data"),
+            data_path=os.path.join(base_path, "data", "arome_metno"),
             base_logger=pymepps.BaseLogger(os.path.join(base_path, "log")))
 
-now = datetime.datetime.utcnow()
+wm.addModel(name="gfs", inits=[0, 6, 12, 18], leads=range(0, 12, 6),
+            server_model=pymepps.data.Internet
+                ("ftp://ftp.ncep.noaa.gov/pub/data/nccf/com/gfs/prod/"),
+            files=pymepps.data.PathTemplate("gfs.${init(%Y%m%d%H)}$/gfs.t${init(%H)}$z.pgrb2.0p25.f${lead(3)}$"),
+            data_path=os.path.join(base_path, "data", "gfs"),
+            base_logger=pymepps.BaseLogger(os.path.join(base_path, "log")))
 
-wm.models[0].run(now)
-
-#print(wm.models)
+wm.start()

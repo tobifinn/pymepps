@@ -25,6 +25,7 @@ import abc
 from abc import abstractmethod
 import urllib.request
 import urllib.parse
+import urllib.error
 import shutil
 
 # External modules
@@ -70,13 +71,16 @@ class Internet(Server):
         file_path = urllib.parse.urljoin(self.base_path, file_path)
         save_path = File(save_path)
         save_path.create_dir()
-        with urllib.request.urlopen(file_path) as response,\
-                save_path.open() as out_file:
-            try:
-                shutil.copyfileobj(response, out_file)
-                if save_path.available:
-                    return True, None
-                else:
+        try:
+            with urllib.request.urlopen(file_path) as response,\
+                    save_path.open() as out_file:
+                try:
+                    shutil.copyfileobj(response, out_file)
+                    if save_path.available:
+                        return True, None
+                    else:
+                        return False, response
+                except:
                     return False, response
-            except:
-                return False, response
+        except urllib.error.HTTPError:
+            return False, 404

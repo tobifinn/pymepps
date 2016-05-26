@@ -31,4 +31,18 @@ __version__ = "0.1"
 
 
 class Station(BaseComponent):
-    pass
+    def __init__(self, name, server_model, files, station_decoder, data_path,
+                 base_logger):
+        pass
+
+    def  run(self):
+        pass
+
+    def get(self):
+        pass
+
+    def process(self):
+        pass
+
+    def write(self):
+        pass

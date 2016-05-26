@@ -39,8 +39,40 @@ CDO = cdo.Cdo()
 
 
 class Model(object):
+    """
+    this class represents a single weather forecast model (e.g. arome or gfs).
+    A model can create a modelrun, which downloads the model data from given
+    source for a specific date.
+    """
+
     def __init__(self, name="", inits=[], leads=[], server_model="", files=[],
                  data_path="", base_logger=None):
+        """
+        The model initialization.
+        Args:
+            name (str): The name of the model.
+            inits (list[int]): The initialization hours of the model.
+            leads (list[int]): The lead times of the model.
+            server_model (instance of subclass of pymepss.data.Server):
+                The used server of the model (e.g. an internet server)
+            files (instance of pymepps.data.Pathtemplate or list[str]):
+                The file names. The could created with a pathtemplate system.
+            data_path (str): Path where the model data should be saved.
+            base_logger (instance of BaseLogger):
+                The logger base of the system.
+
+        Attributes:
+            name (str): The name of the model.
+            inits (list[int]): The initialization hours of the model.
+            leads (list[int]): The lead times of the model.
+            server_model (instance of subclass of pymepss.data.Server class):
+                The used server of the model (e.g. an internet server)
+            files (instance of pymepps.data.Pathtemplate class or list[str]):
+                The file names. The could created with a pathtemplate system.
+            data_path (str): Path where the model data should be saved.
+            logger (instance of Logger class): The logger for the model.
+                Initialized with the model name and the base logger.
+        """
         self.name = name
         self.inits = inits
         self.leads = leads
@@ -51,6 +83,13 @@ class Model(object):
         self.logger.initLogger()
 
     def run(self, date, aoi={"lat": [53, 54], "lon": [9.5, 10.5]}):
+        """
+        This method runs the model and gets the model data.
+        Args:
+            date (datetime.datetime object): The current system date.
+            aoi (dict[list[float]]):
+                Area of interest, where the data is constrained.
+        """
         self.logger.info("Started data gathering")
         assert isinstance(date, datetime.datetime)
         start_date = deepcopy(date)
@@ -62,9 +101,12 @@ class Model(object):
                 run_avail = run.getRaw()
                 if run_avail[0]:
                     num_fcst += 1
+                    self.logger.info(
+                        u"The run {0:s} was sucessfully downloaded".format(
+                            date.strftime("%Y%m%d_%H")))
                 else:
                     self.logger.error(
-                        u"The run {0:s} isn't available, due to {1:s}"
+                        u"The run {0:s} has a problem, due to {1:s}"
                             .format(date.strftime("%Y%m%d_%H"), run_avail[1]))
             date -= datetime.timedelta(hours=1)
         if (start_date - date) < datetime.timedelta(days=2):
@@ -77,13 +119,42 @@ class Model(object):
 
 
 class ModelRun(BaseComponent):
+    """
+    A model run for a specific numerical weather model nad initialization date.
+    """
+
     def __init__(self, model, init, aoi={"lat": [53, 54], "lon": [9.5, 10.5]}):
+        """
+        The initialization of the model run
+        Args:
+            model (Model object): The corresponding model.
+            init (datetime.datetime object): The initialization date of the run.
+            aoi (dict[list[float]]):
+                Area of interest, where the data is constrained.
+        Attributes:
+            model (Model object): The corresponding model.
+            init (datetime.datetime object): The initialization date of the run.
+            aoi (dict[list[float]]):
+                Area of interest, where the data is constrained.
+        """
         assert isinstance(model, Model)
         self.model = model
         self.init = init
         self.aoi = aoi
 
     def getRaw(self):
+        """
+        Get the raw data of the model run. Combines the data gathering,
+        processing and saving.
+        Returns:
+            success (bool): If the model run saving was successful
+            errorcode (int or str): The error code. If 0 there was no error.
+        """
+        for dirpath, dirnames, files in os.walk(
+                os.path.join(self.model.data_path,u"{0:s}".format(
+                                 self.init.strftime("%Y%m%d_%H")))):
+            if files:
+                return True, 0
         success, error, temp_files = self.get()
         if not success:
             for file in temp_files:
@@ -91,26 +162,33 @@ class ModelRun(BaseComponent):
                     os.remove(file)
                 except OSError:
                     pass
-            return success, u"Data gathering: {0:s}".format(error)
-        success, error = self.process(temp_files)
+            return success, u"data gathering error: {0:s}".format(str(error))
+        success, error, processed_files = self.process(temp_files)
         if not success:
             for file in temp_files:
                 try:
                     os.remove(file)
                 except OSError:
                     pass
-            return success, u"Data processing: {0:s}".format(error)
-        success, error = self.write(temp_files)
-        if not success:
-            for file in temp_files:
+            for file in processed_files:
                 try:
                     os.remove(file)
                 except OSError:
                     pass
-            return success, u"Data writing: {0:s}".format(error)
+            return success, u"data processing error: {0:s}".format(str(error))
+        success, error = self.write(processed_files)
+        if not success:
+            return success, u"data writing error: {0:s}".format(str(error))
         return True, 0
 
     def get(self):
+        """
+        Get the model data.
+        Returns:
+            success (bool): If the model run gathering was successful
+            errorcode (int or str): The error code. If 0 there was no error.
+            output_files (list[str]): List of temporary raw model run files.
+        """
         input_files = []
         output_files = []
         if isinstance(self.model.files, PathTemplate):
@@ -126,10 +204,11 @@ class ModelRun(BaseComponent):
             except TypeError:
                 print(self.model.files,
                       'is not iterable, nor a PathTemplate, nor a string')
-        print(input_files)
         for key, file in enumerate(input_files):
             temp_file = os.path.join(self.model.data_path,
-                                u"temp_{0:d}.tmp".format(key))
+                                     u"{0:s}".format(
+                                         self.init.strftime("%Y%m%d_%H")),
+                                     u"raw_{0:d}.tmp".format(key))
             output, error = self.model.server_model.getFile(file, temp_file)
             if output:
                 output_files.append(temp_file)
@@ -138,24 +217,51 @@ class ModelRun(BaseComponent):
         return True, str(0), output_files
 
     def process(self, files):
-        for file in files:
+        """
+        Method to constrain the raw model files around the area of interest.
+        Args:
+            files (list[str]): List of raw temporary model files.
+
+        Returns:
+            success (bool): If the model run constraining was successful
+            errorcode (int or str): The error code. If 0 there was no error.
+            processed_files (list[str]): List of processed model run files.
+        """
+        processed_files = []
+        for key, file in enumerate(files):
             try:
+                working_dir = os.path.dirname(file)
+                output = os.path.join(working_dir, "raw_{0:d}.nc".format(key))
                 CDO.sellonlatbox(
                     "{0:.2f},{1:.2f},{2:.2f},{3:.2f}".format(
                         self.aoi["lon"][0],
                         self.aoi["lon"][1],
                         self.aoi["lat"][0],
                         self.aoi["lat"][1]),
-                    input=file, output=file)
+                    input=file, output=output)
+                os.remove(file)
+                processed_files.append(output)
             except Exception as e:
                 return False, e
-        return True, 0
+        return True, 0, processed_files
 
     def write(self, files):
-        output_path = os.path.join(self.model.data_path, "run_{0:s}.nc".format(
-            self.init.strftime("%Y%m%d%H")))
+        """
+        Method to combine the temporary model files into one model run netCDF
+        file with cdo.
+        Args:
+            files (list[str]): List of constrained temporary model files.
+
+        Returns:
+            success (bool): If the model run combining was successful.
+            errorcode (int or str): The error code. If 0 there was no error.
+        """
+        output_path = os.path.join(self.model.data_path, u"{0:s}".format(
+                                     self.init.strftime("%Y%m%d_%H")),
+                                   "run_{0:s}.nc".format(
+                                     self.init.strftime("%Y%m%d%H")))
         try:
-            CDO.mergetime(input=files, output=output_path)
+            CDO.merge(input=files, output=output_path)
         except Exception as e:
             return False, e
         else:

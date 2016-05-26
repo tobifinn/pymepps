@@ -64,16 +64,16 @@ class PathTemplate(object):
             self.leads = leads
             self.date = date
             url_list = self._replace_static(self.base_path)
-            url_list = self._replace_lead(url_list)
+            #            url_list = self._replace_lead(url_list)
             url_list = ["".join(url) for url in url_list]
-            #url_list = [self._calculation("".join(url)) for url in url_list]
+            # url_list = [self._calculation("".join(url)) for url in url_list]
             return url_list
         except:
             return False
 
     def _replace_static(self, url):
         start, end = self.replace_delimiters
-        #url = url.replace(start+"lead"+end, self.leads)
+        # url = url.replace(start+"lead"+end, self.leads)
         escaped = (re.escape(start), re.escape(end))
         regex = re.compile('%s(.*?)%s' % escaped, re.DOTALL)
         replaced_url = []
@@ -85,16 +85,6 @@ class PathTemplate(object):
             replaced_url.append(part)
         url = list(itertools.product(*replaced_url))
         return url
-
-    def _replace_lead(self, url_list):
-        new_url_list = []
-        for key, url in enumerate(url_list):
-            if "§" in url:
-                for lead in self.leads:
-                    new_url_list.append([w.replace("§", str(lead)) for w in url])
-            else:
-                new_url_list.append(url)
-        return new_url_list
 
     def _calculation(self, url):
         start, end = self.calc_delimiters
@@ -122,6 +112,7 @@ class PathTemplate(object):
         """
         return [self.date.strftime(date_format), ]
 
-    def _lead(self, *args):
-        leads = "§"
+    def _lead(self, lead_format, calc=None):
+        leads = ['{number:0{width}d}'.format(width=lead_format, number=lead)
+                 for lead in self.leads]
         return leads

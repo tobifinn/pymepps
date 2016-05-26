@@ -164,9 +164,12 @@ class System(object):
     #         path = os.path.join(base_path, join_path)
     #     return path
 
-    def start(self):
+    def start(self, model=True, station=True, forecast=True, verification=True,
+              plot=True):
         """
         start starts the forecasting system. Every component of the forecasting
         system is also started in this method.
         """
-        pass
+        if model:
+            for m in self.models:
+                m.run(self.date)
