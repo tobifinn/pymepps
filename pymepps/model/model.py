@@ -1,7 +1,8 @@
 # -*- coding: utf-8 -*-
 """
-Created on 23.04.16
-Created for FcstSystem
+Created on 28.09.16
+
+Created for pymepps
 
 @author: Tobias Sebastian Finn, tobias.sebastian.finn@studium.uni-hamburg.de
 
@@ -21,253 +22,161 @@ Created for FcstSystem
     along with this program.  If not, see <http://www.gnu.org/licenses/>.
 """
 # System modules
-import os
+import logging
 import datetime
-from copy import deepcopy
 
 # External modules
-import cdo
 
 # Internal modules
-from ..data import PathTemplate
-from ..base import BaseComponent
-
-__version__ = "0.1"
-
-# initialize CDO
-CDO = cdo.Cdo()
+from ..data_structures import servers_dict
+from ..metfile import file_handler_dict
+from .run import ModelRun
 
 
-class Model(object):
-    """
-    this class represents a single weather forecast model (e.g. arome or gfs).
-    A model can create a modelrun, which downloads the model data from given
-    source for a specific date.
-    """
+logger = logging.getLogger(__name__)
 
-    def __init__(self, name="", inits=[], leads=[], server_model="", files=[],
-                 data_path="", base_logger=None):
+
+class DynamicalModel(object):
+    def __init__(self, name, in_data_store=None, data_path=None,
+                 file_type=None, inits=None, leads=None):
         """
-        The model initialization.
-        Args:
-            name (str): The name of the model.
-            inits (list[int]): The initialization hours of the model.
-            leads (list[int]): The lead times of the model.
-            server_model (instance of subclass of pymepss.data.Server):
-                The used server of the model (e.g. an internet server)
-            files (instance of pymepps.data.Pathtemplate or list[str]):
-                The file names. The could created with a pathtemplate system.
-            data_path (str): Path where the model data should be saved.
-            base_logger (instance of BaseLogger):
-                The logger base of the system.
+        A dynamical model is a class for grid based numerical weather models.
+        The run method is the preferred method to run the model in a normal
+        way. What is the normal way?
+            1) Get forecast data
+            2) Load the forecast data into a GridBasedData instance
 
-        Attributes:
-            name (str): The name of the model.
-            inits (list[int]): The initialization hours of the model.
-            leads (list[int]): The lead times of the model.
-            server_model (instance of subclass of pymepss.data.Server class):
-                The used server of the model (e.g. an internet server)
-            files (instance of pymepps.data.Pathtemplate class or list[str]):
-                The file names. The could created with a pathtemplate system.
-            data_path (str): Path where the model data should be saved.
-            logger (instance of Logger class): The logger for the model.
-                Initialized with the model name and the base logger.
+        Attributes
+        ----------
+        See at the parameters section.
+
+        Parameters
+        ----------
+        name : str
+            The name of the model.
+        in_data_store : str, optional
+            The input data store, where the downloadable files are saved.
+            Default None, so there is no data store defined and the file
+            download is skipped.
+        data_path : str, optional
+            The path where the files should be/are saved. Default is None, so
+            the path is determined automatically by the data folder within the
+            system config file. If the system has no config file, a data folder
+            is created within the pymepps folder.
+        file_type : str, optional
+            The file type of stored files. Default is None so every possible
+            FileHandler is tried. If the file couldn't be opened there will be
+            a value error.
+        inits : list of int, optional
+            List with integers. The integers are the initialization time points
+            of the model. This initialization time points are used to determine
+            the downloadable files for the model and to start a ModelRun. The
+            unit of the inits is hours. Default is None so there is no
+            initialization.
+        leads : list of int, optional
+            The lead times of the model. The lead times are used to determine
+            the downloadable files within one initialization time point. The
+            leads are also used to determine if all model files are available.
+            Default is None so there is no lead time. This means that there is
+            only one file for each model run or there is no systematic.
+
+        Methods
+        -------
+        run(date)
+            Run the model and create ModelRun instances automatically based on
+            init.
+        create_model_run(date)
+            Create a ModelRun instance for this model based on given date.
         """
         self.name = name
+        self.data_path = data_path
+        try:
+            self.in_data_store = servers_dict[in_data_store.lower()]
+        except:
+            logger.error(
+                'The specified input data store {0:s} isn\'t available '
+                'yet.\n The possible file types are: {1:s}'.format(
+                    in_data_store,
+                    '\n'.join(
+                        ['{0:s}'.format(key) for
+                         key, value in servers_dict.items()])))
+        try:
+            if isinstance(file_type, str):
+                self.file_type = file_handler_dict[file_type.lower()]
+            elif file_type is None:
+                self.file_type = None
+                logger.info('No file type is specified, the file type is '
+                            'determined automatically!')
+
+        except:
+            logger.error(
+                'The specified file type {0:s} isn\'t available '
+                'yet.\n The possible file types are: {1:s}'.format(file_type,
+                    '\n'.join(
+                        ['{0:s}'.format(key) for
+                         key, value in file_handler_dict.items()])))
         self.inits = inits
         self.leads = leads
-        self.server_model = server_model
-        self.files = files
-        self.data_path = data_path
-        self.logger = base_logger.createLogger(name)
-        self.logger.initLogger()
 
-    def run(self, date, aoi={"lat": [53, 54], "lon": [9.5, 10.5]}):
+    def run(self, date):
         """
-        This method runs the model and gets the model data.
-        Args:
-            date (datetime.datetime object): The current system date.
-            aoi (dict[list[float]]):
-                Area of interest, where the data is constrained.
+        Run the model and iterate through the initializations until there are
+        four available SpatialForecasts or the initialization time is older
+        than two days. This is used if the model is run via a System class.
+        It creates automatically ModelRuns based on initializations and given
+        date.
+
+        Parameters
+        ----------
+        date : datetime.datetime
+            The start time of the model in utc. This is usually the time
+            determined by the system with datetime.datetime.utcnow.
+
+        Returns
+        -------
+        spatial_fcsts : list of GridBasedData
+            List with instances of GridBasedData. This list are the last four
+            available forecasts made by this model.
         """
-        self.logger.info("Started data gathering")
-        assert isinstance(date, datetime.datetime)
-        start_date = deepcopy(date)
-        num_fcst = 0
-        while num_fcst < 4 and \
-                ((start_date - date) < datetime.timedelta(days=2)):
+        logger.info('Model data gathering for {0:s} started'.format(self.name))
+        assert isinstance(date, datetime.datetime), logger.error(
+            'The given date is no datetime object')
+        start_date = date
+        spatial_fcsts = []
+        while len(spatial_fcsts) < 4 and (
+                    (start_date - date) < datetime.timedelta(days=2)):
             if date.hour in self.inits:
-                run = ModelRun(self, date, aoi)
-                run_avail = run.getRaw()
-                if run_avail[0]:
-                    num_fcst += 1
-                    self.logger.info(
+                run = self.create_model_run(date)
+                spatial_fcst = run.get_spatial_fcst()
+                if spatial_fcst is not None:
+                    spatial_fcsts.append(spatial_fcst)
+                    logger.info(
                         u"The run {0:s} was sucessfully downloaded".format(
                             date.strftime("%Y%m%d_%H")))
                 else:
-                    self.logger.error(
-                        u"The run {0:s} has a problem, due to {1:s}"
-                            .format(date.strftime("%Y%m%d_%H"), run_avail[1]))
+                    logger.debug(u"The run {0:s} has a problem".format(
+                            date.strftime("%Y%m%d_%H")))
             date -= datetime.timedelta(hours=1)
         if (start_date - date) < datetime.timedelta(days=2):
-            self.logger.error(
+            logger.error(
                 "The model hasn't 4 available runs in the last 2 days")
-        self.logger.info("Finished raw data gathering")
+        logger.info("Finished {0:s} data gathering".format(self.name))
+        return spatial_fcsts
 
-    def _createModelRun(self, init):
-        return ModelRun(self, init)
+    def create_model_run(self, date):
+        """
+        Creates an instance of ModelRun with this model and given date as
+        initialization.
 
+        Parameters
+        ----------
+        date : datetime.datetime
+            The initialization time object of the ModelRun.
 
-class ModelRun(BaseComponent):
-    """
-    A model run for a specific numerical weather model nad initialization date.
-    """
-
-    def __init__(self, model, init, aoi={"lat": [53, 54], "lon": [9.5, 10.5]}):
+        Returns
+        -------
+        ModelRun
+            The created ModelRun instance with this model and the given date as
+            argument. For more information about ModelRun see there.
         """
-        The initialization of the model run
-        Args:
-            model (Model object): The corresponding model.
-            init (datetime.datetime object): The initialization date of the run.
-            aoi (dict[list[float]]):
-                Area of interest, where the data is constrained.
-        Attributes:
-            model (Model object): The corresponding model.
-            init (datetime.datetime object): The initialization date of the run.
-            aoi (dict[list[float]]):
-                Area of interest, where the data is constrained.
-        """
-        assert isinstance(model, Model)
-        self.model = model
-        self.init = init
-        self.aoi = aoi
-
-    def getRaw(self):
-        """
-        Get the raw data of the model run. Combines the data gathering,
-        processing and saving.
-        Returns:
-            success (bool): If the model run saving was successful
-            errorcode (int or str): The error code. If 0 there was no error.
-        """
-        for dirpath, dirnames, files in os.walk(
-                os.path.join(self.model.data_path,u"{0:s}".format(
-                                 self.init.strftime("%Y%m%d_%H")))):
-            if files:
-                return True, 0
-        success, error, temp_files = self.get()
-        if not success:
-            for file in temp_files:
-                try:
-                    os.remove(file)
-                except OSError:
-                    pass
-            return success, u"data gathering error: {0:s}".format(str(error))
-        success, error, processed_files = self.process(temp_files)
-        if not success:
-            for file in temp_files:
-                try:
-                    os.remove(file)
-                except OSError:
-                    pass
-            for file in processed_files:
-                try:
-                    os.remove(file)
-                except OSError:
-                    pass
-            return success, u"data processing error: {0:s}".format(str(error))
-        success, error = self.write(processed_files)
-        if not success:
-            return success, u"data writing error: {0:s}".format(str(error))
-        return True, 0
-
-    def get(self):
-        """
-        Get the model data.
-        Returns:
-            success (bool): If the model run gathering was successful
-            errorcode (int or str): The error code. If 0 there was no error.
-            output_files (list[str]): List of temporary raw model run files.
-        """
-        input_files = []
-        output_files = []
-        if isinstance(self.model.files, PathTemplate):
-            input_files = self.model.files.generatePaths(self.model.leads,
-                                                         self.init)
-        elif isinstance(self.model.files, str):
-            input_files = PathTemplate(self.model.files).generatePaths(
-                self.model.leads, self.init)
-        else:
-            try:
-                _ = (e for e in self.model.files)
-                input_files = self.model.files
-            except TypeError:
-                print(self.model.files,
-                      'is not iterable, nor a PathTemplate, nor a string')
-        for key, file in enumerate(input_files):
-            temp_file = os.path.join(self.model.data_path,
-                                     u"{0:s}".format(
-                                         self.init.strftime("%Y%m%d_%H")),
-                                     u"raw_{0:d}.tmp".format(key))
-            output, error = self.model.server_model.getFile(file, temp_file)
-            if output:
-                output_files.append(temp_file)
-            else:
-                return output, error, output_files
-        return True, str(0), output_files
-
-    def process(self, files):
-        """
-        Method to constrain the raw model files around the area of interest.
-        Args:
-            files (list[str]): List of raw temporary model files.
-
-        Returns:
-            success (bool): If the model run constraining was successful
-            errorcode (int or str): The error code. If 0 there was no error.
-            processed_files (list[str]): List of processed model run files.
-        """
-        processed_files = []
-        for key, file in enumerate(files):
-            try:
-                working_dir = os.path.dirname(file)
-                output = os.path.join(working_dir, "raw_{0:d}.nc".format(key))
-                CDO.sellonlatbox(
-                    "{0:.2f},{1:.2f},{2:.2f},{3:.2f}".format(
-                        self.aoi["lon"][0],
-                        self.aoi["lon"][1],
-                        self.aoi["lat"][0],
-                        self.aoi["lat"][1]),
-                    input=file, output=output)
-                os.remove(file)
-                processed_files.append(output)
-            except Exception as e:
-                return False, e
-        return True, 0, processed_files
-
-    def write(self, files):
-        """
-        Method to combine the temporary model files into one model run netCDF
-        file with cdo.
-        Args:
-            files (list[str]): List of constrained temporary model files.
-
-        Returns:
-            success (bool): If the model run combining was successful.
-            errorcode (int or str): The error code. If 0 there was no error.
-        """
-        output_path = os.path.join(self.model.data_path, u"{0:s}".format(
-                                     self.init.strftime("%Y%m%d_%H")),
-                                   "run_{0:s}.nc".format(
-                                     self.init.strftime("%Y%m%d%H")))
-        try:
-            CDO.merge(input=files, output=output_path)
-        except Exception as e:
-            return False, e
-        else:
-            for file in files:
-                try:
-                    os.remove(file)
-                except OSError:
-                    pass
-        return True, 0
+        return ModelRun(self, date)
