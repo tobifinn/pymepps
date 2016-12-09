@@ -26,6 +26,7 @@ import logging
 import datetime
 
 # External modules
+import numpy as np
 
 # Internal modules
 from ..data_structures import servers_dict
@@ -118,11 +119,57 @@ class DynamicalModel(object):
         self.inits = inits
         self.leads = leads
 
+    def get_historical_data(self, stop_date=None, n_fcsts=1000):
+        """
+        Method to download historical data, without the constrains in the run
+        method. The constrains could be specified with a stop_date or a number
+        of forecasts. One of the two constrains have to be specified.
+
+        Parameters
+        ----------
+        stop_date : datetime.datetime, optional
+            The available files are downloaded/opened up to this stop_date. The
+            iteration is stopped if the date is older than this stop_date. If
+            this is None, there is no date constrain. Default is
+            01.01.2000, 00:00 UTC, to avoid a too long iteration.
+        n_fcsts : int, optional
+            Specifies how many forecasts should be downloaded/opened. If there
+            are more than this number of forecasts, the newest n_fcsts
+            forecasts are opened. If this is None, there is no constrain.
+            Default is 1000, to avoid that to many forecasts are downloaded.
+
+        Returns
+        -------
+        spatial_fcsts : list of SpatialData
+            List with instances of GridBasedData. This list are the available
+            forecasts up to the point where one of the constrains are reached.
+        """
+        if stop_date is None and n_fcsts is None:
+            logger.exception("One of the two parameters has to be specified!")
+        logger.info('Model data gathering for {0:s} started'.format(self.name))
+        date = datetime.datetime.utcnow()
+        spatial_fcsts = []
+        if n_fcsts is None:
+            n_fcsts = np.inf
+        if stop_date is None:
+            stop_date = datetime.datetime(1,1,1)
+        while len(spatial_fcsts) < n_fcsts and (
+                    (date-stop_date) < datetime.timedelta(0)):
+            if date.hour in self.inits:
+                run = self.create_model_run(date)
+                spatial_fcst = run.get_spatial_fcst()
+                if spatial_fcst is not None:
+                    spatial_fcsts.append(spatial_fcst)
+            date -= datetime.timedelta(hours=1)
+        logger.info("Finished {0:s} data gathering, and got {1:d} forecasts.".
+                    format(self.name, len(spatial_fcsts)))
+        return spatial_fcsts
+
     def run(self, date):
         """
         Run the model and iterate through the initializations until there are
         four available SpatialForecasts or the initialization time is older
-        than two days. This is used if the model is run via a System class.
+        than two days. This is used if the model is run via the System class.
         It creates automatically ModelRuns based on initializations and given
         date.
 
@@ -134,8 +181,8 @@ class DynamicalModel(object):
 
         Returns
         -------
-        spatial_fcsts : list of GridBasedData
-            List with instances of GridBasedData. This list are the last four
+        spatial_fcsts : list of SpatialData
+            List with instances of SpatialData. This list are the last four
             available forecasts made by this model.
         """
         logger.info('Model data gathering for {0:s} started'.format(self.name))
@@ -151,7 +198,7 @@ class DynamicalModel(object):
                 if spatial_fcst is not None:
                     spatial_fcsts.append(spatial_fcst)
                     logger.info(
-                        u"The run {0:s} was sucessfully downloaded".format(
+                        u"The run {0:s} is successfully opened".format(
                             date.strftime("%Y%m%d_%H")))
                 else:
                     logger.debug(u"The run {0:s} has a problem".format(
