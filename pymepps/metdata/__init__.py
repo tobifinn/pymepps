@@ -27,9 +27,9 @@ Created for pymepps
 # External modules
 
 # Internal modules
-from .spatialdataset import *
-from .tsdataset import *
 from .spatialdata import *
+from .spatialdataset import *
 from .tsdata import *
+from .tsdataset import *
 
 __all__ = ['SpatialDataset', 'SpatialData', 'TSDataset', 'TSData']
