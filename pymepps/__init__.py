@@ -1,7 +1,8 @@
 # -*- coding: utf-8 -*-
 """
-Created on 03.05.16
-Created for pyMepps
+Created on 11.09.16
+
+Created for pymepps
 
 @author: Tobias Sebastian Finn, tobias.sebastian.finn@studium.uni-hamburg.de
 
@@ -25,14 +26,3 @@ Created for pyMepps
 # External modules
 
 # Internal modules
-from .system import *
-from .model import *
-from .station import *
-from .forecast import *
-from .verification import *
-from .plot import *
-from .log import *
-
-__version__ = "0.1"
-
-__all__ = ["System", "Model", "Station", "BaseLogger", "Logger"]
