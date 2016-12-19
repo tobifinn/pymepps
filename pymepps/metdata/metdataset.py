@@ -53,9 +53,11 @@ class MetDataset(object):
             Default is None.
         """
         self.file_handlers = file_handlers
+        if not isinstance(self.file_handlers, list):
+            self.file_handlers = [self.file_handlers,]
         self.data_origin = data_origin
         self.variables = {}
-        for file in file_handlers:
+        for file in self.file_handlers:
             for var in file.var_names:
                 if var not in self.variables.keys():
                     self.variables[var] = [file]
@@ -64,7 +66,7 @@ class MetDataset(object):
 
     @property
     def var_names(self):
-        return self.variables.keys()
+        return list(self.variables.keys())
 
     def select(self, var_name):
         """
@@ -83,10 +85,9 @@ class MetDataset(object):
         Returns
         -------
         extracted_data : Child of MetData or None
-            A instances of a child of MetData with the data of the selected
-            variable as data. If None is returned the variable wasn't found
-            within the list with possible variable names.
-
+            A child instance of MetData with the data of the selected variable
+            as data. If None is returned the variable wasn't found within the
+            list with possible variable names.
         """
         if var_name not in self.var_names:
             logger.error("The variable {0:s} is not in the available variable "
@@ -95,10 +96,22 @@ class MetDataset(object):
             return None
         data = []
         for file in self.variables[var_name]:
-            file_data = file.get_messages(var_name)
-            data += file_data
+            file.open()
+            logger.debug('Trying to get data from {0:s}'.format(file.file.path))
+            file_data = self._get_file_data(file, var_name)
+            logger.debug('Got file data from {0:s}'.format(file.file.path))
+            if isinstance(file_data, (list, tuple)):
+                data.extend(file_data)
+            else:
+                data.append(file_data)
         extracted_data = self.data_merge(data)
+        for file in self.variables[var_name]:
+            file.close()
         return extracted_data
+
+    @abc.abstractmethod
+    def _get_file_data(self, file, var_name):
+        pass
 
     @abc.abstractmethod
     def data_merge(self, data):
