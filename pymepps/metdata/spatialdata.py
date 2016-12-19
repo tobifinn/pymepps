@@ -53,50 +53,5 @@ class SpatialData(MetData):
         """
         super().__init__(data_base, data_origin)
 
-    def __getattr__(self, key):
-        if key == 'data':
-            logger.exception(" ".join([
-                "Can't access data attribute.",
-                "Did you try to access properties before",
-                "loading data?"
-            ]))
-        return self._xr_function(key)
-
-    def _xr_function(self, key):
-        """
-        Get xarray.DataArray function with given key. This is a wrapper around
-        xarray.DataArray functions to secure a SpatialData return value.
-
-        Parameters
-        ----------
-        key : str
-            The function which should be called. Have to be an available
-            function for a xarray.DataArray!
-
-        Returns
-        -------
-        wrapped_func : function
-            The wrapped xarray.DataArray function. The wrapped function returns
-            a new SpatialData instance, if the result of the function is a new
-            xarray.DataArray, else the return value of the function will be
-            returned.
-        """
-        def wrapped_func(*args, **kwargs):
-            try:
-                result = getattr(self.data, key)(*args, **kwargs)
-            except TypeError:
-                result = getattr(self.data, key)
-            if isinstance(result, xr.DataArray):
-                return SpatialData(result, self.data_origin)
-            else:
-                return result
-        return wrapped_func
-
-    def __getitem__(self, key):
-        return SpatialData(self.data.__getitem__(key), self.data_origin)
-
-    def __setitem__(self, key, value):
-        return self.data.__setitem__(key, value)
-
     def plot(self, analysis=None, ):
         pass
