@@ -88,7 +88,18 @@ class PathEncoder(object):
                      'Date: {2:s}'.format(
             str(self.base_path), str(undet_numbers), str(date)))
 
+    def get_file_number(self):
+        return len(self.get_encoded())
+
     def get_encoded(self):
+        """
+        Encode the path with given data.
+
+        Returns
+        -------
+        list of str
+            List with encoded paths.
+        """
         url_list = self._replace_static(self.base_path)
         for k, url in enumerate(url_list):
             url_list[k] = self._calculation(url)
