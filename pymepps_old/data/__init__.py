@@ -4,4 +4,4 @@ from .servers import *
 
 __version = "0.1"
 
-__all__ = ["PathTemplate", "File", "Internet"]
+__all__ = ["PathTemplate", "File", "Internet", "Samba", "SSH"]

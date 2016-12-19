@@ -25,10 +25,18 @@ Created for FcstSystem
 # External modules
 
 # Internal modules
-from pymepps.base import BaseComponent
+from pymepps_old.base import BaseComponent
 
 __version__ = "0.1"
 
 
-class Verification(BaseComponent):
+class ForecastBase(BaseComponent):
+    pass
+
+
+class ForecastPoint(ForecastBase):
+    pass
+
+
+class ForecastGrid(ForecastBase):
     pass
