@@ -51,6 +51,18 @@ class FileHandler(object):
                 file.path))
         self.file = file
         self.var_names = self._get_varnames()
+        self._ds = None
+
+    @property
+    def ds(self):
+        if self._ds is None:
+            raise ValueError('Do you try to get the dataset, without open the file?')
+        else:
+            return self._ds
+
+    @ds.setter
+    def ds(self, ds):
+        self._ds = ds
 
     @abc.abstractmethod
     def get_messages(self, var_name):
