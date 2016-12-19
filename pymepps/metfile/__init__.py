@@ -28,9 +28,16 @@ Created for pymepps
 
 # Internal modules
 from .gribhandler import *
+from .netcdfhandler import *
 
 
 file_handler_dict = {'grib': GribHandler,
                      'grb': GribHandler,
                      'grb2': GribHandler,
-                     'grb1': GribHandler}
+                     'grb1': GribHandler,
+                     'nc': NetCDFHandler,
+                     'netcdf': NetCDFHandler,
+                     'nc4': NetCDFHandler}
+
+spatial_handler = [GribHandler, NetCDFHandler]
+time_series_handler = [NetCDFHandler,]
