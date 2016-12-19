@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 """
 Created on 18.05.16
-Created for pyMepps
+Created for pymepps
 
 @author: Tobias Sebastian Finn, tobias.sebastian.finn@studium.uni-hamburg.de
 
@@ -22,54 +22,59 @@ Created for pyMepps
 """
 # System modules
 import os
-import abc
 
 # External modules
 
 # Internal modules
-
+from .basefile import BaseFile
 
 __version__ = "0.2"
 
 
-class BaseFile(object):
-    """
-    The file base class.
-    """
-    def __init__(self, path):
-        self.__path = None
-        self.path = path
-
-    @property
-    def path(self):
-        return self.__path
-
-    @path.setter
-    def path(self, path):
-        if isinstance(path, str):
-            self.__path = path
-        else:
-            raise ValueError("The path is not a string")
-
-    @property
-    def available(self):
-        return self.check()
-
-    @abc.abstractmethod
-    def check(self):
-        pass
-
-
 class File(BaseFile):
+    def __init__(self, path):
+        """
+        Object for one single file.
+
+        Parameters
+        ----------
+        path : str
+            The path to the file.
+
+        Methods
+        -------
+        get_dir
+            Get the file dir.
+        check_file
+            Checks if the file is available.
+        create_dir
+            Create the file dir.
+        create_file
+            Create the file within the dir.
+        rename(new_name)
+            Rename the file.
+        change_path(new_path)
+            Move the file to another path.
+        open(mode)
+            Open the file.
+        """
+        super().__init__(path)
     @property
     def dir(self):
         return self.get_dir()
+
+    @property
+    def name(self):
+        return self.get_basename()
 
     def check(self):
         return self.check_file()
 
     def get_dir(self):
         return os.path.dirname(self.path)
+
+    def get_basename(self):
+        return os.path.basename(self.path)
 
     def check_file(self):
         if os.path.isfile(self.path):
@@ -84,6 +89,7 @@ class File(BaseFile):
 
     def create_file(self):
         try:
+            self.create_dir()
             open(self.path, 'a').close()
         except:
             raise ValueError("The file can't be created")
