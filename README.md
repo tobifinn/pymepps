@@ -22,11 +22,12 @@ It will grow with the time.
 Requirements
 ------------
 Written using Python 3.5.<br>
-It requires:
+Requires:
 <li>Numpy
 <li>Matplotlib
 <li>Basemap
 <li>Pandas
 <li>Xarray
+<li>Pygrib
 <li>Netcdf-4
 <li>CDO
