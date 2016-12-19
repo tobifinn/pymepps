@@ -29,9 +29,9 @@ import datetime
 import numpy as np
 
 # Internal modules
-from ..data_structures import servers_dict
+from ..data_structures import servers_dict, server_types
 from ..metfile import file_handler_dict
-from .run import ModelRun
+from .modelrun import ModelRun
 
 
 logger = logging.getLogger(__name__)
@@ -55,10 +55,10 @@ class DynamicalModel(object):
         ----------
         name : str
             The name of the model.
-        in_data_store : str, optional
+        in_data_store : child of DataServer, optional
             The input data store, where the downloadable files are saved.
-            Default None, so there is no data store defined and the file
-            download is skipped.
+            Default None, so there is no data store defined and the file and
+            the data download function is deactivated.
         data_path : str, optional
             The path where the files should be/are saved. Default is None, so
             the path is determined automatically by the data folder within the
@@ -83,41 +83,70 @@ class DynamicalModel(object):
 
         Methods
         -------
+        get_historical_data()
+            Get historical data up to a given constrain.
         run(date)
-            Run the model and create ModelRun instances automatically based on
-            init.
+            Run the model and create ModelRun instances based on init.
         create_model_run(date)
             Create a ModelRun instance for this model based on given date.
         """
         self.name = name
         self.data_path = data_path
-        try:
-            self.in_data_store = servers_dict[in_data_store.lower()]
-        except:
-            logger.error(
-                'The specified input data store {0:s} isn\'t available '
-                'yet.\n The possible file types are: {1:s}'.format(
-                    in_data_store,
-                    '\n'.join(
-                        ['{0:s}'.format(key) for
-                         key, value in servers_dict.items()])))
-        try:
-            if isinstance(file_type, str):
-                self.file_type = file_handler_dict[file_type.lower()]
-            elif file_type is None:
-                self.file_type = None
-                logger.info('No file type is specified, the file type is '
-                            'determined automatically!')
-
-        except:
-            logger.error(
-                'The specified file type {0:s} isn\'t available '
-                'yet.\n The possible file types are: {1:s}'.format(file_type,
-                    '\n'.join(
-                        ['{0:s}'.format(key) for
-                         key, value in file_handler_dict.items()])))
+        self._in_data_store = None
+        self._file_type = None
+        self.in_data_store = in_data_store
+        self.file_type = file_type
         self.inits = inits
         self.leads = leads
+
+    @property
+    def in_data_store(self):
+        return self._in_data_store
+
+    @in_data_store.setter
+    def in_data_store(self, store):
+        if isinstance(store, str):
+            try:
+                self._in_data_store = servers_dict[store.lower()]
+            except:
+                logger.error(
+                    'The specified input data store {0:s} isn\'t available '
+                    'yet.\n The possible file types are: {1:s}'.format(store,
+                        '\n'.join(['{0:s}'.format(key) for
+                                   key, value in servers_dict.items()])))
+        elif store is None:
+            self._in_data_store = None
+            logger.info('No store is specified, the download function will be'
+                        'deactivated.')
+        elif isinstance(store, server_types):
+            self._in_data_store = store
+        else:
+            logger.exception('In_data_store must be set as string or None, '
+                             'instead is was set as {0:s}'.format(type(store)))
+
+    @property
+    def file_type(self):
+        return self._file_handler
+
+    @file_type.setter
+    def file_type(self, type):
+        if isinstance(type, str):
+            try:
+                self._file_handler = file_handler_dict[type.lower()]
+            except:
+                logger.error(
+                    'The specified file type {0:s} isn\'t available '
+                    'yet.\n The possible file types are: {1:s}'.format(
+                        type,
+                        '\n'.join(['{0:s}'.format(key)
+                                for key, value in file_handler_dict.items()])))
+        elif type is None:
+            self._file_type = None
+            logger.info('No file type is specified, the file type will be'
+                        'determined automatically.')
+        else:
+            logger.exception('The file type must be set as string or None, '
+                             'instead is was set as {0:s}'.format(type(type)))
 
     def get_historical_data(self, stop_date=None, n_fcsts=1000):
         """
@@ -146,6 +175,7 @@ class DynamicalModel(object):
         """
         if stop_date is None and n_fcsts is None:
             logger.exception("One of the two parameters has to be specified!")
+            raise ValueError("One of the two parameters has to be specified!")
         logger.info('Model data gathering for {0:s} started'.format(self.name))
         date = datetime.datetime.utcnow()
         spatial_fcsts = []

@@ -25,17 +25,20 @@ Created for pymepps
 # System modules
 import os
 import logging
+import glob
 
 # External modules
 
 # Internal modules
+from ..metdata import SpatialDataset
+from ..metfile import spatial_handler
 
 
 logger = logging.getLogger(__name__)
 
 
 class ModelRun(object):
-    def __init__(self, model, init_date):
+    def __init__(self, model, init_date, data_path=None):
         """
         A model run for a given model and given initialization date.
 
@@ -56,6 +59,13 @@ class ModelRun(object):
             This model run is for the given Model.
         init_date : datetime.datetime
             The initialization time point of this model run.
+        data_path : str or None, optional
+            The data path were the downloaded files are stored.
+            If the data path is None, the data path is set automatically based
+            on the model's data path.
+            The path structure is then:
+                model.data_path/init_date (date format: YYYYmmdd_hh).
+            Default is None.
 
         Methods
         -------
@@ -66,8 +76,28 @@ class ModelRun(object):
         """
         self.model = model
         self.init_date = init_date
-        self.data_path = os.path.join(model.data_path,
-                                      self.init_date.strftime("YYYYmmdd_HH"))
+        self.data_path = data_path
+
+    @property
+    def data_path(self):
+        return self._data_path
+
+    @data_path.setter
+    def data_path(self, data_path):
+        if isinstance(data_path, str):
+            self._data_path = data_path
+        elif data_path is None:
+            logger.debug('There was no data path defined model run\'s data'
+                         'path is set automatically!')
+            self._data_path = os.path.join(
+                self.model.data_path, self.init_date.strftime("%Y%m%d_%H"))
+        else:
+            logger.exception('The data_path parameter has to be a string or'
+                             'None, but it was instead {0:s}'.
+                             format(type(data_path)))
+            raise ValueError('The data_path parameter has to be a string or'
+                             'None, but it was instead {0:s}'.
+                             format(type(data_path)))
 
     def get_data(self):
         """
@@ -132,10 +162,33 @@ class ModelRun(object):
 
         Returns
         -------
-        GridBasedData or None
-            GridBasedData instance with the loaded files and this model run as
+        SpatialDataset or None
+            SpatialDataset instance with the loaded files and this model run as
             base. If this is None, there was no file given or found within the
             data path.
         """
-        # TODO: Needs to be written
-        pass
+        all_files = list(glob.glob(os.path.join(self.data_path, '*')))
+        handlers = []
+        file_handler_templ = self.model.file_type
+        if file_handler_templ is None:
+            for handler_type in spatial_handler:
+                if handler_type(all_files[0]).is_type():
+                    file_handler_templ = handler_type
+        if file_handler_templ is None:
+            logger.error('The file type couldn\'t be determined automatically '
+                         'by the data. To open the files you have set the '
+                         'type manually.')
+            return None
+        for file in all_files:
+            temp_handler = file_handler_templ(file)
+            if temp_handler.is_type():
+                handlers.append(file_handler_templ(file))
+        if len(handlers)>0:
+            logger.debug('The files of {0:s} are opened successfully.'.
+                         format(str(self)))
+            return SpatialDataset(handlers, self)
+        else:
+            logger.info('There was no file within given path, which could be '
+                        'opened by {0:s}.'.format(str(self)))
+            return None
+

@@ -28,6 +28,6 @@ Created for pymepps
 
 # Internal modules
 from .model import *
-from .run import *
+from .modelrun import *
 
 __all__ = ['DynamicalModel', 'ModelRun']
