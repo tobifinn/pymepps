@@ -25,6 +25,7 @@ Created for pymepps
 # System modules
 import collections
 import getpass
+import logging
 
 # External modules
 import numpy as np
@@ -44,13 +45,31 @@ import xarray
 from .filehandler import FileHandler
 
 
+logger = logging.getLogger(__name__)
+
+
 class GribHandler(FileHandler):
+    def open(self):
+        if self._ds is None:
+            self.ds = pygrib.open(self.file.path)
+
+    def close(self):
+        self.ds.close()
+
+    def is_type(self):
+        self.open()
+        if len(self.ds[:])==0:
+            return_value = False
+        else:
+            return_value = True
+        return return_value
+
     def _get_varnames(self):
-        grb = pygrib.open(self.file.path)
+        self.open()
         var_names = []
-        for msg in grb:
+        for msg in self.ds:
             var_names.append(msg.name)
-        grb.close()
+        self.close()
         return set(var_names)
 
     def get_messages(self, var_name):
@@ -70,44 +89,53 @@ class GribHandler(FileHandler):
             have six coordinates (analysis, ensemble, time, level, y, x).
             The shape of DataArray are normally (1,1,1,1,y_size,x_size).
         """
-        grb = pygrib.open(self.file.path)
-        msgs = grb.select(name=var_name)
-        grb.close()
+        msgs = self.ds.select(name=var_name)
+        logger.debug('Selected {0:s} from file {1:s}'.format(var_name,
+                                                             self.file.path))
         data = []
+        logger.debug('Starting decoding of messages')
         for msg in msgs:
-            array_data = np.array(msg.data()[0])
+            logger.debug('Decoding of message: {0:s}'.format(str(msg)))
+            array_data = msg.values
             array_data = array_data[
                          np.newaxis, np.newaxis, np.newaxis, np.newaxis, :, :]
+            logger.debug('Got array data')
             anal_date = [msg.analDate,]
+            logger.debug('Got analysis date')
             try:
                 ens_type = msg['typeOfEnsembleForecast']
                 if ens_type in [2,3,4]:
                     ens = [msg['perturbationNumber'],]
             except RuntimeError:
                 ens = ['det',]
-            valid_date = [msg.validDate,]
+            logger.debug('Got ensemble forecast number')
+            valid_date = [msg.validDate-msg.analDate,]
             level = [":".join(str(msg).split(':')[4:6]),]
+            logger.debug('Decoded levels')
             # Check if grid is in lat/lon
-            dimensions = []
+            dimensions = {}
             if 'iDirectionIncrementInDegrees' in msg.keys():
                 y_0 = msg['latitudeOfFirstGridPointInDegrees']
                 y_end = msg['latitudeOfLastGridPointInDegrees']
-                y_inc = msg['jDirectionIncrementInDegrees']*(-1)**(float(y_end<y_0))
                 x_0 = msg['longitudeOfFirstGridPointInDegrees']
-                x_inc = msg['iDirectionIncrementInDegrees']
                 x_end = msg['longitudeOfLastGridPointInDegrees']
-                dimensions.append(np.arange(y_0, y_end+y_inc, y_inc))
-                dimensions.append(np.arange(x_0, x_end + x_inc, x_inc))
+                logger.debug('Found lon/lat')
             # Unknown grid
             else:
-                dimensions.append(np.arange(0, array_data.shape[-2]))
-                dimensions.append(np.arange(0, array_data.shape[-1]))
+                y_0 = 0
+                y_end = array_data.shape[-2]-1
+                x_0 = 0
+                x_end = array_data.shape[-1]-1
+                logger.debug('No lon/lat available')
+            dimensions['y'] = np.linspace(y_0, y_end, array_data.shape[-2])
+            dimensions['x'] = np.linspace(x_0, x_end, array_data.shape[-1])
             xr_data = xarray.DataArray(
                 data=array_data,
                 coords=[
                     ('analysis', anal_date), ('ensemble', ens),
                     ('time', valid_date), ('level', level),
-                    ('y', dimensions[0]), ('x', dimensions[1])])
+                    ('y', dimensions['y']), ('x', dimensions['x'])])
+            logger.debug('Combines everything into one xr DataArray')
             xr_data.name = msg['cfName']
             xr_data.attrs['unit'] = msg['units']
             try:
@@ -129,5 +157,7 @@ class GribHandler(FileHandler):
                     dt.datetime.utcnow().strftime("%Y%m%d %H:%Mz"),
                     getpass.getuser(),
                     var_name)
+            logger.debug('Set DataArray attributes')
             data.append(xr_data)
+        logger.debug('Finished messages decoding')
         return data
