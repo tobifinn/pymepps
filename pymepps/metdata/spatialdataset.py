@@ -63,48 +63,26 @@ class SpatialDataset(MetDataset):
         -------
         select
             Method to select a variable.
-
-        Example Usage
-        -------------
-        >>> model = DynamicalModel('GFS_0_25')
-        >>> modelrun = ModelRun(model,
-        >>>                     dt.datetime.strptime('25.12.1992', '%d.%m.%Y'))
-        >>> file_handlers = [GribHandler(…), GribHandler(…), GribHandler(…)]
-        >>> ds = SpatialDataset(file_handlers, modelrun)
-        >>> data = ds.select('t2m')[10:100, 10:100, 1]
-        The selected variable is t2m.
-        The dimensions longitude and latitude and time are sliced.
-        >>> data.plot(method='contourf', c='red').save('t2m.png')
-        The data is plotted as contourf plot in red.
-        The plot is saved at the path: ~/t2m.png
-        >>> data.dataflow
-        GFS_0_25:Init-25.12.1992 00:00 UTC:Grib:T2m:
-        sliced(longitude, latitude, time)
         """
         super().__init__(file_handlers, data_origin)
 
-    def select(self, var_name):
-        """
-        Method to select a variable from this dataset. If the variable is find
-        in more than one file or message, the method tries to find similarities
-        within the metadata and to combine the data into one array, with
-        several dimensions. This method could have a long running time, due to
-        data loading and combination.
+    def _get_file_data(self, file, var_name):
+        return file.get_messages(var_name)
 
+    def sellonlatbox(self, lonlatbox, inplace=True):
+        """
+        Method to select a longitude/latitude box and slice the FileHandlers.
+        This method is based on the cdo command sellonlatbox.
         Parameters
         ----------
-        var_name : str
-            The variable which should be extracted. If the variable is not
-            found within the dataset there would be a value error exception.
+        lonlatbox
+        inplace
 
         Returns
         -------
-        extracted_data : SpatialData or None
-            A SpatialData instance with the data of the selected variable as
-            data. If None is returned the variable wasn't found within the
-            list with possible variable names.
+
         """
-        return super().select(var_name)
+        pass
 
     def data_merge(self, data):
         """
@@ -121,43 +99,47 @@ class SpatialDataset(MetDataset):
         SpatialData
         """
         if len(data) == 1:
+            logger.debug('Found only one message')
             return SpatialData(data[0], self)
         else:
+            coordinate_names = list(data[0].dims)
             uniques = []
-            for dim in ['analysis', 'ensemble', 'time', 'level']:
-                if dim in data[0].coords:
-                    dim_gen = [d[dim].values for d in data]
-                else:
-                    dim_gen = [None,]
+            for dim in coordinate_names[:-2]:
+                dim_gen = [d[dim].values for d in data]
                 uniques.append(list(np.unique(dim_gen)))
-            if np.product([len(u) for u in uniques]) != len(data):
-                logger.warning(
-                    'The number of possible split elements isn\'t '
-                    'the same as the number of elements within the data list. '
-                    'So the assumption of same-sized clusters is violated and '
-                    'it isn\'t possible to combine the data into one data '
-                    'array completely.')
-                extracted_data = xr.concat(data)
-            else:
-                indexes = []
-                for d in data:
-                    d_ind = [d.values]
-                    for key, dim in enumerate(['analysis', 'ensemble', 'time', 'level']):
-                        if dim in d.coords:
-                            d_ind.append(uniques[key].index(d[dim].values))
-                        else:
-                            d_ind.append(0)
-                    indexes.append(d_ind)
-                sorted_data = zip(*sorted(indexes, key=operator.itemgetter(1,2,3,4)))
-                sorted_data = np.array(list(sorted_data)[0])
-                shaped_data = sorted_data.reshape(
-                    [len(u) for u in uniques]+
-                    [sorted_data.shape[-2]]+
-                    [sorted_data.shape[-1]])
-                coords = list(zip(['analysis', 'ensemble', 'time', 'level', 'x', 'y'],
-                             uniques+[data[0]['x'].values]+[data[0]['y'].values]))
-                extracted_data = xr.DataArray(
-                    data=shaped_data,
-                    coords=coords)
-                extracted_data.attrs = data[0].attrs
+            logger.debug('Got unique coordinates')
+            indexes = []
+            logger.debug('Start coordinates indexing')
+            for d in data:
+                d_ind = [d.values]
+                for key, dim in enumerate(coordinate_names[:-2]):
+                    if dim in d.coords:
+                        d_ind.append(uniques[key].index(d[dim].values))
+                    else:
+                        d_ind.append(0)
+                logger.debug('Finished coordinates indexing for {0:s}'.format(str(d_ind[1:])))
+                indexes.append(d_ind)
+            logger.debug('Start data sorting')
+            n_dims = len(coordinate_names[:-2])
+            sort_dims = tuple(range(1, n_dims+1))
+            sorted_data = zip(*sorted(indexes, key=operator.itemgetter(*sort_dims)))
+            logger.debug('Start data reordering')
+            sorted_data = np.array(list(sorted_data)[0])
+            logger.debug('Start data reshaping')
+            logger.debug(sorted_data.shape)
+            logger.debug([len(u) for u in uniques])
+            shaped_data = sorted_data.reshape(
+                [len(u) for u in uniques]+
+                [sorted_data.shape[-2]]+
+                [sorted_data.shape[-1]])
+            logger.debug('Start coordinates setting')
+            coords = list(zip(coordinate_names,
+                              uniques+[data[0][coordinate_names[-2]].values]+[data[0][coordinate_names[-1]].values]))
+            logger.debug('Start merging')
+            extracted_data = xr.DataArray(
+                data=shaped_data,
+                coords=coords)
+            logger.debug('Start attribute setting')
+            extracted_data.attrs = data[0].attrs
+            logger.debug('Finished data merging')
         return SpatialData(extracted_data, self)
