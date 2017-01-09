@@ -82,7 +82,7 @@ class PathEncoder(object):
         self.replace_methods = {
             "text": self._text,
             "date": self._date,
-            "unde": self._unde}
+            "numb": self._unde}
         logger.debug('Url template: {0:s}\n'
                      'Undetermined numbers: {1:s}\n'
                      'Date: {2:s}'.format(
