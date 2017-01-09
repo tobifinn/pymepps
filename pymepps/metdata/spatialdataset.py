@@ -26,17 +26,19 @@ Created for pymepps
 import logging
 import datetime as dt
 import operator
+import os.path
 
 # External modules
 import numpy as np
-
 import xarray as xr
+import cdo
 
 # Internal modules
 from .metdataset import MetDataset
 from .spatialdata import SpatialData
 
 
+CDO = cdo.Cdo()
 logger = logging.getLogger(__name__)
 
 
@@ -75,14 +77,31 @@ class SpatialDataset(MetDataset):
         This method is based on the cdo command sellonlatbox.
         Parameters
         ----------
-        lonlatbox
-        inplace
+        lonlatbox : Tuple of floats
+            The lonlatbox, which should be sliced. This lonlatbox has four
+            entries (left, top, right, bottom).
+        inplace : bool, optional
+            If True the files would be overridden. If False a '_sliced' will be
+            appened to the file name. Default is True.
 
         Returns
         -------
 
         """
-        pass
+        new_file_handlers = []
+        for file_handler in self.file_handlers:
+            in_file = file_handler.file.path
+            if inplace:
+                out_file = in_file
+            else:
+                file_name = file_handler.file.get_basename()
+                file_name = '{0:s}_{1:s}'.format(file_name, 'sliced')
+                out_file = os.path.join(file_handler.file.get_dir(), file_name)
+            cdo.sellonlatbox(lonlatbox[0],lonlatbox[2],lonlatbox[3],lonlatbox[1],
+                             input=in_file,
+                             output=out_file)
+            new_file_handlers.append(type(file_handler)(out_file))
+        self.file_handlers = new_file_handlers
 
     def data_merge(self, data):
         """

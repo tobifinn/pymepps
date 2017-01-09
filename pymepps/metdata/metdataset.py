@@ -52,12 +52,21 @@ class MetDataset(object):
             model or a measurement site. If this is None, this isn't set.
             Default is None.
         """
-        self.file_handlers = file_handlers
-        if not isinstance(self.file_handlers, list):
-            self.file_handlers = [self.file_handlers,]
+        self._file_handlers = None
         self.data_origin = data_origin
         self.variables = {}
-        for file in self.file_handlers:
+        self.file_handlers = file_handlers
+
+    @property
+    def file_handlers(self):
+        return self._file_handlers
+
+    @file_handlers.setter
+    def file_handlers(self, handlers):
+        self._file_handlers = handlers
+        if not isinstance(self._file_handlers, list):
+            self._file_handlers = [self._file_handlers, ]
+        for file in self._file_handlers:
             for var in file.var_names:
                 if var not in self.variables.keys():
                     self.variables[var] = [file]
