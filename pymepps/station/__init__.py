@@ -1,7 +1,9 @@
+#!/bin/env python
 # -*- coding: utf-8 -*-
 """
-Created on 03.05.16
-Created for pyMepps
+Created on 05.12.16
+
+Created for pymepps
 
 @author: Tobias Sebastian Finn, tobias.sebastian.finn@studium.uni-hamburg.de
 
@@ -25,8 +27,3 @@ Created for pyMepps
 # External modules
 
 # Internal modules
-from .station import *
-
-__version__ = "0.1"
-
-__all__ = ["Station"]
