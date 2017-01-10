@@ -23,29 +23,40 @@ Created for pymepps
     along with this program.  If not, see <http://www.gnu.org/licenses/>.
 """
 # System modules
-import abc
-import logging
+import unittest
 
 # External modules
 import matplotlib.pyplot as plt
+import matplotlib.gridspec
 
 # Internal modules
+from pymepps.plot.subplot import Subplot
+from pymepps.utilities.testcase import TestCase
 
 
-logger = logging.getLogger(__name__)
+class TestSubplot(TestCase):
+    def tearDown(self):
+        plt.close('all')
 
+    def test_axes_is_plt_subplot(self):
+        sp = Subplot()
+        self.assertIsInstance(sp.ax, type(plt.subplot()))
 
-class Subplot(object):
-    def __init__(self, *args, **kwargs):
-        self.ax = plt.subplot(*args, **kwargs)
+    def test_attributes_from_mpl_axes(self):
+        sp = Subplot()
+        self.assertAttribute(sp, 'set_xlim')
 
-    def __getattr__(self, item):
-        return getattr(self.ax, item)
+    def test_gridspec_as_parameter(self):
+        sp = Subplot()
+        gs = matplotlib.gridspec.GridSpec(4,4)
+        sp_gs = Subplot(gs[3])
+        self.assertNotEqual(sp.get_subplotspec().get_geometry(),
+                            sp_gs.get_subplotspec().get_geometry())
 
-    def _extract_data(self, data):
-        return data
+    def test_plot_method_return_self(self):
+        sp = Subplot()
+        after_sp = sp.plot_method(data=(range(10), range(10)))
+        self.assertEqual(sp, after_sp)
 
-    def plot_method(self, data, method='plot', *args, **kwargs):
-        extracted_data = self._extract_data(data)
-        getattr(self.ax, method)(*extracted_data, *args, **kwargs)
-        return self
+if __name__ == '__main__':
+    unittest.main()
