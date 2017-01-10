@@ -1,13 +1,13 @@
 #!/bin/env python
 # -*- coding: utf-8 -*-
 """
-Created on 02.12.16
+Created on 10.01.17
 
 Created for pymepps
 
 @author: Tobias Sebastian Finn, tobias.sebastian.finn@studium.uni-hamburg.de
 
-    Copyright (C) {2016}  {Tobias Sebastian Finn}
+    Copyright (C) {2017}  {Tobias Sebastian Finn}
 
     This program is free software: you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
@@ -23,10 +23,12 @@ Created for pymepps
     along with this program.  If not, see <http://www.gnu.org/licenses/>.
 """
 # System modules
+from copy import deepcopy
 import logging
 
 # External modules
 import matplotlib.pyplot as plt
+import matplotlib.gridspec
 
 # Internal modules
 from .subplot import Subplot
@@ -35,128 +37,58 @@ from .subplot import Subplot
 logger = logging.getLogger(__name__)
 
 
-class Plot(object):
-    def __init__(self, n_subplots=1, style=None, fig_size=(5,3), **kwargs):
+class BasePlot(object):
+    def __init__(self, nrows=None, ncols=None, *args, **kwargs):
         """
-        Base class to plot meteorological data.
+        BasePlot is base class as wrapper around matplotlib
         """
-        self.figure = plt.figure(figsize=fig_size, **kwargs)
-        self.subplots = []
+        self._gs = None
+        self._active_sp_id = None
+
+        self.subplot_type = Subplot
+        self.FIG = plt.figure(*args, **kwargs)
         self.active_subplot = None
-        self.plot_style = style
-        self._plot_style = None
-        if n_subplots is not None:
-            for n in range(n_subplots):
-                self.subplots.append(self._new_subplot())
-                self.active_subplot = self.subplots[-1]
+        self.subplots = []
+        self.gs = (nrows, ncols)
+
+    def __getattr__(self, item):
+        try:
+            return getattr(self.FIG, item)
+        except AttributeError:
+            return getattr(self.active_subplot, item)
 
     @property
-    def plot_style(self):
-        return self._plot_style
+    def active_subplot(self):
+        if isinstance(self._active_sp_id, int):
+            return self.subplots[self._active_sp_id]
+        else:
+            return None
 
-    @plot_style.setter
-    def plot_style(self, styles):
-        avail_styles = plt.style.available
-        self._plot_style = None
-        if isinstance(styles, str):
-            if styles in avail_styles:
-                self._plot_style = [styles,]
-            else:
-                logger.error('The selected style: {0:s} isn\'t available '
-                             'within the styles. The plot style is set to '
-                             'None.')
-        elif hasattr(styles, '__iter__'):
-            plot_styles = []
-            for style in styles:
-                if style in avail_styles:
-                    plot_styles.append(style)
-                else:
-                    logger.error('The selected style: {0:s} isn\'t available '
-                                 'within the styles. This plot style isn\'t '
-                                 'append to the styles list.')
-            if not plot_styles:
-                logger.warning('The style list is empty. The plot style is '
-                               'set to None.')
-            else:
-                self._plot_style = plot_styles
+    @active_subplot.setter
+    def active_subplot(self, id):
+        if id is None:
+            self._active_sp_id = None
+        elif id not in range(len(self.subplots)):
+            raise ValueError('The chosen active subplot is not available. '
+                             'The last available subplot id is {0:d}'.
+                             format(len(self.subplots)-1))
+        else:
+            self._active_sp_id = id
 
-    def set_active_sub(self, n=0):
-        """
-        Method to set the active subplot.
+    @property
+    def gs(self):
+        return self._gs
 
-        Parameters
-        ----------
-        n
+    @gs.setter
+    def gs(self, gs_shape):
+        if all([shp is None for shp in gs_shape]):
+            self._gs = None
+            self.add_subplot()
+        else:
+            self._gs = matplotlib.gridspec.GridSpec(nrows=gs_shape[0],
+                                                    ncols=gs_shape[1])
 
-        Returns
-        -------
-        self
-        """
-        self.active_subplot = self.subplots[n]
+    def add_subplot(self):
+        self.subplots.append(deepcopy(self.subplot_type)())
+        self.active_subplot = len(self.subplots)-1
         return self
-
-    def _run_subplots(self):
-        for sub in self.subplots:
-            sub.plot()
-        return self
-
-    def save(self, path, *args, **kwargs):
-        """
-        Method to save the plot at given path.
-
-        Parameters
-        ----------
-        path
-
-        Returns
-        -------
-
-        """
-        self._run_subplots()
-        self.figure.savefig(path, *args, **kwargs)
-
-    def show(self):
-        """
-        Method to show the plot.
-
-        Returns
-        -------
-
-        """
-        self._run_subplots()
-        self.figure.show()
-
-    def title(self, title, **kwargs):
-        """
-        Method to plot a title into the title bar.
-
-        Parameters
-        ----------
-        title : str
-            The title for this plot.
-
-        Returns
-        -------
-        self
-        """
-        self.figure.suptitle(title, **kwargs)
-        return self
-
-    def xlabel(self, label, **kwargs):
-        self.active_subplot.xlabel(label, **kwargs)
-
-    def ylabel(self, label, **kwargs):
-        self.active_subplot.ylabel(label, **kwargs)
-
-    def _new_subplot(self):
-        """
-        Method to create a new subplot within the data plotting area.
-
-        Returns
-        -------
-
-        """
-        try:
-            return Subplot(axis_info=self._axis_info)
-        except AttributeError:
-            return Subplot(axis_info=None)

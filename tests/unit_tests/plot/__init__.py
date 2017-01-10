@@ -23,7 +23,11 @@ Created for pymepps
     along with this program.  If not, see <http://www.gnu.org/licenses/>.
 """
 # System modules
+import logging
 
 # External modules
 
 # Internal modules
+
+
+logger = logging.getLogger(__name__)

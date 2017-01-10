@@ -1,7 +1,7 @@
 #!/bin/env python
 # -*- coding: utf-8 -*-
 """
-Created on 09.01.17
+Created on 10.01.17
 
 Created for pymepps
 
@@ -23,7 +23,15 @@ Created for pymepps
     along with this program.  If not, see <http://www.gnu.org/licenses/>.
 """
 # System modules
+import logging
 
 # External modules
 
 # Internal modules
+
+
+class Subplot(object):
+    def bla_function(self):
+        pass
+
+logger = logging.getLogger(__name__)
