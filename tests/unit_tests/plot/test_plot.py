@@ -220,6 +220,14 @@ class TestPlot(TestCase):
         with self.assertRaises(ValueError):
             p = self.plot_class(stylesheets=['fivethirtyeight12', 'ggplot'])
 
+    def test_rendered_data_subplots(self):
+        test_data = ((range(10), range(10)), (range(1,11), range(1,11)))
+        p = self.plot_class(2, 1)
+        p.add_subplot()
+        p.plot(test_data[0])
+        p.add_subplot()
+        p.plot(test_data[1])
+        numpy.testing.assert_array_equal(p.rendered_data, test_data)
 
 if __name__ == '__main__':
     unittest.main()

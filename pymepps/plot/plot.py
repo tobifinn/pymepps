@@ -65,6 +65,14 @@ class BasePlot(object):
             return getattr(self.active_subplot, item)
 
     @property
+    def rendered_data(self):
+        rendered_data = []
+        for subplot in self.subplots:
+            for data in subplot.rendered_data:
+                rendered_data.append(data)
+        return rendered_data
+
+    @property
     def stylesheets(self):
         return self._stylesheets
 
