@@ -42,6 +42,7 @@ class Subplot(object):
         with plt.style.context(self.stylesheets):
             self.ax = plt.subplot(*args, **kwargs)
         self._plot_methods = ['plot']
+        self.rendered_data = []
 
     @property
     def stylesheets(self):
@@ -85,6 +86,7 @@ class Subplot(object):
                              'plot method. The valid plot methods are: {1:s}'.
                              format(method, '\n'.join(self._plot_methods)))
         extracted_data = self._extract_data(data)
+        self.rendered_data.append(extracted_data)
         with plt.style.context(self.stylesheets):
             getattr(self.ax, method)(*extracted_data, *args, **kwargs)
         return self

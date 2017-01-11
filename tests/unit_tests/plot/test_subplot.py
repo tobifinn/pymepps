@@ -29,6 +29,7 @@ import unittest
 import matplotlib.pyplot as plt
 import matplotlib.gridspec
 
+import numpy as np
 import numpy.testing
 
 # Internal modules
@@ -88,6 +89,13 @@ class TestSubplot(TestCase):
     def test_stylesheets_none_basis_stylesheet(self):
         sp = self.subplot_type()
         numpy.testing.assert_array_equal(sp.stylesheets, ['default'])
+
+    def test_rendered_data_equals_line_data(self):
+        sp = self.subplot_type()
+        sp.plot_method(data=(range(10), range(10)), method='plot')
+        line_data = sp.ax.lines[0].get_xydata().T
+        numpy.testing.assert_array_equal(
+            line_data, sp.rendered_data[0])
 
 if __name__ == '__main__':
     unittest.main()
