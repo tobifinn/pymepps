@@ -29,6 +29,8 @@ import unittest
 import matplotlib.pyplot as plt
 import matplotlib.gridspec
 
+import numpy.testing
+
 # Internal modules
 from pymepps.plot.subplot import Subplot
 from pymepps.utilities.testcase import TestCase
@@ -57,6 +59,24 @@ class TestSubplot(TestCase):
         sp = Subplot()
         after_sp = sp.plot_method(data=(range(10), range(10)))
         self.assertEqual(sp, after_sp)
+
+    def test_plot_method_not_empty(self):
+        sp = Subplot()
+        self.assertGreaterEqual(len(sp._plot_methods), 1)
+
+    def test_plot_method(self):
+        sp = Subplot()
+        sp.plot(data=(range(10), range(10)))
+        plot_data = sp.ax.lines[0].get_data()
+        sp = Subplot()
+        sp.plot_method(data=(range(10), range(10)), method='plot')
+        method_data = sp.ax.lines[0].get_data()
+        numpy.testing.assert_array_equal(plot_data, method_data)
+
+    def test_not_available_plot_method_raises(self):
+        sp = Subplot()
+        with self.assertRaises(ValueError):
+            sp.plot_method(data=(range(10), range(10)), method='plot12')
 
 if __name__ == '__main__':
     unittest.main()

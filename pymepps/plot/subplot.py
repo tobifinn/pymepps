@@ -36,16 +36,36 @@ logger = logging.getLogger(__name__)
 
 
 class Subplot(object):
-    def __init__(self, *args, **kwargs):
-        self.ax = plt.subplot(*args, **kwargs)
+    def __init__(self, stylesheets=None, *args, **kwargs):
+        self.stylesheets = stylesheets
+        with plt.style.context(self.stylesheets):
+            self.ax = plt.subplot(*args, **kwargs)
+        self._plot_methods = ['plot']
 
     def __getattr__(self, item):
-        return getattr(self.ax, item)
+        plot_func = self._check_plot_method(item)
+        if plot_func is None:
+            return getattr(self.ax, item)
+        else:
+            return plot_func
+
+    def _check_plot_method(self, method):
+        if method in self._plot_methods:
+            def plotting_function(data, *args, **kwargs):
+                return self.plot_method(data, method, *args, **kwargs)
+            return plotting_function
+        else:
+            return None
 
     def _extract_data(self, data):
         return data
 
     def plot_method(self, data, method='plot', *args, **kwargs):
+        if method not in self._plot_methods:
+            raise ValueError('The selected plot method {0:s} isn\'t a valid '
+                             'plot method. The valid plot methods are: {1:s}'.
+                             format(method, '\n'.join(self._plot_methods)))
         extracted_data = self._extract_data(data)
-        getattr(self.ax, method)(*extracted_data, *args, **kwargs)
+        with plt.style.context(self.stylesheets):
+            getattr(self.ax, method)(*extracted_data, *args, **kwargs)
         return self
