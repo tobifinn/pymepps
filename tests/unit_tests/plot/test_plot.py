@@ -48,11 +48,6 @@ class TestPlot(TestCase):
     def tearDown(self):
         plt.close("all")
 
-    def layers_list_test(self, p):
-        self.assertTrue(any([isinstance(sub, self.subplot_type)
-                             for sub in p.subplots]),
-                    'Not all subplots are a Subplot instance')
-
     def test_baseplot_could_created(self):
         sp = self.plot_class()
         self.assertIsInstance(sp, self.plot_class)
@@ -82,7 +77,9 @@ class TestPlot(TestCase):
         p = self.plot_class(1,1)
         p.add_subplot()
         self.assertEqual(len(p.subplots), 1)
-        self.layers_list_test(p=p)
+        self.assertTrue(any([isinstance(sub, self.subplot_type)
+                             for sub in p.subplots]),
+                    'Not all subplots are a Subplot instance')
 
     def test_subplot_type_could_be_set(self):
         p = self.plot_class(1,1)
