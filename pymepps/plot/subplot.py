@@ -37,10 +37,29 @@ logger = logging.getLogger(__name__)
 
 class Subplot(object):
     def __init__(self, stylesheets=None, *args, **kwargs):
+        self._stylesheets = ['default', ]
         self.stylesheets = stylesheets
         with plt.style.context(self.stylesheets):
             self.ax = plt.subplot(*args, **kwargs)
         self._plot_methods = ['plot']
+
+    @property
+    def stylesheets(self):
+        return self._stylesheets
+
+    @stylesheets.setter
+    def stylesheets(self, sheets):
+        if hasattr(sheets, '__iter__'):
+            new_stylesheets = []
+            for s in sheets:
+                if s not in plt.style.available:
+                    raise ValueError(
+                        'The stylesheet {0:s} is not available, '
+                        'please select one of the following {1:s}'.
+                        format(s, '\n'.join(plt.style.available)))
+                else:
+                    new_stylesheets.append(s)
+            self._stylesheets = new_stylesheets
 
     def __getattr__(self, item):
         plot_func = self._check_plot_method(item)

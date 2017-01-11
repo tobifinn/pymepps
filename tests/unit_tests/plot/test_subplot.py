@@ -51,7 +51,7 @@ class TestSubplot(TestCase):
     def test_gridspec_as_parameter(self):
         sp = Subplot()
         gs = matplotlib.gridspec.GridSpec(4,4)
-        sp_gs = Subplot(gs[3])
+        sp_gs = Subplot(None, gs[3])
         self.assertNotEqual(sp.get_subplotspec().get_geometry(),
                             sp_gs.get_subplotspec().get_geometry())
 
@@ -77,6 +77,14 @@ class TestSubplot(TestCase):
         sp = Subplot()
         with self.assertRaises(ValueError):
             sp.plot_method(data=(range(10), range(10)), method='plot12')
+
+    def test_not_available_stylesheet_raises_error(self):
+        with self.assertRaises(ValueError):
+            sp = Subplot(stylesheets=['fivethirtyeight32'])
+
+    def test_stylesheets_none_basis_stylesheet(self):
+        sp = Subplot()
+        numpy.testing.assert_array_equal(sp.stylesheets, ['default'])
 
 if __name__ == '__main__':
     unittest.main()
