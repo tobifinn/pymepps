@@ -26,6 +26,8 @@ Created for pymepps
 import unittest
 
 # External modules
+import numpy as np
+import numpy.testing
 
 # Internal modules
 from pymepps.plot.spatial.spatialplot import SpatialPlot
@@ -33,11 +35,19 @@ from pymepps.plot.spatial.spatialsubplot import SpatialSubplot
 from .test_plot import TestPlot
 
 
+RandomState = np.random.RandomState(42)
+
+
 class TestSpatialPlot(TestPlot):
     def setUp(self):
         super().setUp()
         self.plot_class = SpatialPlot
         self.subplot_type = SpatialSubplot
+        self.testing_data = (range(10), range(10),
+                          RandomState.uniform(0, 1, (10,10)))
+
+    def test_rendered_data_subplots(self):
+        pass
 
 
 if __name__ == '__main__':
