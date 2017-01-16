@@ -73,16 +73,13 @@ class TestSpatialSubplotPlot(TestSubplot):
             sp._extract_data(self.subplot_type())
 
     def test_extract_data_dataarray(self):
-        file = os.path.join(BASE_DIR, 'test_data', 'spatial',
-                            'test_spatialdata_dataarray.pk')
-        print(file)
-        self.fail(file)
+        file = os.path.join(BASE_DIR, 'test_data', 'spatial', 'test_spatialdata_dataarray.pk')
         test_data = pickle.load(open(file, mode='rb'))
-        # sp = self.subplot_type()
-        # x, y, plot_data = sp._extract_data(test_data)
-        # numpy.testing.assert_array_equal(test_data['lat'], x)
-        # numpy.testing.assert_array_equal(test_data['lon'], y)
-        # numpy.testing.assert_array_equal(test_data.values.squeeze(), plot_data)
+        sp = self.subplot_type()
+        x, y, plot_data = sp._extract_data(test_data)
+        numpy.testing.assert_array_equal(test_data['lat'], x)
+        numpy.testing.assert_array_equal(test_data['lon'], y)
+        numpy.testing.assert_array_equal(test_data.values.squeeze(), plot_data)
 
     def test_extract_data_extracts_dataarray(self):
         sp = self.subplot_type()
