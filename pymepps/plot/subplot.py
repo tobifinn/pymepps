@@ -77,6 +77,7 @@ class Subplot(object):
         else:
             return None
 
+    @abc.abstractmethod
     def _extract_data(self, data):
         return data
 
