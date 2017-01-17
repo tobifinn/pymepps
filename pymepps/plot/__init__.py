@@ -27,3 +27,7 @@ Created for pymepps
 # External modules
 
 # Internal modules
+from .spatial import *
+
+
+__all__ = ['SpatialPlot', 'SpatialSubplot']

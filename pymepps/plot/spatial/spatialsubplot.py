@@ -32,6 +32,7 @@ import matplotlib.pyplot as plt
 
 # Internal modules
 from ..subplot import Subplot
+import pymepps.metdata
 
 
 logger = logging.getLogger(__name__)
@@ -48,16 +49,20 @@ class SpatialSubplot(Subplot):
     def _extract_data(self, data):
         if isinstance(data, xarray.core.dataarray.DataArray):
             dim_names = data.squeeze().dims
-            dims = tuple([data[dim] for dim in dim_names])
+            dims = tuple([data[dim].values.squeeze() for dim in dim_names])
             plot_data = data.values.squeeze()
         elif isinstance(data, np.ndarray):
             array_shape = data.squeeze().shape
             dims = tuple([np.arange(shp) for shp in array_shape])
             plot_data = data
+        elif isinstance(data, pymepps.metdata.SpatialData):
+            extracted_data = self._extract_data(data.data)
+            dims = extracted_data[:2][::-1]
+            plot_data = extracted_data[2]
         elif hasattr(data, '__iter__') and len(data) == 3:
             dims = data[:2]
             plot_data = data[2]
         else:
             raise ValueError('The data has to be a xarray.DataArray or a '
                              'numpy.ndarray!')
-        return dims[0], dims[1], plot_data
+        return dims[1], dims[0], plot_data

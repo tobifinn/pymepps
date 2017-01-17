@@ -33,6 +33,8 @@ import numpy.testing
 
 # Internal modules
 from pymepps.plot.spatial.spatialsubplot import SpatialSubplot
+from pymepps.metfile import NetCDFHandler
+from pymepps.metdata import SpatialDataset
 from .test_subplot import TestSubplot
 
 
@@ -50,8 +52,8 @@ class TestSpatialSubplotPlot(TestSubplot):
     def setUp(self):
         super().setUp()
         self.subplot_type = SpatialSubplot
-        self.test_data = (range(10), range(10),
-                          RandomState.uniform(0, 1, (10,10)))
+        self.test_data = (range(10), range(15),
+                          RandomState.uniform(0, 1, (10,15)))
 
     def test_plot_method(self):
         pass
@@ -72,20 +74,34 @@ class TestSpatialSubplotPlot(TestSubplot):
         with self.assertRaises(ValueError):
             sp._extract_data(self.subplot_type())
 
+    def test_extract_data_spatialdata(self):
+        file = os.path.join(BASE_DIR, 'test_data', 'spatial',
+                            'GFS_Global_0p25deg_20161219_0600.grib2.nc')
+        nc_file = NetCDFHandler(file)
+        ds = SpatialDataset(nc_file)
+        test_data = ds.select('Maximum_temperature_height_above_ground_Mixed_intervals_Maximum')
+        sp = self.subplot_type()
+        nc_file.open()
+        x, y, plot_data = sp._extract_data(test_data)
+        numpy.testing.assert_array_equal(test_data.data['lat'], y)
+        numpy.testing.assert_array_equal(test_data.data['lon'], x)
+        numpy.testing.assert_array_equal(test_data.data.values.squeeze(), plot_data)
+        ds.close()
+
     def test_extract_data_dataarray(self):
         file = os.path.join(BASE_DIR, 'test_data', 'spatial', 'test_spatialdata_dataarray.pk')
         test_data = pickle.load(open(file, mode='rb'))
         sp = self.subplot_type()
         x, y, plot_data = sp._extract_data(test_data)
-        numpy.testing.assert_array_equal(test_data['lat'], x)
-        numpy.testing.assert_array_equal(test_data['lon'], y)
+        numpy.testing.assert_array_equal(test_data['lat'], y)
+        numpy.testing.assert_array_equal(test_data['lon'], x)
         numpy.testing.assert_array_equal(test_data.values.squeeze(), plot_data)
 
-    def test_extract_data_extracts_dataarray(self):
+    def test_extract_data_extracts_array(self):
         sp = self.subplot_type()
         x, y, plot_data = sp._extract_data(self.test_data[2])
-        numpy.testing.assert_array_equal(self.test_data[0], x)
-        numpy.testing.assert_array_equal(self.test_data[1], y)
+        numpy.testing.assert_array_equal(self.test_data[0], y)
+        numpy.testing.assert_array_equal(self.test_data[1], x)
         numpy.testing.assert_array_equal(self.test_data[2], plot_data)
 
 
