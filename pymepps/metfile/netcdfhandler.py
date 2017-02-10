@@ -56,6 +56,7 @@ class NetCDFHandler(FileHandler):
 
     def open(self):
         self.ds = xr.open_dataset(self.file.path)
+        return self
 
     def close(self):
         self.ds.close()

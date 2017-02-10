@@ -40,6 +40,7 @@ except ImportError:
 
 import pygrib
 import xarray
+import numpy as np
 
 # Internal modules
 from .filehandler import FileHandler
@@ -50,14 +51,13 @@ logger = logging.getLogger(__name__)
 
 class GribHandler(FileHandler):
     def open(self):
-        if self._ds is None:
-            self.ds = pygrib.open(self.file.path)
+        self.ds = pygrib.open(self.file.path)
+        return self
 
     def close(self):
         self.ds.close()
 
     def is_type(self):
-        self.open()
         if len(self.ds[:])==0:
             return_value = False
         else:
@@ -65,11 +65,9 @@ class GribHandler(FileHandler):
         return return_value
 
     def _get_varnames(self):
-        self.open()
         var_names = []
         for msg in self.ds:
             var_names.append(msg.name)
-        self.close()
         return set(var_names)
 
     def get_messages(self, var_name):
@@ -89,6 +87,9 @@ class GribHandler(FileHandler):
             have six coordinates (analysis, ensemble, time, level, y, x).
             The shape of DataArray are normally (1,1,1,1,y_size,x_size).
         """
+        logger.debug('Trying to select {0:s} from file {1:s}'.format(
+            var_name,
+             self.file.path))
         msgs = self.ds.select(name=var_name)
         logger.debug('Selected {0:s} from file {1:s}'.format(var_name,
                                                              self.file.path))
@@ -97,8 +98,17 @@ class GribHandler(FileHandler):
         for msg in msgs:
             logger.debug('Decoding of message: {0:s}'.format(str(msg)))
             array_data = msg.values
-            array_data = array_data[
+            logger.debug('The type of array data is: {0:s}'.format(
+                str(type(array_data))))
+            if isinstance(array_data, float):
+                array_data = np.array(array_data).reshape((1, 1, 1, 1, 1, 1))
+            elif isinstance(array_data, np.ndarray):
+                array_data = array_data[
                          np.newaxis, np.newaxis, np.newaxis, np.newaxis, :, :]
+            else:
+                raise ValueError(
+                    'The type of array data is {0:s}. Array data has to be a '
+                    'float or a numpy array.'.format(str(type(array_data))))
             logger.debug('Got array data')
             anal_date = [msg.analDate,]
             logger.debug('Got analysis date')

@@ -33,6 +33,7 @@ import pygrib
 # Internal modules
 from ..data_structures import File
 
+
 class FileHandler(object):
     def __init__(self, file_path):
         """
@@ -49,20 +50,22 @@ class FileHandler(object):
         if not file.available:
             raise ValueError('The file path {0:s} isn\'t available yet'.format(
                 file.path))
+        self.ds = None
         self.file = file
-        self.var_names = self._get_varnames()
-        self._ds = None
-
+        self._var_names = None
+    #
+    # @property
+    # def ds(self):
+    #     return self._ds
+    #
+    # @ds.setter
+    # def ds(self, ds):
+    #     self._ds = ds
     @property
-    def ds(self):
-        if self._ds is None:
-            raise ValueError('Do you try to get the dataset, without open the file?')
-        else:
-            return self._ds
-
-    @ds.setter
-    def ds(self, ds):
-        self._ds = ds
+    def var_names(self):
+        if self._var_names is None:
+            self._var_names = self._get_varnames()
+        return self._var_names
 
     @abc.abstractmethod
     def get_messages(self, var_name):
