@@ -24,6 +24,7 @@ Created for pymepps
 """
 # System modules
 import logging
+from copy import deepcopy
 
 # External modules
 import pandas as pd
@@ -33,6 +34,14 @@ import xarray as xr
 
 
 logger = logging.getLogger(__name__)
+
+math_ops = [
+    '__add__',
+    '__sub__',
+    '__div__',
+    '__mul__',
+    '__pow__',
+]
 
 
 class MetData(object):
@@ -44,6 +53,21 @@ class MetData(object):
         self.data_origin = data_origin
         self.data = data
 
+    def _copy_of_self(self):
+        return deepcopy(self)
+
+    def _extract_math_data(self, obj):
+        try:
+            return getattr(obj, 'data')
+        except AttributeError:
+            return obj
+
+    def _math_ops(self, op, other):
+        data_obj = self._copy_of_self()
+        other = self._extract_math_data(other)
+        data_obj.data = getattr(data_obj.data, op)(other)
+        return data_obj
+
     def __getattr__(self, key):
         if key == 'data':
             logger.exception(" ".join([
@@ -51,7 +75,12 @@ class MetData(object):
                 "Did you try to access properties before",
                 "loading data?"
             ]))
-        return self._xr_function(key)
+        elif key in math_ops:
+            def math_method(other):
+                return self._math_ops(key, other)
+            return math_method
+        else:
+            return self._xr_function(key)
 
     def __getitem__(self, key):
         return type(self)(self.data.__getitem__(key), self.data_origin)

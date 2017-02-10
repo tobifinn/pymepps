@@ -30,6 +30,7 @@ import xarray as xr
 
 # Internal modules
 from .metdata import MetData
+import pymepps.plot
 
 
 logger = logging.getLogger(__name__)
@@ -53,5 +54,9 @@ class SpatialData(MetData):
         """
         super().__init__(data_base, data_origin)
 
-    def plot(self, analysis=None, ):
-        pass
+    def plot(self, method='contourf'):
+        plot = pymepps.plot.SpatialPlot()
+        plot.add_subplot()
+        getattr(plot, method)(self.data)
+        plot.suptitle('{0:s} plot of {1:s}'.format(method, self.data.variable))
+        return plot
