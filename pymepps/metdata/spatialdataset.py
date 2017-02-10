@@ -71,7 +71,62 @@ class SpatialDataset(MetDataset):
     def _get_file_data(self, file, var_name):
         return file.get_messages(var_name)
 
-    def sellonlatbox(self, lonlatbox, inplace=True):
+    def _cdo_path_helper(self, file_handler, new_path=None, inplace=False):
+        in_file = file_handler.file.path
+        if inplace:
+            out_file = in_file
+        else:
+            file_name = file_handler.file.get_basename()
+            if file_handler.file.get_dir == new_path:
+                file_name = '{0:s}_{1:s}'.format(file_name, 'sliced')
+            if new_path is not None:
+                out_file = os.path.join(new_path, file_name)
+            else:
+                out_file = os.path.join(file_handler.file.get_dir(), file_name)
+        logger.debug(
+            'Set output path to {0:s} for file {1:s}'.format(out_file, in_file))
+        return in_file, out_file
+
+    def selnearest(self, lonlat, new_path=None, inplace=False):
+        """
+        Method to select a longitude/latitude get nearest grid point within
+        every FileHandler. This method is based on the cdo command remapnn.
+        For more informations see [1].
+        Parameters
+        ----------
+        lonlat : Tuple of floats
+            The lonlat, which should be extracted. This lonlat has two
+            entries (lon, lat).
+        inplace : bool, optional
+            If True the files would be overridden. If False a '_sliced' will be
+            appened to the file name. Default is True.
+
+        Returns
+        -------
+
+        [1] https://code.zmaw.de/boards/2/topics/301
+        """
+        new_file_handlers = []
+        for file_handler in self.file_handlers:
+            in_file, out_file = self._cdo_path_helper(file_handler=file_handler,
+                                                      new_path=new_path,
+                                                      inplace=inplace)
+            if not os.path.isfile(out_file) and in_file!=out_file:
+                CDO.remapnn(
+                    'lon={0:.4f}_lat={1:.4f}'.format(lonlat[0], lonlat[1]),
+                    input=in_file,
+                    output=out_file)
+                logger.debug('Finished CDO remapnn, set new file_handler')
+            else:
+                logger.debug('File already exists. It\'s assumed, that this is '
+                             'the already sliced file.')
+            new_file_handlers.append(type(file_handler)(out_file))
+        logger.debug('Finished selnearest, set new file_handlers.')
+        self.file_handlers = new_file_handlers
+        return self
+
+
+    def sellonlatbox(self, lonlatbox, new_path=None, inplace=False):
         """
         Method to select a longitude/latitude box and slice the FileHandlers.
         This method is based on the cdo command sellonlatbox.
@@ -90,18 +145,22 @@ class SpatialDataset(MetDataset):
         """
         new_file_handlers = []
         for file_handler in self.file_handlers:
-            in_file = file_handler.file.path
-            if inplace:
-                out_file = in_file
+            in_file, out_file = self._cdo_path_helper(file_handler=file_handler,
+                                                      new_path=new_path,
+                                                      inplace=inplace)
+            if not os.path.isfile(out_file) and in_file!=out_file:
+                CDO.sellonlatbox(lonlatbox[0],lonlatbox[2],lonlatbox[3],
+                                 lonlatbox[1],
+                                 input=in_file,
+                                 output=out_file)
+                logger.debug('Finished CDO sellonlatbox, set new file_handler')
             else:
-                file_name = file_handler.file.get_basename()
-                file_name = '{0:s}_{1:s}'.format(file_name, 'sliced')
-                out_file = os.path.join(file_handler.file.get_dir(), file_name)
-            cdo.sellonlatbox(lonlatbox[0],lonlatbox[2],lonlatbox[3],lonlatbox[1],
-                             input=in_file,
-                             output=out_file)
+                logger.debug('File already exists. It\'s assumed, that this is '
+                             'the already sliced file.')
             new_file_handlers.append(type(file_handler)(out_file))
+        logger.debug('Finished sellonlatbox, set new file_handlers.')
         self.file_handlers = new_file_handlers
+        return self
 
     def data_merge(self, data):
         """
