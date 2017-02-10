@@ -54,8 +54,23 @@ class MetDataset(object):
         """
         self._file_handlers = None
         self.data_origin = data_origin
-        self.variables = {}
+        self._variables = {}
         self.file_handlers = file_handlers
+
+    @property
+    def variables(self):
+        if not any(self._variables):
+            new_variables = {}
+            for file in self._file_handlers:
+                file.open()
+                for var in file.var_names:
+                    if var not in new_variables.keys():
+                        new_variables[var] = [file]
+                    else:
+                        new_variables[var].append(file)
+                file.close()
+            self._variables = new_variables
+        return self._variables
 
     @property
     def file_handlers(self):
@@ -66,16 +81,51 @@ class MetDataset(object):
         self._file_handlers = handlers
         if not isinstance(self._file_handlers, list):
             self._file_handlers = [self._file_handlers, ]
-        for file in self._file_handlers:
-            for var in file.var_names:
-                if var not in self.variables.keys():
-                    self.variables[var] = [file]
-                else:
-                    self.variables[var].append(file)
 
     @property
     def var_names(self):
-        return list(self.variables.keys())
+        return sorted(self.variables.keys())
+
+    def select_by_pattern(self, pattern, return_list=True):
+        """
+        Method to select variables from this dataset by keywords. This method
+        uses list comprehension to extract the variable names where the var_name
+        pattern is within the variable name. If the variable names are found the
+        variable is selected with the select method.
+
+        Parameters
+        ----------
+        pattern : str
+            The pattern fir which should be searched.
+        return_list : bool
+            If the return value should be a list or a dictionary.
+
+        Returns
+        -------
+        data_list : dict/list with SpatialData instances or None
+            The return value is a dict/list with SpatialData instances, one
+            entry for every found variable name. If return_list is False, are
+            the keys the variable names. If None is returned no variable with
+            this pattern was found.
+        """
+        found_variables = [var for var in self.var_names if pattern in var]
+        if not found_variables:
+            logger.error('The pattern {0:s} is not found within the variable '
+                         'names of this dataset. The available variable names'
+                         ' are: {1:s}'.format(pattern, str(self.var_names)))
+            return None
+        else:
+            if return_list:
+                data_list = []
+            else:
+                data_list = {}
+            for var in found_variables:
+                data = self.select(var)
+                if return_list:
+                    data_list.append(data)
+                else:
+                    data_list[var] = data
+            return data_list
 
     def select(self, var_name):
         """
