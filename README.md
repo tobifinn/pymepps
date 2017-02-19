@@ -2,7 +2,6 @@
 pymepps is a **Py**thon module to implement a **me**teorological **p**ost-
 **p**rocessing **s**ystem.</br>
 The system contains following modules:
-<li>System: The module to start the system and to read the config files.
 <li>Model: With this module meteorological weather forecast model data could be
 downloaded, constraint and saved from various data sources.
 <li>Station: With this module weather station data could be downloaded, readed
@@ -15,8 +14,10 @@ forecasts could be verified against measurement sites and/or grid analyses.
 could be plotted into a map or to a meteogram.
 
 
-This repository is in the pre-alpha (V. 0.0.1) stadium.
+This repository is in the pre-alpha (V. 0.0.2) stadium.
 It will grow with the time.
+The framework for an operational weather forecasting post-processing system is
+splitted into [pymepps-streaming]()
 
 
 Requirements
