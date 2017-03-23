@@ -156,9 +156,9 @@ class MetDataset(object):
         data = []
         for file in self.variables[var_name]:
             file.open()
-            logger.debug('Trying to get data from {0:s}'.format(file.file.path))
+            logger.debug('Trying to get data from {0:s}'.format(file.file))
             file_data = self._get_file_data(file, var_name)
-            logger.debug('Got file data from {0:s}'.format(file.file.path))
+            logger.debug('Got file data from {0:s}'.format(file.file))
             if isinstance(file_data, (list, tuple)):
                 data.extend(file_data)
             else:

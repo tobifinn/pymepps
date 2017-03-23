@@ -34,6 +34,7 @@ import xarray as xr
 import cdo
 
 # Internal modules
+from pymepps.data_structures import File
 from .metdataset import MetDataset
 from .spatialdata import SpatialData
 
@@ -72,50 +73,71 @@ class SpatialDataset(MetDataset):
         return file.get_messages(var_name)
 
     def _cdo_path_helper(self, file_handler, new_path=None, inplace=False):
-        in_file = file_handler.file.path
+        file_obj = File(file_handler.file)
+        in_file = file_obj.path
         if inplace:
             out_file = in_file
         else:
-            file_name = file_handler.file.get_basename()
-            if file_handler.file.get_dir == new_path:
+            file_name = file_obj.get_basename()
+            if file_obj.get_dir == new_path:
                 file_name = '{0:s}_{1:s}'.format(file_name, 'sliced')
             if new_path is not None:
                 out_file = os.path.join(new_path, file_name)
             else:
-                out_file = os.path.join(file_handler.file.get_dir(), file_name)
+                out_file = os.path.join(file_obj.get_dir(), file_name)
         logger.debug(
             'Set output path to {0:s} for file {1:s}'.format(out_file, in_file))
         return in_file, out_file
 
-    def selnearest(self, lonlat, new_path=None, inplace=False):
+    def selnearest(self, lonlat, new_path=None, inplace=False, in_opt=None,
+                   options=None):
         """
         Method to select a longitude/latitude get nearest grid point within
         every FileHandler. This method is based on the cdo command remapnn.
         For more informations see [1].
+
+        [1] https://code.zmaw.de/boards/2/topics/301
+
         Parameters
         ----------
         lonlat : Tuple of floats
             The lonlat, which should be extracted. This lonlat has two
             entries (lon, lat).
+        new_path : str or None, optional
+            If a new path is given as string the new file is saved at this path
+            with the same file name as the input file. If this is None the new
+            file will be saved in the same directory as the input file. Default
+            is None.
         inplace : bool, optional
             If True the files would be overridden. If False a '_sliced' will be
-            appened to the file name. Default is True.
+            appended to the file name. Default is True.
+        in_opt : str or None, optional
+            If the input options are given as string, the string will be used as
+            input to the cdo method. %FILE% is a placeholder and will be
+            replaced by the file path. If this is None the file path will be
+            used as input. Default is None.
 
         Returns
         -------
-
-        [1] https://code.zmaw.de/boards/2/topics/301
+        self
         """
         new_file_handlers = []
         for file_handler in self.file_handlers:
             in_file, out_file = self._cdo_path_helper(file_handler=file_handler,
                                                       new_path=new_path,
                                                       inplace=inplace)
+            options_str = ''
+            if isinstance(options, str):
+                options_str = options
+            input_str = in_file
+            if isinstance(in_opt, str):
+                input_str = in_opt.replace('%FILE%', in_file)
             if not os.path.isfile(out_file) and in_file!=out_file:
                 CDO.remapnn(
                     'lon={0:.4f}_lat={1:.4f}'.format(lonlat[0], lonlat[1]),
-                    input=in_file,
-                    output=out_file)
+                    input=input_str,
+                    output=out_file,
+                    options=options_str)
                 logger.debug('Finished CDO remapnn, set new file_handler')
             else:
                 logger.debug('File already exists. It\'s assumed, that this is '
@@ -126,7 +148,8 @@ class SpatialDataset(MetDataset):
         return self
 
 
-    def sellonlatbox(self, lonlatbox, new_path=None, inplace=False):
+    def sellonlatbox(self, lonlatbox, new_path=None, inplace=False,
+                     in_opt=None, options=None):
         """
         Method to select a longitude/latitude box and slice the FileHandlers.
         This method is based on the cdo command sellonlatbox.
@@ -135,24 +158,40 @@ class SpatialDataset(MetDataset):
         lonlatbox : Tuple of floats
             The lonlatbox, which should be sliced. This lonlatbox has four
             entries (left, top, right, bottom).
+        new_path : str or None, optional
+            If a new path is given as string the new file is saved at this path
+            with the same file name as the input file. If this is None the new
+            file will be saved in the same directory as the input file. Default
+            is None.
         inplace : bool, optional
             If True the files would be overridden. If False a '_sliced' will be
-            appened to the file name. Default is True.
+            appended to the file name. Default is True.
+        in_opt : str or None, optional
+            If the input options are given as string, the string will be used as
+            input to the cdo method. %FILE% is a placeholder and will be
+            replaced by the file path. If this is None the file path will be
+            used as input. Default is None.
 
         Returns
         -------
-
+        self
         """
         new_file_handlers = []
         for file_handler in self.file_handlers:
             in_file, out_file = self._cdo_path_helper(file_handler=file_handler,
                                                       new_path=new_path,
                                                       inplace=inplace)
+            options_str = ''
+            if isinstance(options, str):
+                options_str = options
+            input_str = in_file
+            if isinstance(in_opt, str):
+                input_str = in_opt.replace('%FILE%', in_file)
             if not os.path.isfile(out_file) and in_file!=out_file:
                 CDO.sellonlatbox(lonlatbox[0],lonlatbox[2],lonlatbox[3],
                                  lonlatbox[1],
-                                 input=in_file,
-                                 output=out_file)
+                                 input=input_str,
+                                 options=options_str)
                 logger.debug('Finished CDO sellonlatbox, set new file_handler')
             else:
                 logger.debug('File already exists. It\'s assumed, that this is '

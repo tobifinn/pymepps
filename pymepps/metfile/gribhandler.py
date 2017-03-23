@@ -51,7 +51,7 @@ logger = logging.getLogger(__name__)
 
 class GribHandler(FileHandler):
     def open(self):
-        self.ds = pygrib.open(self.file.path)
+        self.ds = pygrib.open(self.file)
         return self
 
     def close(self):
@@ -89,10 +89,10 @@ class GribHandler(FileHandler):
         """
         logger.debug('Trying to select {0:s} from file {1:s}'.format(
             var_name,
-             self.file.path))
+             self.file))
         msgs = self.ds.select(name=var_name)
         logger.debug('Selected {0:s} from file {1:s}'.format(var_name,
-                                                             self.file.path))
+                                                             self.file))
         data = []
         logger.debug('Starting decoding of messages')
         for msg in msgs:

@@ -46,12 +46,8 @@ class FileHandler(object):
         file_path : str
             The path to the file, which should be opened.
         """
-        file = File(file_path)
-        if not file.available:
-            raise ValueError('The file path {0:s} isn\'t available yet'.format(
-                file.path))
         self.ds = None
-        self.file = file
+        self.file = file_path
         self._var_names = None
     #
     # @property
@@ -69,6 +65,10 @@ class FileHandler(object):
 
     @abc.abstractmethod
     def get_messages(self, var_name):
+        pass
+
+    @abc.abstractmethod
+    def get_timeseries(self, var_name):
         pass
 
     @abc.abstractmethod
