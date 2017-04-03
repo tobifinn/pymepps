@@ -167,7 +167,9 @@ class NetCDFHandler(FileHandler):
                 for c in splitted_cube:
                     grouped = list(c.groupby(dim, squeeze=False))
                     temp_cube.extend([g[1] for g in grouped])
+                logger.debug(len(temp_cube))
                 splitted_cube = temp_cube
                 logger.debug('Splitted {0:s}, due to length of {1:d}'.
                              format(dim, len(cube[dim])))
+        logger.debug(cube['level'])
         return splitted_cube

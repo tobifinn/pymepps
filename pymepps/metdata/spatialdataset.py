@@ -221,9 +221,13 @@ class SpatialDataset(MetDataset):
         else:
             coordinate_names = list(data[0].dims)
             uniques = []
+            logger.debug(coordinate_names)
+            logger.debug(data[0])
+            logger.debug(data[0]['level'])
             for dim in coordinate_names[:-2]:
                 dim_gen = [d[dim].values for d in data]
                 uniques.append(list(np.unique(dim_gen)))
+            logger.debug(uniques)
             logger.debug('Got unique coordinates')
             indexes = []
             logger.debug('Start coordinates indexing')
