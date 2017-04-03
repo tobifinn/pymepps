@@ -215,6 +215,9 @@ class SpatialDataset(MetDataset):
         -------
         SpatialData
         """
+        logger.debug('Input length of data_merge: {0:d}'.format(len(data)))
+        logger.debug('Data coordinates {0}'.format(data[0].coords))
+        logger.debug('Data dimensions {0}'.format(data[0].dims))
         if len(data) == 1:
             logger.debug('Found only one message')
             return SpatialData(data[0], self)
@@ -222,12 +225,9 @@ class SpatialDataset(MetDataset):
             coordinate_names = list(data[0].dims)
             uniques = []
             logger.debug(coordinate_names)
-            logger.debug(data[0])
-            logger.debug(data[0]['level'])
             for dim in coordinate_names[:-2]:
                 dim_gen = [d[dim].values for d in data]
                 uniques.append(list(np.unique(dim_gen)))
-            logger.debug(uniques)
             logger.debug('Got unique coordinates')
             indexes = []
             logger.debug('Start coordinates indexing')
@@ -240,22 +240,34 @@ class SpatialDataset(MetDataset):
                         d_ind.append(0)
                 logger.debug('Finished coordinates indexing for {0:s}'.format(str(d_ind[1:])))
                 indexes.append(d_ind)
-            logger.debug('Start data sorting')
+            logger.info('Start data sorting')
             n_dims = len(coordinate_names[:-2])
             sort_dims = tuple(range(1, n_dims+1))
             sorted_data = zip(*sorted(indexes, key=operator.itemgetter(*sort_dims)))
-            logger.debug('Start data reordering')
+            logger.info('Start data reordering')
             sorted_data = np.array(list(sorted_data)[0])
-            logger.debug('Start data reshaping')
+            logger.info('Start data reshaping and coordinates setting')
             logger.debug(sorted_data.shape)
-            logger.debug([len(u) for u in uniques])
-            shaped_data = sorted_data.reshape(
-                [len(u) for u in uniques]+
-                [sorted_data.shape[-2]]+
-                [sorted_data.shape[-1]])
-            logger.debug('Start coordinates setting')
-            coords = list(zip(coordinate_names,
-                              uniques+[data[0][coordinate_names[-2]].values]+[data[0][coordinate_names[-1]].values]))
+            try:
+                shaped_data = sorted_data.reshape(
+                    [len(u) for u in uniques]+
+                    [sorted_data.shape[-2]]+
+                    [sorted_data.shape[-1]])
+                coord_names = coordinate_names
+                coord_values = uniques+[data[0][coordinate_names[-2]].values]+\
+                               [data[0][coordinate_names[-1]].values]
+            # If the reshape wasn't successful
+            except ValueError:
+                shaped_data = sorted_data.reshape(
+                    [-1]+
+                    [len(u) for u in uniques]+
+                    [sorted_data.shape[-2]]+
+                    [sorted_data.shape[-1]])
+                coord_names = ['unknown']+coordinate_names
+                coord_values = [np.arange(shaped_data.shape[0])]+uniques+\
+                               [data[0][coordinate_names[-2]].values]+\
+                               [data[0][coordinate_names[-1]].values]
+            coords = list(zip(coord_names, coord_values))
             logger.debug('Start merging')
             extracted_data = xr.DataArray(
                 data=shaped_data,
