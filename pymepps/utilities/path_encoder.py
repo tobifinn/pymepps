@@ -88,6 +88,10 @@ class PathEncoder(object):
                      'Date: {2:s}'.format(
             str(self.base_path), str(undet_numbers), str(date)))
 
+    def __repr__(self):
+        return "{0:s}(template: {1:s})".format(self.__class__.__name__,
+                                               self.base_path)
+
     def get_file_number(self):
         return len(self.get_encoded())
 
