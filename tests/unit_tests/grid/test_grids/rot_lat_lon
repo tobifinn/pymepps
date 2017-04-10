@@ -1,5 +1,6 @@
 #
 # gridID 1
+# Source: Metorologisches Institut, Universität Hamburg, Tobias Finn, Cosmo-HH
 #
 gridtype  = projection
 gridsize  = 150000
