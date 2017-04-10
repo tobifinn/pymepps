@@ -34,7 +34,8 @@ import numpy as np
 import xarray as xr
 
 # Internal modules
-from pymepps.grid.grid import Grid
+from pymepps.grid.builder import GridBuilder
+from pymepps.grid.curvilinear import CurvilinearGrid
 
 
 logging.basicConfig(level=logging.DEBUG)
@@ -46,7 +47,7 @@ class TestGrid(unittest.TestCase):
     def setUp(self):
         grids_path = os.path.join(BASE_PATH, 'test_grids', '*')
         self.available_grids = glob.glob(grids_path)
-        self.grid = Grid()
+        self.grid = GridBuilder
 
     def test_get_string_from_file_opens_file_return_string(self):
         for grid_path in self.available_grids:
@@ -60,47 +61,57 @@ class TestGrid(unittest.TestCase):
             self.grid.open_string(None)
 
     def test_get_string_returns_str_if_could_not_opened(self):
-        test_str = 'lat=10, lon=11\n'
+        test_str = 'lat=10\nlon=11\ngridtype=lonlat'
         returned_str = self.grid.open_string(test_str)
         self.assertEqual(returned_str, test_str)
 
     def test_decode_str_return_key_value_from_mapping(self):
-        test_str = 'key=value'
+        test_str = 'gridtype=lonlat'
         returned_dict = self.grid.decode_str(test_str)
         self.assertIsInstance(returned_dict, dict)
-        self.assertEqual(returned_dict, dict(key='value'))
+        self.assertEqual(returned_dict, dict(gridtype='lonlat'))
 
     def test_decode_str_return_key_value_with_new_line(self):
-        test_str = 'key=value\nkey1=value'
+        test_str = 'gridtype=lonlat\nkey1=value'
         returned_dict = self.grid.decode_str(test_str)
-        self.assertEqual(returned_dict, dict(key='value', key1='value'))
+        self.assertEqual(returned_dict, dict(gridtype='lonlat', key1='value'))
+
+    def test_decode_str_decodes_also_list_with_str(self):
+        test_list = ['gridtype=lonlat', 'key1=value']
+        returned_dict = self.grid.decode_str(test_list)
+        self.assertEqual(returned_dict, dict(gridtype='lonlat', key1='value'))
+
+    def test_decode_str_takes_only_str_and_list_raises_type_error(self):
+        test_dict = None
+        with self.assertRaises(TypeError):
+            self.grid.decode_str(test_dict)
 
     def test_decode_str_skips_comment_lines(self):
         test_str = '# I\'m a comment line\n# Second comment line = key value ' \
-                   'test\nkey=value'
+                   'test\ngridtype=lonlat'
         returned_dict = self.grid.decode_str(test_str)
-        self.assertEqual(returned_dict, dict(key='value'))
+        self.assertEqual(returned_dict, dict(gridtype='lonlat'))
 
     def test_decode_str_removes_spaces_and_special_characters(self):
         test_str = 'key1=value\n # Second comment line = "key" value test\n ' \
-                   'key  =[value]! '
+                   'gridtype=[lonlat]! '
         returned_dict = self.grid.decode_str(test_str)
-        self.assertEqual(returned_dict, dict(key1='value', key='value'))
+        self.assertEqual(returned_dict, dict(key1='value', gridtype='lonlat'))
 
     def test_decode_str_lowers_caps(self):
-        test_str = 'Key=VaLue'
+        test_str = 'GRidtype=LonlaT'
         returned_dict = self.grid.decode_str(test_str)
-        self.assertEqual(returned_dict, dict(key='value'))
+        self.assertEqual(returned_dict, dict(gridtype='lonlat'))
 
     def test_decode_str_raises_loggerwarning_if_no_key_value(self):
-        test_str = 'Key\nkey=value'
+        test_str = 'Key\ngridtype=lonlat'
         returned_dict = self.grid.decode_str(test_str)
-        self.assertEqual(returned_dict, dict(key='value'))
+        self.assertEqual(returned_dict, dict(gridtype='lonlat'))
 
     def test_decode_str_decodes_to_float(self):
-        test_str = 'Key\nkey=value\nkey2=2.0'
+        test_str = 'Key\ngridtype=lonlat\nkey2=2.0'
         returned_dict = self.grid.decode_str(test_str)
-        self.assertEqual(returned_dict, dict(key='value', key2=2.0))
+        self.assertEqual(returned_dict, dict(gridtype='lonlat', key2=2.0))
 
     @staticmethod
     def decode_grid_file(grid_str):
@@ -127,16 +138,45 @@ class TestGrid(unittest.TestCase):
 
     def test_griddes_decodes_str_to_grid_des(self):
         for grid_path in self.available_grids:
-            self.grid.griddes = grid_path
+            grid = GridBuilder(griddes=grid_path)
             decoded_grid = self.grid.decode_str(
                 self.grid.open_string(grid_path))
-            self.assertEqual(self.grid.griddes, decoded_grid)
+            self.assertEqual(grid.griddes, decoded_grid)
 
     def test_griddes_raises_typeerror_if_no_str_none_dict(self):
+        grid = GridBuilder('gridtype=lonlat')
         test = [2124,46386586,'bla']
         with self.assertRaises(TypeError):
-            self.grid.griddes = test
+            grid.griddes = test
+        self.assertEqual(grid._grid_dict, dict(gridtype='lonlat'))
 
+    def test_griddes_set_dict_to_grid_dict(self):
+        grid = GridBuilder('gridtype=lonlat')
+        test_dict = dict(gridtype='lonlat', lon0=10.3)
+        grid.griddes = test_dict
+        self.assertEqual(grid._grid_dict, test_dict)
+
+    def test_set_grid_handler_raises_keyerror_if_no_gridtype(self):
+        grid = GridBuilder('gridtype=lonlat')
+        with self.assertRaises(KeyError):
+            grid._set_grid_handler({'key': 'value'})
+
+    def test_set_grid_handler_raises_valueerror_if_wrong_gridtype(self):
+        grid = GridBuilder('gridtype=lonlat')
+        with self.assertRaises(ValueError):
+            grid._set_grid_handler({'gridtype': 'gausslat'})
+
+    def test_set_grid_handler_set_decoder(self):
+        grid = GridBuilder('gridtype=lonlat')
+        grid._set_grid_handler({'gridtype': 'curvilinear'})
+        self.assertEqual(grid._grid_handler.__class__.__name__,
+                         CurvilinearGrid.__class__.__name__)
+
+    def test_build_grid(self):
+        grid_builder = GridBuilder('gridtype=lonlat')
+        grid_builder._set_grid_handler({'gridtype': 'curvilinear'})
+        grid = grid_builder.build_grid()
+        self.assertIsInstance(grid, CurvilinearGrid)
 
 if __name__ == '__main__':
     unittest.main()
