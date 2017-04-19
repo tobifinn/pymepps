@@ -43,7 +43,7 @@ logging.basicConfig(level=logging.DEBUG)
 BASE_PATH = os.path.dirname(os.path.realpath(__file__))
 
 
-class TestGrid(unittest.TestCase):
+class TestGridBuilder(unittest.TestCase):
     def setUp(self):
         grids_path = os.path.join(BASE_PATH, 'test_grids', '*')
         self.available_grids = glob.glob(grids_path)
@@ -116,17 +116,22 @@ class TestGrid(unittest.TestCase):
     @staticmethod
     def decode_grid_file(grid_str):
         lined_grid_str = grid_str.split('\n')
-        cleaned_lines = [re.sub('[^0-9a-zA-Z=#-\.]+', '', gs).lower()
+        cleaned_lines = [re.sub('[^0-9a-zA-Z=#-\. ]+', '', gs).lower()
                          for gs in lined_grid_str]
-        grid_dict = dict(gs.split('=')for gs in cleaned_lines
-                         if len(gs) > 0
-                         and gs[0] != '#'
-                         and len(gs.split('=')) > 1)
+        splitted_lines = [line.split('=') for line in cleaned_lines if len(line) > 0 and line[0] != '#']
+        for i in np.arange(len(splitted_lines)-1, -1, -1):
+            if len(splitted_lines[i])==1 and i!=0:
+                splitted_lines[i-1][-1] = "{0:s} {1:s}".format(
+                    splitted_lines[i - 1][-1], splitted_lines[i][-1])
+        grid_dict = {line[0].replace(' ', ''): list(filter(None, line[1].split(' ')))
+                     for line in splitted_lines if len(line)==2}
         for k in grid_dict:
             try:
-                grid_dict[k] = float(grid_dict[k])
+                grid_dict[k] = [float(val) for val in grid_dict[k]]
             except ValueError:
                 pass
+            if len(grid_dict[k])==1:
+                grid_dict[k] = grid_dict[k][0]
         return grid_dict
 
     def test_decode_grid_file_str(self):
@@ -177,6 +182,7 @@ class TestGrid(unittest.TestCase):
         grid_builder._set_grid_handler({'gridtype': 'curvilinear'})
         grid = grid_builder.build_grid()
         self.assertIsInstance(grid, CurvilinearGrid)
+
 
 if __name__ == '__main__':
     unittest.main()

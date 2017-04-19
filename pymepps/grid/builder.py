@@ -28,6 +28,7 @@ import logging
 import re
 
 # External modules
+import numpy as np
 
 # Internal modules
 from .lonlat import LonLatGrid
@@ -72,10 +73,10 @@ class GridBuilder(object):
         ----------
         decoded
         """
+        self._grid_handler = None
         self._latlon = None
         self._grid_dict = {}
         self.griddes = griddes
-        self._grid_handler = None
 
     @property
     def griddes(self):
@@ -141,6 +142,19 @@ class GridBuilder(object):
     def decode_str(grid_str):
         """
         Method to clean the given grid str and to get a python dict.
+        Key and value are separated with =. Every new key value pair needs a new
+        line delimiter (\n). Only alphanumeric characters are allowed as key and
+        value. To delimit a value list use spaces and new lines. Lines with #
+        are used as comment lines.
+        
+        Steps to decode the grid string:
+            1) String splitting by new line delimiter (\n)
+            2) Clean the lines from unallowed characters
+            3) Split the non-comment lines to key, value pairs
+            4) Append elements where no key, value pair is available to the
+               previous value
+            5) Clean and split the key, value elements from spaces
+            6) Convert the values to float numbers
 
         Parameters
         ----------
@@ -154,7 +168,6 @@ class GridBuilder(object):
         grid_dict : dict(str, str or float)
             The decoded grid dict from the str.
         """
-        grid_str_lines = None
         if isinstance(grid_str, str):
             grid_str_lines = list(grid_str.split('\n'))
         elif isinstance(grid_str, list):
@@ -162,22 +175,28 @@ class GridBuilder(object):
         else:
             raise TypeError('The given grid_str has to be a str or a list of '
                             'str!')
-        grid_dict = {}
         logger.debug(grid_str_lines)
-        for gs in grid_str_lines:
-            gs = re.sub('[^0-9a-zA-Z=#-\.]+', '', gs).lower()
-            logger.debug(gs)
-            if len(gs) > 0 and gs[0] != '#':
-                key_value_str = gs.split('=')
-                try:
-                    grid_dict[key_value_str[0]] = float(key_value_str[1])
-                except ValueError:
-                    grid_dict[key_value_str[0]] = key_value_str[1]
-                except IndexError:
-                    logger.warning('The given key value string "{0:s}" is not '
-                                   'a valid key value string, it will be '
-                                   'skipped. The syntax has to be '
-                                   'key=value!'.format(gs))
+        cleaned_lines = [re.sub('[^0-9a-zA-Z=#-\. ]+', '', gs).lower()
+                         for gs in grid_str_lines]
+        splitted_lines = [line.split('=') for line in cleaned_lines
+                          if len(line) > 0 and '#' not in line]
+        logger.debug(splitted_lines)
+        for i in np.arange(len(splitted_lines)-1, -1, -1):
+            if len(splitted_lines[i])==1 and i!=0:
+                splitted_lines[i-1][-1] = "{0:s} {1:s}".format(
+                    splitted_lines[i - 1][-1], splitted_lines[i][-1])
+        logger.debug(splitted_lines)
+        grid_dict = {
+            line[0].replace(' ', ''): list(filter(None, line[1].split(' ')))
+            for line in splitted_lines if len(line)==2}
+        for k in grid_dict:
+            try:
+                grid_dict[k] = [float(val) for val in grid_dict[k]]
+            except ValueError:
+                pass
+            if len(grid_dict[k])==1:
+                grid_dict[k] = grid_dict[k][0]
+        logger.debug(grid_dict)
         return grid_dict
 
     def build_grid(self):
@@ -190,5 +209,6 @@ class GridBuilder(object):
             The built grid. The class of the grid is defined by the gridtype.
             The values of the grid are calculated with griddes.
         """
+        logger.debug(self._grid_handler)
         grid = self._grid_handler(self._grid_dict)
         return grid
