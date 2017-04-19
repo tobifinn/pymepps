@@ -176,9 +176,9 @@ class GridBuilder(object):
             raise TypeError('The given grid_str has to be a str or a list of '
                             'str!')
         logger.debug(grid_str_lines)
-        cleaned_lines = [re.sub('[^0-9a-zA-Z=#-\. ]+', '', gs).lower()
+        cleaned_lines = [re.sub('[^0-9a-zA-Z=#"-\. ]+', '', gs).lower()
                          for gs in grid_str_lines]
-        splitted_lines = [line.split('=') for line in cleaned_lines
+        splitted_lines = [line.split('=', 1) for line in cleaned_lines
                           if len(line) > 0 and '#' not in line]
         logger.debug(splitted_lines)
         for i in np.arange(len(splitted_lines)-1, -1, -1):
@@ -186,9 +186,14 @@ class GridBuilder(object):
                 splitted_lines[i-1][-1] = "{0:s} {1:s}".format(
                     splitted_lines[i - 1][-1], splitted_lines[i][-1])
         logger.debug(splitted_lines)
-        grid_dict = {
-            line[0].replace(' ', ''): list(filter(None, line[1].split(' ')))
-            for line in splitted_lines if len(line)==2}
+        grid_dict = {}
+        for line in splitted_lines:
+            if len(line) == 2:
+                if '"' in line[1]:
+                    val = [line[1].replace('"', '').strip(), ]
+                else:
+                    val = list(filter(None, line[1].split(' ')))
+                grid_dict[line[0].strip()] = val
         for k in grid_dict:
             try:
                 grid_dict[k] = [float(val) for val in grid_dict[k]]

@@ -116,15 +116,22 @@ class TestGridBuilder(unittest.TestCase):
     @staticmethod
     def decode_grid_file(grid_str):
         lined_grid_str = grid_str.split('\n')
-        cleaned_lines = [re.sub('[^0-9a-zA-Z=#-\. ]+', '', gs).lower()
+        cleaned_lines = [re.sub('[^0-9a-zA-Z=#"-\. ]+', '', gs).lower()
                          for gs in lined_grid_str]
-        splitted_lines = [line.split('=') for line in cleaned_lines if len(line) > 0 and line[0] != '#']
+        splitted_lines = [line.split('=', 1) for line in cleaned_lines
+                          if len(line) > 0 and '#' not in line]
         for i in np.arange(len(splitted_lines)-1, -1, -1):
             if len(splitted_lines[i])==1 and i!=0:
                 splitted_lines[i-1][-1] = "{0:s} {1:s}".format(
                     splitted_lines[i - 1][-1], splitted_lines[i][-1])
-        grid_dict = {line[0].replace(' ', ''): list(filter(None, line[1].split(' ')))
-                     for line in splitted_lines if len(line)==2}
+        grid_dict = {}
+        for line in splitted_lines:
+            if len(line) == 2:
+                if '"' in line[1]:
+                    val = [line[1].replace('"', '').strip(), ]
+                else:
+                    val = list(filter(None, line[1].split(' ')))
+                grid_dict[line[0].strip()] = val
         for k in grid_dict:
             try:
                 grid_dict[k] = [float(val) for val in grid_dict[k]]
