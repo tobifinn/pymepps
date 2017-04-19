@@ -28,12 +28,19 @@ import logging
 import abc
 
 # External modules
+import numpy as np
 import xarray as xr
 
 # Internal modules
 
 
 logger = logging.getLogger(__name__)
+
+
+known_units = {
+    'deg': lambda x: x,
+    'rad': lambda x: x*180/np.pi,
+}
 
 
 class Grid(object):
@@ -50,6 +57,29 @@ class Grid(object):
         xr_coords : xarray.DataArray
         """
         pass
+
+    @staticmethod
+    def convert_to_deg(field, unit):
+        """
+        Method to convert given field with given unit into degree.
+
+        Parameters
+        ----------
+        field
+        unit
+
+        Returns
+        -------
+
+        """
+        try:
+            calculated_field = [known_units[known](field)
+                                for known in known_units
+                                if known in unit.lower()][0]
+        except IndexError:
+            raise ValueError('There is no calculating rule for the given unit'
+                             '{0:s} defined yet!'.format(unit))
+        return calculated_field
 
     @property
     def lat_lon(self):

@@ -93,6 +93,46 @@ class TestLatLonGrid(unittest.TestCase):
             lon.transpose(),
             calculated_lat_lon[1])
 
+    def test_calc_lat_lon_calc_radian_to_deg(self):
+        self.grid._grid_dict['xunits'] = 'radian'
+        self.grid._grid_dict['yunits'] = 'radian'
+        calculated_lat_lon = self.grid._calc_lat_lon()
+        lon = self.const_lat_lon(
+            self.grid_dict['xfirst'],
+            self.grid_dict['xsize'],
+            self.grid_dict['xinc']
+        ) * 180 / np.pi
+        lat = self.const_lat_lon(
+            self.grid_dict['yfirst'],
+            self.grid_dict['ysize'],
+            self.grid_dict['yinc']
+        ) * 180 / np.pi
+        lat, lon = np.meshgrid(lat, lon)
+        np.testing.assert_array_equal(
+            lat.transpose(),
+            calculated_lat_lon[0])
+        np.testing.assert_array_equal(
+            lon.transpose(),
+            calculated_lat_lon[1])
+
+    def test_convert_to_degree_radian_to_deg(self):
+        lon = self.const_lat_lon(
+            self.grid_dict['xfirst'],
+            self.grid_dict['xsize'],
+            self.grid_dict['xinc']
+        )
+        returned_lon = self.grid.convert_to_deg(field=lon, unit='radian')
+        np.testing.assert_array_equal(lon*180/np.pi, returned_lon)
+
+    def test_convert_to_degree_raises_error_if_unknown_unit(self):
+        lon = self.const_lat_lon(
+            self.grid_dict['xfirst'],
+            self.grid_dict['xsize'],
+            self.grid_dict['xinc']
+        )
+        with self.assertRaises(ValueError):
+            self.grid.convert_to_deg(field=lon, unit='m84174bihaf')
+
     def test_get_lat_lon_returns_xarray(self):
         calculated_lat_lon = self.grid._get_lat_lon()
         self.assertIsInstance(calculated_lat_lon, xr.Dataset)

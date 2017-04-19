@@ -70,5 +70,7 @@ class LonLatGrid(Grid):
 
     def _calc_lat_lon(self):
         dim_lat, dim_lon = self._construct_dim()
+        dim_lat = self.convert_to_deg(dim_lat, self._grid_dict['yunits'])
+        dim_lon = self.convert_to_deg(dim_lon, self._grid_dict['xunits'])
         lat, lon = np.meshgrid(dim_lat, dim_lon)
         return lat.transpose(), lon.transpose()
