@@ -38,9 +38,9 @@ logger = logging.getLogger(__name__)
 
 class LonLatGrid(Grid):
     """
-    A LonLatGrid is a grid with evenly distributed longitue and latitude values.
-    This is the right grid if the grid could be described with a range, where
-    the values are lies in.
+    A LonLatGrid is a grid with evenly distributed longitude and latitude values.
+    This is the right grid if the grid could be described with a evenly
+    distributed range of values for longitude and latitude.
     """
     def __init__(self, grid_dict):
         super().__init__(grid_dict)
