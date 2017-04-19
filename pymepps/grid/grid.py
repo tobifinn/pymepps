@@ -25,8 +25,10 @@
 
 # System modules
 import logging
+import abc
 
 # External modules
+import xarray as xr
 
 # Internal modules
 
@@ -37,7 +39,7 @@ logger = logging.getLogger(__name__)
 class Grid(object):
     def __init__(self, grid_dict):
         self._lat_lon = None
-        self.grid_dict = grid_dict
+        self._grid_dict = None
 
     def get_coordinates(self):
         """
@@ -52,8 +54,35 @@ class Grid(object):
     @property
     def lat_lon(self):
         if self._lat_lon is None:
-            self._calc_lat_lon()
+            self._lat_lon = self._get_lat_lon()
         return self._lat_lon
 
+    def get_coords(self):
+        dy, dx = self._construct_dim()
+        coords = {
+            self._grid_dict['yname']: ((self._grid_dict['yname'],), dy),
+            self._grid_dict['xname']: ((self._grid_dict['xname'],), dx),
+        }
+        return coords
+
+    @abc.abstractmethod
+    def _construct_dim(self):
+        pass
+
+    def _get_lat_lon(self):
+        coords = self.get_coords()
+        lat, lon = self._calc_lat_lon()
+        ds = xr.Dataset(
+            {
+                'latitude': (
+                    (self._grid_dict['yname'], self._grid_dict['xname']), lat),
+                'longitude': (
+                    (self._grid_dict['yname'], self._grid_dict['xname']), lon),
+            },
+            coords=coords
+        )
+        return ds
+
+    @abc.abstractmethod
     def _calc_lat_lon(self):
         pass
