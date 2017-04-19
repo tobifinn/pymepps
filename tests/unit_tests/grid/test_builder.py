@@ -98,11 +98,6 @@ class TestGridBuilder(unittest.TestCase):
         returned_dict = self.grid.decode_str(test_str)
         self.assertEqual(returned_dict, dict(key1='value', gridtype='lonlat'))
 
-    def test_decode_str_lowers_caps(self):
-        test_str = 'GRidtype=LonlaT'
-        returned_dict = self.grid.decode_str(test_str)
-        self.assertEqual(returned_dict, dict(gridtype='lonlat'))
-
     def test_decode_str_raises_loggerwarning_if_no_key_value(self):
         test_str = 'Key\ngridtype=lonlat'
         returned_dict = self.grid.decode_str(test_str)
@@ -116,7 +111,7 @@ class TestGridBuilder(unittest.TestCase):
     @staticmethod
     def decode_grid_file(grid_str):
         lined_grid_str = grid_str.split('\n')
-        cleaned_lines = [re.sub('[^0-9a-zA-Z=#"-\. ]+', '', gs).lower()
+        cleaned_lines = [re.sub('[^0-9a-zA-Z=#"\_\.\-\+ ]+', '', gs)
                          for gs in lined_grid_str]
         splitted_lines = [line.split('=', 1) for line in cleaned_lines
                           if len(line) > 0 and '#' not in line]

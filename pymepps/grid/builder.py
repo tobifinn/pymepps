@@ -176,7 +176,7 @@ class GridBuilder(object):
             raise TypeError('The given grid_str has to be a str or a list of '
                             'str!')
         logger.debug(grid_str_lines)
-        cleaned_lines = [re.sub('[^0-9a-zA-Z=#"-\. ]+', '', gs).lower()
+        cleaned_lines = [re.sub('[^0-9a-zA-Z=#"\_\.\-\+ ]+', '', gs)
                          for gs in grid_str_lines]
         splitted_lines = [line.split('=', 1) for line in cleaned_lines
                           if len(line) > 0 and '#' not in line]
