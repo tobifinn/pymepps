@@ -77,7 +77,7 @@ class Grid(object):
                                 for known in known_units
                                 if known in unit.lower()][0]
         except IndexError:
-            raise ValueError('There is no calculating rule for the given unit'
+            raise ValueError('There is no calculating rule for the given unit '
                              '{0:s} defined yet!'.format(unit))
         return calculated_field
 
