@@ -55,18 +55,18 @@ class LonLatGrid(Grid):
         }
         self._grid_dict.update(grid_dict)
 
+    def _calc_single_dim(self, dim_name='x'):
+        start = self._grid_dict['{0:s}first'.format(dim_name)]
+        steps = self._grid_dict['{0:s}size'.format(dim_name)]
+        width = self._grid_dict['{0:s}inc'.format(dim_name)]
+        calculated_dim = np.arange(
+            start,
+            start + steps * width,
+            width)
+        return calculated_dim
+
     def _construct_dim(self):
-        lat_lon = []
-        for coord in ['y', 'x']:
-            start = self._grid_dict['{0:s}first'.format(coord)]
-            steps = self._grid_dict['{0:s}size'.format(coord)]
-            width = self._grid_dict['{0:s}inc'.format(coord)]
-            lat_lon.append(np.arange(
-                start,
-                start + steps * width,
-                width
-            ))
-        return lat_lon[0], lat_lon[1]
+        return self._calc_single_dim('y'), self._calc_single_dim('x')
 
     def _calc_lat_lon(self):
         dim_lat, dim_lon = self._construct_dim()
