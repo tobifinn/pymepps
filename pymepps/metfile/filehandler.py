@@ -101,6 +101,8 @@ class FileHandler(object):
         for part in reversed(path_parts):
             if part[:3]=='ens':
                 ens_member = int(part[3:])
+            elif part=='det':
+                ens_member = 'det'
         if ens_member is None:
             ext = os.path.splitext(path)[1]
             try:
