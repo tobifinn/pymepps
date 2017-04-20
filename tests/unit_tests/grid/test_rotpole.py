@@ -42,21 +42,44 @@ logging.basicConfig(level=logging.DEBUG)
 class TestRotPole(unittest.TestCase):
     def setUp(self):
         self.proj = RotPoleProj(npole_lat=36, npole_lon=-170)
+        self.lat_lon = [
+            (10, 54),
+            (111.30919915667666, 40.106264596208376),
+            (10, -6)
+        ]
+        self.rot_lat_lon = [
+            (0, 0),
+            (60, 30),
+            (0, -60)
+        ]
 
-    def test_transform_to_lat_lon_pole(self):
-        returned = self.proj.transform_to_latlon(90, 0)
-        np.testing.assert_array_equal(returned, (36, -170))
+    def test_transform_to_lat_lon(self):
+        for k, v in enumerate(self.rot_lat_lon):
+            returned = self.proj.transform_to_lonlat(*v)
+            np.testing.assert_almost_equal(returned, self.lat_lon[k])
 
-    def test_transform_from_lat_lon_pole(self):
-        returned = self.proj.transform_from_latlon(36, -170)
-        np.testing.assert_array_equal(returned, (90, 0))
+    def test_transform_from_lat_lon(self):
+        for k, v in enumerate(self.lat_lon):
+            returned = self.proj.transform_from_lonlat(*v)
+            np.testing.assert_almost_equal(returned, self.rot_lat_lon[k])
 
-    #
-    # def test_transform_from_lat_lon(self):
-    #     transformed = self.proj.transform_from_latlon(36, -170)
-    #     np.testing.assert_array_equal(transformed, (90, 0))
-    #     returned = self.proj.transform_to_latlon(transformed[0], transformed[1])
-    #     np.testing.assert_array_equal(returned, (36, -170))
+    def test_transform_with_normal_pole(self):
+        proj = RotPoleProj(90, 0)
+        for k, v in enumerate(self.rot_lat_lon+self.lat_lon):
+            returned_ll = proj.transform_to_lonlat(*v)
+            np.testing.assert_almost_equal(returned_ll, v)
+            returned_rotll = proj.transform_from_lonlat(*v)
+            np.testing.assert_almost_equal(returned_ll, returned_rotll)
+
+    def test_call_inverse_transform_to_lat_lon(self):
+        for k, v in enumerate(self.rot_lat_lon):
+            returned = self.proj(*v, inverse=True)
+            np.testing.assert_almost_equal(returned, self.lat_lon[k])
+
+    def test_call_transform_to_rot_lat_lon(self):
+        for k, v in enumerate(self.lat_lon):
+            returned = self.proj(*v)
+            np.testing.assert_almost_equal(returned, self.rot_lat_lon[k])
 
 
 if __name__ == '__main__':

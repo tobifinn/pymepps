@@ -64,14 +64,9 @@ class ProjectionGrid(LonLatGrid):
         if self._grid_dict['proj4'] is not None:
             projection = pyproj.Proj(self._grid_dict['proj4'])
         elif self._grid_dict['grid_mapping'] == 'rotated_pole':
-            proj__dict = {
-                'proj': 'ob_tran',
-                'o_proj': 'longlat',
-                'o_lon_p': self._grid_dict['grid_north_pole_longitude'],
-                'o_lat_p': self._grid_dict['grid_north_pole_latitude'],
-                'lon_0': 180,
-            }
-            projection = pyproj.Proj(**proj__dict)
+            projection = RotPoleProj(
+                npole_lat=self._grid_dict['grid_north_pole_latitude'],
+                npole_lon=self._grid_dict['grid_north_pole_longitude'])
         else:
             raise ValueError(
                 'The given projection grid isn\'t supported yet, please use a'
@@ -86,18 +81,18 @@ class ProjectionGrid(LonLatGrid):
 
 
 class BaseProj(object):
-    def __call__(self, y, x, inverse=False):
+    def __call__(self, x, y, inverse=False):
         if inverse:
-            return self.transform_to_latlon(y, x)
+            return self.transform_to_latlon(x, y)
         else:
-            return self.transform_from_latlon(y, x)
+            return self.transform_from_latlon(x, y)
 
     @abc.abstractmethod
-    def transform_to_latlon(self, y, x):
+    def transform_to_latlon(self, x, y):
         pass
 
     @abc.abstractmethod
-    def transform_from_latlon(self, lat, lon):
+    def transform_from_latlon(self, lon, lat):
         pass
 
     @staticmethod
@@ -131,7 +126,9 @@ class RotPoleProj(BaseProj):
     """
     Class for to calculate the transformation from rotated pole coordinates to 
     normal latitude and longitude coordinates. The rotated pole coordinates are
-    calculated in a cf-conform manner, with a rotated north pole.
+    calculated in a cf-conform manner, with a rotated north pole. The
+    calculations are based on [1]_. If the resulting latitude coordinate equals
+    -90° or 90° the longitude coordinate will be set to 0°.
     
     Parameters
     ----------
@@ -139,10 +136,21 @@ class RotPoleProj(BaseProj):
         The latitude of the rotated north pole in degrees.
     npole_lom: float
         The longitude of the rotated north pole in degrees.
+    
+    References
+    ----------
+    [1] http://de.mathworks.com/matlabcentral/fileexchange/
+            43435-rotated-grid-transform
     """
     def __init__(self, npole_lat, npole_lon):
         self._north_pole = None
         self.north_pole = (npole_lat, npole_lon)
+
+    def __call__(self, x, y, inverse=False):
+        if inverse:
+            return self.transform_to_lonlat(x, y)
+        else:
+            return self.transform_from_lonlat(x, y)
 
     @property
     def north_pole(self):
@@ -155,35 +163,58 @@ class RotPoleProj(BaseProj):
             'lon': self._deg2rad(self._check_lon(coords[1]))
         }
 
-    def rotate_coords(self, lat, lon, p_lat, p_lon):
-        rot_lat = self._deg2rad(self._check_lat(lat))
-        rot_lon = self._deg2rad(self._check_lon(lon))
-        rot_x = np.cos(rot_lon)*np.cos(rot_lat)
-        rot_y = np.sin(rot_lon)*np.cos(rot_lat)
-        rot_z = np.sin(rot_lat)
-        x = np.cos(p_lat)*\
-            np.cos(p_lon)*\
-            rot_x+np.sin(p_lon)*rot_y+\
-            np.sin(p_lat)*np.cos(p_lon)*\
-            rot_z
-        y = -np.cos(p_lat)*\
-            np.sin(p_lon)*\
-            rot_x+np.cos(p_lon)*rot_y-\
-            np.sin(p_lat)*np.sin(p_lon)*\
-            rot_z
-        z = -np.sin(p_lat)*rot_x+\
-            np.cos(p_lat)*rot_z
+    def _prepare_rotation(self, lat, lon):
+        lat = self._deg2rad(self._check_lat(lat))
+        lon = self._deg2rad(self._check_lon(lon))
+        x = np.cos(lon)*np.cos(lat)
+        y = np.sin(lon)*np.cos(lat)
+        z = np.sin(lat)
+        theta = np.pi*1/2-self._north_pole['lat']
+        phi = self._deg2rad(self._check_lon(
+            self._rad2deg(self._north_pole['lon'])))
+        if np.abs(self._north_pole['lat'])!=np.pi/2:
+            phi = np.pi+phi
+        return x, y, z, theta, phi
+
+    def _rotate_coords(self, x, y, z, theta, phi):
+        x_new = np.cos(theta)*np.cos(phi)*x\
+                +np.cos(theta)*np.sin(phi)*y\
+                +np.sin(theta)*z
+        y_new = -np.sin(phi)*x\
+                +np.cos(phi)*y
+        z_new = -np.sin(theta)*np.cos(phi)*x\
+                -np.sin(theta)*np.sin(phi)*y\
+                +np.cos(theta)*z
+        return x_new, y_new, z_new
+
+    def _derotate_coords(self, x, y, z, theta, phi):
+        phi = -phi
+        theta = -theta
+        x_new = np.cos(theta)*np.cos(phi)*x\
+                +np.sin(phi)*y\
+                +np.sin(theta)*np.cos(phi)*z
+        y_new = -np.cos(theta)*np.sin(phi)*x\
+                +np.cos(phi)*y\
+                -np.sin(theta)*np.sin(phi)*z
+        z_new = -np.sin(theta)*x\
+                +np.cos(theta)*z
+        return x_new, y_new, z_new
+
+    def _post_rotation(self, x, y, z):
         lat = self._rad2deg(np.arcsin(z))
         lon = self._rad2deg(np.arctan2(y, x))
+        if lat==np.pi/2:
+            lon = 0
         return lat, lon
 
-    def transform_from_latlon(self, lat, lon):
-        p_lat = self._north_pole['lat']
-        p_lon = -self._north_pole['lon']
-        return self.rotate_coords(lat, lon, p_lat, p_lon)
+    def transform_from_lonlat(self, lon, lat):
+        x, y, z, theta, phi = self._prepare_rotation(lat, lon)
+        rot_x, rot_y, rot_z = self._rotate_coords(x, y, z, theta, phi)
+        rot_lat, rot_lon = self._post_rotation(rot_x, rot_y, rot_z)
+        return rot_lon, rot_lat
 
-    def transform_to_latlon(self, y, x):
-        p_lat, p_lon = np.pi/2-self._north_pole['lat'], -self._north_pole['lon']
-        return self.rotate_coords(y, x, p_lat, p_lon)
-
-
+    def transform_to_lonlat(self, x, y):
+        rot_x, rot_y, rot_z, theta, phi = self._prepare_rotation(y, x)
+        x, y, z = self._derotate_coords(rot_x, rot_y, rot_z, theta, phi)
+        lat, lon = self._post_rotation(x, y, z)
+        return lon, lat

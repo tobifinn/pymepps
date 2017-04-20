@@ -34,6 +34,7 @@ import pyproj
 # Internal modules
 from pymepps.grid import GridBuilder
 from pymepps.grid.projection import ProjectionGrid
+from pymepps.grid.projection import RotPoleProj
 
 
 logging.basicConfig(level=logging.DEBUG)
@@ -115,13 +116,10 @@ class TestProjectionGrid(unittest.TestCase):
             'grid_north_pole_latitude': 36.0625,
         }
         grid = ProjectionGrid(grid_dict)
-        proj_str = '+proj=ob_tran +o_proj=longlat +o_lon_p=-170.415 ' \
-                   '+o_lat_p=36.0625 +lon_0=180'
-        lon, lat = 10, 53.5
-        test_proj = pyproj.Proj(proj_str)
         returned_proj = grid.get_projection()
-        np.testing.assert_array_equal(
-            test_proj(lon, lat), returned_proj(lon, lat))
+        self.assertIsInstance(returned_proj, RotPoleProj)
+        self.assertEqual(returned_proj.north_pole['lat'], 36.0625)
+        self.assertEqual(returned_proj.north_pole['lon'], -170.415)
 
 
 
