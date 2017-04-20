@@ -24,6 +24,9 @@ Created for pymepps
 """
 # System modules
 import abc
+import os
+import dateutil.parser
+import pytz
 
 # External modules
 import xarray as xr
@@ -84,3 +87,37 @@ class FileHandler(object):
 
     def _get_metadata(self):
         pass
+
+    @staticmethod
+    def _get_path_parts(path):
+        base_path = os.path.normpath(path)
+        base_path = os.path.splitext(base_path)[0]
+        parts = base_path.split(os.sep)
+        return parts
+
+    def _get_ensemble_from_path(self, path):
+        ens_member = None
+        path_parts = self._get_path_parts(path)
+        for part in reversed(path_parts):
+            if part[:3]=='ens':
+                ens_member = int(part[3:])
+        if ens_member is None:
+            ext = os.path.splitext(path)[1]
+            try:
+                ens_member = int(ext)
+            except ValueError:
+                ens_member = None
+        return ens_member
+
+    def _get_dates_from_path(self, path):
+        dates = []
+        path_parts = self._get_path_parts(path)
+        for part in path_parts:
+            try:
+                date = dateutil.parser.parse(part, ignoretz=True)
+                date.replace(tzinfo=pytz.UTC)
+            except ValueError:
+                date = None
+            if date is not None:
+                dates.append(date)
+        return dates
