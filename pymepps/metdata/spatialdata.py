@@ -67,3 +67,9 @@ class SpatialData(MetData):
         getattr(plot, method)(self.data)
         plot.suptitle('{0:s} plot of {1:s}'.format(method, self.data.variable))
         return plot
+
+    def load(self, path):
+        pass
+
+    def save(self, path):
+        pass
