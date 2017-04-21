@@ -82,9 +82,6 @@ class FileHandler(object):
     def load_file(self):
         pass
 
-    def get_data(self):
-        pass
-
     def _get_metadata(self):
         pass
 

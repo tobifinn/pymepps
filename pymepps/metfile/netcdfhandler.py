@@ -95,7 +95,7 @@ class NetCDFHandler(FileHandler):
             The DataArray of the variable.
         """
         logger.debug('Get {0:s} from {1:s}'.format(var_name, self.file))
-        variable = self.ds[var_name]
+        variable = self.ds[var_name].load()
         if hasattr(variable, '_FillValue'):
             variable.values[variable.values == variable._FillValue] = np.nan
         elif hasattr(variable, 'missing_value'):
@@ -148,26 +148,8 @@ class NetCDFHandler(FileHandler):
                 in_list = True
         return in_list
 
-    def get_messages(self, var_name):
-        """
-        Method to imitate the message-like behaviour of grib files.
-
-        Parameters
-        ----------
-        var_name : str
-            The variable name, which should be extracted.
-
-        Returns
-        -------
-        data : list of xr.DataArray
-            The list with the message-wise data as DataArray. The DataArray
-            have six coordinates (analysis, ensemble, time, level, y, x).
-            The shape of DataArray are normally (1,1,1,1,y_size,x_size).
-        """
-        cube = self.load_cube(var_name)
-        logger.debug('Loaded the cube')
-        cube.attrs.update(self.ds.attrs)
-        logger.debug('Updated the attributes')
+    def _get_missing_coordinates(self, cube):
+        logger.debug('The cube coordinates are {0}'.format(cube.coords))
         additional_coords = collections.OrderedDict()
         if not self._check_list_in_list(
                 ['ana', 'runtime'], list(cube.dims[:-2])):
@@ -201,8 +183,31 @@ class NetCDFHandler(FileHandler):
                 '{0}'.format(time))
         ds_coords = xr.Dataset(coords=additional_coords)
         cube.coords.update(ds_coords)
-        cube.expand_dims(list(additional_coords.keys()))
+        cube = cube.expand_dims(list(additional_coords.keys()))
         logger.debug('The cube coordinates are {0}'.format(cube.coords))
+        return cube
+
+    def get_messages(self, var_name):
+        """
+        Method to imitate the message-like behaviour of grib files.
+
+        Parameters
+        ----------
+        var_name : str
+            The variable name, which should be extracted.
+
+        Returns
+        -------
+        data : list of xr.DataArray
+            The list with the message-wise data as DataArray. The DataArray
+            have six coordinates (analysis, ensemble, time, level, y, x).
+            The shape of DataArray are normally (1,1,1,1,y_size,x_size).
+        """
+        cube = self.load_cube(var_name)
+        logger.debug('Loaded the cube')
+        cube.attrs.update(self.ds.attrs)
+        logger.debug('Updated the attributes')
+        cube = self._get_missing_coordinates(cube)
         splitted_cube = [cube,]
         for dim in list(cube.dims[:-2]):
             if len(dim)>1:
