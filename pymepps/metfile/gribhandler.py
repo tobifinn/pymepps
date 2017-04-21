@@ -58,16 +58,18 @@ class GribHandler(FileHandler):
         self.ds.close()
 
     def is_type(self):
+        self.open()
         if len(self.ds[:])==0:
             return_value = False
         else:
             return_value = True
+        self.close()
         return return_value
 
     def _get_varnames(self):
         var_names = []
         for msg in self.ds:
-            var_names.append(msg.name)
+            var_names.append(msg['cfVarNameECMF'])
         return set(var_names)
 
     def get_messages(self, var_name):
@@ -90,7 +92,7 @@ class GribHandler(FileHandler):
         logger.debug('Trying to select {0:s} from file {1:s}'.format(
             var_name,
              self.file))
-        msgs = self.ds.select(name=var_name)
+        msgs = self.ds.select(cfVarNameECMF=var_name)
         logger.debug('Selected {0:s} from file {1:s}'.format(var_name,
                                                              self.file))
         data = []
