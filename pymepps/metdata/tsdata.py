@@ -105,9 +105,9 @@ class TSData(MetData):
             'hdf': (self._load_hdf, self._save_hdf)
         }
         self.load, self.save = self._save_types[save_type]
-        super().__init__(data_base, data_origin)
         self.encoder = encoder
         self.lonlat = lonlat
+        super().__init__(data_base, data_origin)
 
     def plot(self, variable, type, color):
         pass

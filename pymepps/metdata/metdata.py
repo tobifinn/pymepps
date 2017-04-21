@@ -50,8 +50,22 @@ class MetData(object):
         MetData is the base class for meteorological data, like station data,
         nwp forecast data etc.
         """
+        self._data = None
         self.data_origin = data_origin
         self.data = data
+
+    @property
+    def data(self):
+        return self._data
+
+    @data.setter
+    def data(self, data):
+        if isinstance(data, str):
+            data = self.load(data)
+        if data is None:
+            raise ValueError(
+                '{0:s} needs data!'.format(self.__class__.__name__))
+        self._data = data
 
     def _copy_of_self(self):
         return deepcopy(self)

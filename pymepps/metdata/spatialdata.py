@@ -58,8 +58,8 @@ class SpatialData(MetData):
             The origin of this data. This could be a model run, a station, a
             database or something else. Default is None.
         """
-        super().__init__(data_base, data_origin)
         self.grid = grid
+        super().__init__(data_base, data_origin)
 
     def plot(self, method='contourf'):
         plot = pymepps.plot.SpatialPlot()
