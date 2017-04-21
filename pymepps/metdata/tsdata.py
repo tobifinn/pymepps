@@ -99,25 +99,15 @@ class TSData(MetData):
                 - : Not human readable,
                     error prone (make sure that you make backups!)
             Default is json.
-
         """
+        self._save_types = {
+            'json': (self._load_json, self._save_json),
+            'hdf': (self._load_hdf, self._save_hdf)
+        }
+        self.load, self.save = self._save_types[save_type]
         super().__init__(data_base, data_origin)
         self.encoder = encoder
-
-    def _get_save_type_function(self, save_type):
-        load, save = None, None
-        if save_type == 'json':
-            load = self._load_json
-            save = self._save_json
-        elif save_type == 'hdf':
-            load = self._load_hdf
-            save = self._save_hdf
-        else:
-            logger.error(
-                'The given save_type isn\'t defined yet. The possible'
-                ' save_type are "json" and "hdf" at the moment.',
-                exc_info=True)
-        return load, save
+        self.lonlat = lonlat
 
     def plot(self, variable, type, color):
         pass

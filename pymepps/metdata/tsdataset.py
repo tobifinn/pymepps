@@ -37,7 +37,7 @@ logger = logging.getLogger(__name__)
 
 
 class TSDataset(MetDataset):
-    def __init__(self, file_handlers, data_origin=None):
+    def __init__(self, file_handlers, data_origin=None, save_type='json'):
         """
         TSDataset is a class for a pool of file handlers. Typically a
         time series dataset combines the files of a station, such that it
@@ -54,19 +54,32 @@ class TSDataset(MetDataset):
             flow. If this is None, there is no data origin and this
             dataset will be the starting point of the data flow. Default is
             None.
-
+        save_type : 'json' or 'hdf', optional
+            The string to determine the file type in which the TSData is saved.
+            The DataFrame is saved with the save methods of a pandas.DataFrame.
+            There are different advantages and disadvantages for each file
+            type.
+            Json:
+                + : Human readable,
+                    easy to import, it's like a python dict
+                - : File size
+            HDF:
+                + : File compression,
+                    efficient save format,
+                    standard save format for such data
+                - : Not human readable,
+                    error prone (make sure that you make backups!)
+            Default is json.
         Methods
         -------
         select
             Method to select a variable.
         """
         super().__init__(file_handlers, data_origin)
+        self.save_type = save_type
 
     @property
     def lon_lat(self):
-        return self._get_lon_lat()
-
-    def _get_lon_lat(self):
         if self.data_origin is not None:
             try:
                 return self.data_origin.lon_lat()
@@ -97,5 +110,6 @@ class TSDataset(MetDataset):
             extracted_data = pd.DataFrame(extracted_data)
         else:
             extracted_data = pd.Series(list(extracted_data.values())[0])
-        return TSData(extracted_data, self, lonlat=self.lon_lat)
+        return TSData(extracted_data, self, lonlat=self.lon_lat,
+                      save_type=self.save_type)
 
