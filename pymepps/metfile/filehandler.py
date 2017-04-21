@@ -27,6 +27,8 @@ import abc
 import os
 import dateutil.parser
 import pytz
+import logging
+import datetime
 
 # External modules
 import xarray as xr
@@ -34,6 +36,9 @@ import pandas as pd
 import pygrib
 
 # Internal modules
+
+
+logger = logging.getLogger(__name__)
 
 
 class FileHandler(object):
@@ -111,11 +116,19 @@ class FileHandler(object):
         dates = []
         path_parts = self._get_path_parts(path)
         for part in path_parts:
-            try:
-                date = dateutil.parser.parse(part, ignoretz=True)
-                date.replace(tzinfo=pytz.UTC)
-            except ValueError:
-                date = None
-            if date is not None:
-                dates.append(date)
+            if len(part)>5:
+                try:
+                    date = dateutil.parser.parse(part, ignoretz=True)
+                    date.replace(tzinfo=pytz.UTC)
+                except ValueError:
+                    date = None
+                if date is None:
+                    try:
+                        date = datetime.datetime.strptime(part, '%Y%m%d_%H%M')
+                    except ValueError:
+                        date = None
+                if date is not None:
+                    logger.info(part)
+                    logger.info(date)
+                    dates.append(date)
         return dates
