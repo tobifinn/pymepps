@@ -84,7 +84,7 @@ class TSDataset(MetDataset):
     def _get_file_data(self, file, var_name):
         return file.get_timeseries(var_name)
 
-    def data_merge(self, data):
+    def data_merge(self, data, var_name):
         extracted_data = data[0]
         for d in data[1:]:
             for k in d:

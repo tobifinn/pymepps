@@ -163,9 +163,8 @@ class MetDataset(object):
                 data.extend(file_data)
             else:
                 data.append(file_data)
-        extracted_data = self.data_merge(data)
-        for file in self.variables[var_name]:
             file.close()
+        extracted_data = self.data_merge(data, var_name)
         return extracted_data
 
     @abc.abstractmethod
@@ -173,7 +172,7 @@ class MetDataset(object):
         pass
 
     @abc.abstractmethod
-    def data_merge(self, data):
+    def data_merge(self, data, var_name):
         """
         Method to merge the given data by given metadata into one data
         structure.

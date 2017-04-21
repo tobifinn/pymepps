@@ -35,6 +35,7 @@ import cdo
 
 # Internal modules
 from pymepps.data_structures import File
+from pymepps.grid import GridBuilder
 from .metdataset import MetDataset
 from .spatialdata import SpatialData
 
@@ -44,7 +45,7 @@ logger = logging.getLogger(__name__)
 
 
 class SpatialDataset(MetDataset):
-    def __init__(self, file_handlers, data_origin=None):
+    def __init__(self, file_handlers, grid=None, data_origin=None):
         """
         SpatialDataset is a class for a pool of file handlers. Typically a
         spatial dataset combines the files of one model run, such that it is
@@ -56,6 +57,14 @@ class SpatialDataset(MetDataset):
         file_handlers : list of childs of FileHandler
             The spatial dataset is based on these files. The files should be
             either instances of GribHandler or NetCDFHandler.
+        grid : str or Grid or None
+            The grid describes the horizontal grid of the spatial data. The grid 
+            will be appended to every created SpatialData instance. If a str is
+            given it will be checked if the str is a path to a cdo-conform grid
+            file or a cdo-conform grid string. If this is a instance of a child 
+            of Grid it is assumed that the grid is already initialized and this
+            grid will be used. If this is None the Grid will be automatically 
+            read from the first file handler. Default is None. 
         data_origin : optional
             The data origin. This parameter is important to trace the data
             flow. If this is None, there is no data origin and this
@@ -66,8 +75,62 @@ class SpatialDataset(MetDataset):
         -------
         select
             Method to select a variable.
+        selnearest
+            Method to select the nearest grid point for given coordinates.
+        sellonlatbox
+            Method to slice a box with the given coordinates.
         """
         super().__init__(file_handlers, data_origin)
+        self.grid = grid
+
+    def get_grid(self, var_name):
+        """
+        Method to get for given variable name a Grid instance. If the grid
+        attribute is already a Grid instance this grid will be returned. If the 
+        grid attribute is a str instance, the str will be read from file or from
+        the given grid str. If the grid attribute isn't set the grid instance
+        will be the grid for the variable selected with the first corresponding
+        file handler and cdo.
+
+        Parameters
+        ----------
+        var_name: str
+            The variable name, which should be used to generate the grid.
+
+        Returns
+        -------
+        grid: Instance of child of grid or None
+            The returned grid. If the returned grid is None, the grid could not
+            be read.
+        """
+        grid = None
+        if isinstance(self.grid, str):
+            grid = self._get_grid_from_str(self.grid)
+        elif hasattr(self.grid, 'get_coords'):
+            grid = self.grid
+        if grid is None:
+            grid = self._get_grid_from_cdo(var_name)
+        return grid
+
+    def _get_grid_from_cdo(self, var_name):
+        file = self.variables[var_name][0].file
+        grid_str = CDO.griddes(
+            input='-selvar,{0:s} {1:s}'.format(var_name, file))
+        grid = self._get_grid_from_str(grid_str)
+        return grid
+
+    def _get_grid_from_str(self, grid_str):
+        try:
+            with open(grid_str, 'r') as gf:
+                read_str = gf.read()
+        except IOError:
+            read_str = grid_str
+        try:
+            grid_builder = GridBuilder(read_str)
+            grid = grid_builder.build_grid()
+        except KeyError or ValueError:
+            grid = None
+        return grid
 
     def _get_file_data(self, file, var_name):
         return file.get_messages(var_name)
@@ -92,11 +155,9 @@ class SpatialDataset(MetDataset):
     def selnearest(self, lonlat, new_path=None, inplace=False, in_opt=None,
                    options=None):
         """
-        Method to select a longitude/latitude get nearest grid point within
-        every FileHandler. This method is based on the cdo command remapnn.
-        For more informations see [1].
-
-        [1] https://code.zmaw.de/boards/2/topics/301
+        Method to the nearest grid point to a given latitude/longitude
+        coordinate pair. This method is based on the cdo command remapnn.
+        For more informations see [1]_.
 
         Parameters
         ----------
@@ -120,6 +181,10 @@ class SpatialDataset(MetDataset):
         Returns
         -------
         self
+        
+        References
+        ----------
+        [1] https://code.zmaw.de/boards/2/topics/301
         """
         new_file_handlers = []
         for file_handler in self.file_handlers:
@@ -201,10 +266,11 @@ class SpatialDataset(MetDataset):
         self.file_handlers = new_file_handlers
         return self
 
-    def data_merge(self, data):
+    def data_merge(self, data, var_name):
         """
         Method to merge instances of xarray.DataArray into a SpatialData
-        instance. The merge method of xarray is used.
+        instance. Also the grid is read and inserted into the SpatialData
+        instance.
 
         Parameters
         ----------
@@ -214,13 +280,15 @@ class SpatialDataset(MetDataset):
         Returns
         -------
         SpatialData
+            The SpatialData instance with the extracted data and the extracted
+            grid.
         """
         logger.debug('Input length of data_merge: {0:d}'.format(len(data)))
         logger.debug('Data coordinates {0}'.format(data[0].coords))
         logger.debug('Data dimensions {0}'.format(data[0].dims))
         if len(data) == 1:
             logger.debug('Found only one message')
-            return SpatialData(data[0], self)
+            extracted_data = data[0]
         else:
             coordinate_names = list(data[0].dims)
             uniques = []
@@ -238,15 +306,18 @@ class SpatialDataset(MetDataset):
                         d_ind.append(uniques[key].index(d[dim].values))
                     else:
                         d_ind.append(0)
-                logger.debug('Finished coordinates indexing for {0:s}'.format(str(d_ind[1:])))
+                logger.debug(
+                    'Finished coordinates indexing for {0:s}'.format(
+                        str(d_ind[1:])))
                 indexes.append(d_ind)
-            logger.info('Start data sorting')
+            logger.debug('Start data sorting')
             n_dims = len(coordinate_names[:-2])
             sort_dims = tuple(range(1, n_dims+1))
-            sorted_data = zip(*sorted(indexes, key=operator.itemgetter(*sort_dims)))
-            logger.info('Start data reordering')
+            sorted_data = zip(*sorted(
+                indexes, key=operator.itemgetter(*sort_dims)))
+            logger.debug('Start data reordering')
             sorted_data = np.array(list(sorted_data)[0])
-            logger.info('Start data reshaping and coordinates setting')
+            logger.debug('Start data reshaping and coordinates setting')
             logger.debug(sorted_data.shape)
             try:
                 shaped_data = sorted_data.reshape(
@@ -275,4 +346,6 @@ class SpatialDataset(MetDataset):
             logger.debug('Start attribute setting')
             extracted_data.attrs = data[0].attrs
             logger.debug('Finished data merging')
-        return SpatialData(extracted_data, self)
+        logger.debug('Trying to get the grid')
+        grid = self.get_grid(var_name)
+        return SpatialData(extracted_data, self, grid=grid)
