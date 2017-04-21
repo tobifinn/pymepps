@@ -121,9 +121,10 @@ class SpatialDataset(MetDataset):
 
     def _get_grid_from_str(self, grid_str):
         try:
-            with open(grid_str, 'r') as gf:
-                read_str = gf.read()
-        except IOError:
+            gf = open(grid_str, 'r')
+            read_str = gf.read()
+            gf.close()
+        except (IOError, TypeError):
             read_str = grid_str
         try:
             grid_builder = GridBuilder(read_str)
@@ -346,6 +347,8 @@ class SpatialDataset(MetDataset):
             logger.debug('Start attribute setting')
             extracted_data.attrs = data[0].attrs
             logger.debug('Finished data merging')
+        logger.debug(extracted_data.attrs)
         logger.debug('Trying to get the grid')
         grid = self.get_grid(var_name)
-        return SpatialData(extracted_data, self, grid=grid)
+        logger.debug(grid)
+        return SpatialData(extracted_data, grid=grid, data_origin=self)
