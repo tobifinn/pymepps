@@ -30,6 +30,8 @@ import logging
 
 # Internal modules
 from .base import BaseLoader
+from pymepps.metdata import SpatialDataset
+from pymepps.metfile import NetCDFHandler, GribHandler
 
 
 logger = logging.getLogger(__name__)
@@ -60,3 +62,12 @@ class ModelLoader(BaseLoader):
     def __init__(self, data_path, file_type=None, grid=None):
         super().__init__(data_path, file_type)
         self.grid = grid
+        self._available_file_type = {
+            'nc': NetCDFHandler,
+            'grib2': GribHandler,
+            'grib1': GribHandler,
+        }
+
+    def _convert_filehandlers_to_dataset(self, file_handlers):
+        ds = SpatialDataset(file_handlers, self.grid, data_origin=self)
+        return ds
