@@ -37,7 +37,7 @@ logger = logging.getLogger(__name__)
 
 
 class SpatialData(MetData):
-    def __init__(self, data_base, data_origin):
+    def __init__(self, data_base, grid=None, data_origin=None):
         """
         SpatialData contains spatial based data structures. This class is the
         standard data type for file types like netCDF or grib. It's prepared
@@ -48,11 +48,18 @@ class SpatialData(MetData):
         ----------
         data_base : xarray.DataArray or None
             The data of this grid based data structure.
-        data_origin : object of pymepps
+        grid : Child instance of Grid or None
+            The corresponding grid of this SpatialData instance. This grid is 
+            used to interpolate/remap the data and to select the nearest grid
+            point to a given longitude/latitude pair. The grid is also used to 
+            get a basemap instance to determine the grid boundaries for plotting
+            purpose.
+        data_origin : object of pymepps or None, optional
             The origin of this data. This could be a model run, a station, a
-            database or something else.
+            database or something else. Default is None.
         """
         super().__init__(data_base, data_origin)
+        self.grid = grid
 
     def plot(self, method='contourf'):
         plot = pymepps.plot.SpatialPlot()

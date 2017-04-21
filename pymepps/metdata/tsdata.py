@@ -35,7 +35,7 @@ logger = logging.getLogger(__name__)
 
 
 class TSData(MetData):
-    def __init__(self, data_base, data_origin,
+    def __init__(self, data_base, data_origin=None,
                  encoder=None, lonlat=None, save_type='json'):
         """
         TSData is a data structure for time series based data. This
@@ -52,7 +52,7 @@ class TSData(MetData):
         ----------
         data : pandas.dataframe
             The data of this time series based data structure.
-        data_base : object of pymepps
+        data_origin : object of pymepps
             The origin of this data.This could be a model run, a station, a
             database or something else.
         encoder : child of StationDataEncoder
@@ -68,7 +68,9 @@ class TSData(MetData):
 
         Parameters
         ----------
-        data_base : object of pymepps
+        data_base : pandas.dataframe
+            The data of this time series based data structure.
+        data_origin : object of pymepps
             The origin of this data.This could be a model run, a station, a
             database or something else.
         encoder : child of StationDataEncoder or None
