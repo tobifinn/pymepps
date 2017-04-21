@@ -41,10 +41,31 @@ class BaseLoader(object):
     def __init__(self, data_path, file_type=None):
         self.data_path = data_path
         self.file_type = file_type
-        self._available_file_handler = {}
+        self._available_file_type = {}
+
+    def _get_specific_type_handlers(self, files, file_type):
+        base_handler = self._available_file_type[file_type]
+        base_file_handlers = [base_handler(file) for file in files]
+        file_handlers = [handler for handler in base_file_handlers
+                         if handler.is_type()]
+        return file_handlers
 
     def _get_file_handlers(self, files):
-        pass
+        try:
+            file_handlers = self._get_specific_type_handlers(
+                files, self.file_type)
+        except KeyError:
+            file_handlers = self._determine_file_handler(files)
+        return file_handlers
+
+    def _determine_file_handler(self, files):
+        all_file_handlers = {
+            type: self._get_specific_type_handlers(files, type)
+            for type in self._available_file_type}
+        file_handlers = all_file_handlers[
+            max(all_file_handlers,
+                key=lambda k: len(all_file_handlers[k]))]
+        return file_handlers
 
     def _convert_filehandlers_to_dataset(self, file_handlers):
         pass
