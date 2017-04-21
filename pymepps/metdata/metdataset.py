@@ -78,6 +78,10 @@ class MetDataset(object):
 
     @file_handlers.setter
     def file_handlers(self, handlers):
+        if handlers is None:
+            raise ValueError(
+                'There is no file handler, the {0:s} couldn\'t be '
+                'created!'.format(self.__class__.__name__))
         self._file_handlers = handlers
         if not isinstance(self._file_handlers, list):
             self._file_handlers = [self._file_handlers, ]
