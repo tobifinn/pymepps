@@ -163,7 +163,7 @@ class NetCDFHandler(FileHandler):
                 'to {0}'.format(ana))
         if not self._check_list_in_list(
                 ['ens', 'mem'], list(cube.dims[:-2])):
-            ens = self._get_dates_from_path(self.file)
+            ens = self._get_ensemble_from_path(self.file)
             additional_coords['Ensemble'] = ens
             logger.debug(
                 'No ensemble member within the cube found set the ensemble '
@@ -182,6 +182,8 @@ class NetCDFHandler(FileHandler):
                 'No time within the cube found set the time to '
                 '{0}'.format(time))
         ds_coords = xr.Dataset(coords=additional_coords)
+        logger.info(ds_coords)
+        logger.info(cube.coords)
         cube.coords.update(ds_coords)
         cube = cube.expand_dims(list(additional_coords.keys()))
         logger.debug('The cube coordinates are {0}'.format(cube.coords))
