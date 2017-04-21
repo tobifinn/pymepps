@@ -34,7 +34,6 @@ import pandas as pd
 import pygrib
 
 # Internal modules
-from ..data_structures import File
 
 
 class FileHandler(object):
