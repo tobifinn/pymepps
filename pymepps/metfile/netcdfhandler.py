@@ -122,6 +122,7 @@ class NetCDFHandler(FileHandler):
             values.
         """
         cube = self.load_cube(var_name)
+        logger.debug(cube)
         cleaned_dims = list(cube.dims)
         cleaned_dims.remove('time')
         splitted_cube = {var_name: cube,}
@@ -139,6 +140,7 @@ class NetCDFHandler(FileHandler):
                             format(e))
                 splitted_cube = new_cube
         data = {k: splitted_cube[k].to_series() for k in splitted_cube}
+        logger.debug(data)
         return data
 
     def _check_list_in_list(self, sublist, check_list):
