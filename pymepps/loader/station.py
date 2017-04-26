@@ -58,8 +58,8 @@ class StationLoader(BaseLoader):
         The lonlat coordinate tuple describes the position of the station in
         degrees. If this is None the position is unknown. Default is None.
     """
-    def __init__(self, data_path, file_type=None, lonlat=None):
-        super().__init__(data_path, file_type)
+    def __init__(self, data_path, file_type=None, lonlat=None, processes=1):
+        super().__init__(data_path, file_type, processes)
         self.lonlat = lonlat
         self._available_file_type = {
             'nc': NetCDFHandler,
@@ -71,3 +71,7 @@ class StationLoader(BaseLoader):
     def _convert_filehandlers_to_dataset(self, file_handlers):
         ds = TSDataset(file_handlers, data_origin=self)
         return ds
+
+def open_station_dataset(data_path, file_type=None, lonlat=None, processes=1):
+    loader = StationLoader(data_path, file_type, lonlat, processes)
+    return loader.load_data()
