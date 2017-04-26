@@ -38,9 +38,10 @@ logger = logging.getLogger(__name__)
 
 
 class BaseLoader(object):
-    def __init__(self, data_path, file_type=None):
+    def __init__(self, data_path, file_type=None, processes=1):
         self.data_path = data_path
         self.file_type = file_type
+        self.processes = processes
         self._available_file_type = {}
 
     def _get_specific_type_handlers(self, files, file_type):
