@@ -37,7 +37,8 @@ logger = logging.getLogger(__name__)
 
 
 class TSDataset(MetDataset):
-    def __init__(self, file_handlers, data_origin=None, save_type='json'):
+    def __init__(self, file_handlers, data_origin=None, save_type='json',
+                 processes=1):
         """
         TSDataset is a class for a pool of file handlers. Typically a
         time series dataset combines the files of a station, such that it
@@ -75,7 +76,7 @@ class TSDataset(MetDataset):
         select
             Method to select a variable.
         """
-        super().__init__(file_handlers, data_origin)
+        super().__init__(file_handlers, data_origin, processes)
         self.save_type = save_type
 
     @property
@@ -95,9 +96,13 @@ class TSDataset(MetDataset):
                 return None
 
     def _get_file_data(self, file, var_name):
-        return file.get_timeseries(var_name)
+        file.open()
+        ts_data = file.get_timeseries(var_name)
+        file.close()
+        return ts_data
 
     def data_merge(self, data, var_name):
+        logger.debug('The data before data_merge is: {0}'.format(data))
         extracted_data = data[0]
         for d in data[1:]:
             for k in d:
@@ -106,6 +111,7 @@ class TSDataset(MetDataset):
                     extracted_data[k] = extracted_data[k].sort_index()
                 else:
                     extracted_data.update({k:d[k]})
+        logger.debug(extracted_data)
         if len(extracted_data.keys())>1:
             extracted_data = pd.DataFrame(extracted_data)
         else:
