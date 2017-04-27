@@ -56,13 +56,18 @@ class LonLatGrid(Grid):
         self._grid_dict.update(grid_dict)
 
     def _calc_single_dim(self, dim_name='x'):
-        start = self._grid_dict['{0:s}first'.format(dim_name)]
-        steps = self._grid_dict['{0:s}size'.format(dim_name)]
-        width = self._grid_dict['{0:s}inc'.format(dim_name)]
-        calculated_dim = np.arange(
-            start,
-            start + steps * width,
-            width)
+        try:
+            calculated_dim = self._grid_dict['{0:s}vals'.format(dim_name)]
+            if isinstance(calculated_dim, float):
+                calculated_dim = [calculated_dim, ]
+        except KeyError:
+            start = self._grid_dict['{0:s}first'.format(dim_name)]
+            steps = self._grid_dict['{0:s}size'.format(dim_name)]
+            width = self._grid_dict['{0:s}inc'.format(dim_name)]
+            calculated_dim = np.arange(
+                start,
+                start + steps * width,
+                width)
         return calculated_dim
 
     def _construct_dim(self):
