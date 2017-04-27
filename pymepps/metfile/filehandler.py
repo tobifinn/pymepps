@@ -34,6 +34,7 @@ import datetime
 import xarray as xr
 import pandas as pd
 import pygrib
+import numpy as np
 
 # Internal modules
 
@@ -109,7 +110,7 @@ class FileHandler(object):
             try:
                 ens_member = int(ext)
             except ValueError:
-                ens_member = None
+                ens_member = 'det'
         return ens_member
 
     def _get_dates_from_path(self, path):
@@ -126,7 +127,7 @@ class FileHandler(object):
                     try:
                         date = datetime.datetime.strptime(part, '%Y%m%d_%H%M')
                     except ValueError:
-                        date = None
+                        date = -9999
                 if date is not None:
                     logger.info(part)
                     logger.info(date)
