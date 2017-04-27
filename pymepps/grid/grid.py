@@ -49,16 +49,6 @@ class Grid(object):
         self._lat_lon = None
         self._grid_dict = None
 
-    def get_coordinates(self):
-        """
-        Method to get xarray conform coordinates for this grid type.
-
-        Returns
-        -------
-        xr_coords : xarray.DataArray
-        """
-        pass
-
     @staticmethod
     def convert_to_deg(field, unit):
         """
@@ -95,6 +85,9 @@ class Grid(object):
             self._grid_dict['xname']: ((self._grid_dict['xname'],), dx),
         }
         return coords
+
+    def get_coord_names(self):
+        return self._grid_dict['yname'], self._grid_dict['xname']
 
     @abc.abstractmethod
     def _construct_dim(self):
