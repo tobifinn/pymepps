@@ -58,8 +58,26 @@ class SpatialData(MetData):
             The origin of this data. This could be a model run, a station, a
             database or something else. Default is None.
         """
-        self.grid = grid
         super().__init__(data_base, data_origin)
+        self._grid = None
+        self.grid = grid
+
+    @property
+    def grid(self):
+        if self._grid is None:
+            raise ValueError('This spatial data has no grid defined!')
+        else:
+            return self._grid
+
+    @grid.setter
+    def grid(self, grid):
+        if grid is not None and not hasattr(grid, '_grid_dict'):
+            raise TypeError('The given grid is not a valid defined grid type!')
+        self._grid = grid
+
+    def remapnn(self, new_grid):
+        pass
+        #new_data = self.grid.remapnn(self.data.valu)
 
     def plot(self, method='contourf'):
         plot = pymepps.plot.SpatialPlot()
