@@ -56,6 +56,7 @@ class LonLatGrid(Grid):
         self._grid_dict.update(grid_dict)
 
     def _calc_single_dim(self, dim_name='x'):
+        steps = self._grid_dict['{0:s}size'.format(dim_name)]
         try:
             calculated_dim = self._grid_dict['{0:s}vals'.format(dim_name)]
             if isinstance(calculated_dim, float):
@@ -68,6 +69,7 @@ class LonLatGrid(Grid):
                 start,
                 start + steps * width,
                 width)
+        calculated_dim = calculated_dim[:int(steps)]
         return calculated_dim
 
     def _construct_dim(self):
