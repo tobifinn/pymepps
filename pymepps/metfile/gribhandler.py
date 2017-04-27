@@ -121,7 +121,7 @@ class GribHandler(FileHandler):
             except RuntimeError:
                 ens = ['det',]
             logger.debug('Got ensemble forecast number')
-            valid_date = [msg.validDate-msg.analDate,]
+            valid_date = [msg.validDate,]
             level = [":".join(str(msg).split(':')[4:6]),]
             logger.debug('Decoded levels')
             # Check if grid is in lat/lon
