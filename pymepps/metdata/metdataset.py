@@ -160,15 +160,14 @@ class MetDataset(object):
             return None
         data = []
         for file in self.variables[var_name]:
-            file.open()
             logger.debug('Trying to get data from {0:s}'.format(file.file))
             file_data = self._get_file_data(file, var_name)
             logger.debug('Got file data from {0:s}'.format(file.file))
-            if isinstance(file_data, (list, tuple)):
-                data.extend(file_data)
-            else:
-                data.append(file_data)
-            file.close()
+            try:
+                data = data+file_data
+            except TypeError:
+                data = data+[file_data,]
+            logger.debug('Added the file data to the dataset data')
         extracted_data = self.data_merge(data, var_name)
         return extracted_data
 
