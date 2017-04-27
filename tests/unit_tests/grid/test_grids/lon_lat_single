@@ -1,0 +1,16 @@
+#
+# gridID 1
+# Source: Metorologisches Institut, Universität Hamburg, Tobias Finn, Cosmo-HH
+#
+gridtype  = lonlat
+gridsize  = 1
+xsize     = 1
+ysize     = 1
+xname     = lon
+xlongname = "longitude"
+xunits    = "degrees_east"
+yname     = lat
+ylongname = "latitude"
+yunits    = "degrees_north"
+xvals     = 10.1051
+yvals     = 53.5199
