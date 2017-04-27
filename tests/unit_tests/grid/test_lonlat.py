@@ -224,6 +224,26 @@ class TestLatLonGrid(unittest.TestCase):
                                      g_lat, g_lon, order=1)
         np.testing.assert_array_equal(remapped_values, interpolated_values)
 
+    def test_get_nearest_point(self):
+        ll_lat, ll_lon = self.grid._calc_lat_lon()
+        data = np.random.normal(size=ll_lat.shape)
+        target_point = (53.45, 10.05)
+        trg_lat = (np.abs(ll_lat[:,0] - target_point[0])).argmin()
+        trg_lon = (np.abs(ll_lon[0,:] - target_point[1])).argmin()
+        target_data = data[trg_lat, trg_lon].squeeze()
+        extracted_data = self.grid.get_nearest_point(target_point, data)
+        np.testing.assert_array_equal(target_data, extracted_data)
+
+    def test_get_nearest_point_multi_dim(self):
+        ll_lat, ll_lon = self.grid._calc_lat_lon()
+        data = np.random.normal(size=[5,]+list(ll_lat.shape))
+        target_point = (53.45, 10.05)
+        trg_lat = (np.abs(ll_lat[:,0] - target_point[0])).argmin()
+        trg_lon = (np.abs(ll_lon[0,:] - target_point[1])).argmin()
+        target_data = data[..., trg_lat, trg_lon]
+        extracted_data = self.grid.get_nearest_point(target_point, data)
+        np.testing.assert_array_equal(target_data, extracted_data)
+
 
 if __name__ == '__main__':
     unittest.main()

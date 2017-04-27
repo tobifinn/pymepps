@@ -100,6 +100,10 @@ class Grid(object):
     def _construct_dim(self):
         pass
 
+    @abc.abstractmethod
+    def _calc_lat_lon(self):
+        pass
+
     def _get_lat_lon(self):
         coords = self.get_coords()
         lat, lon = self._calc_lat_lon()
@@ -249,9 +253,43 @@ class Grid(object):
         remapped_data = np.atleast_2d(remapped_data.squeeze())
         return remapped_data
 
-    @abc.abstractmethod
-    def _calc_lat_lon(self):
-        pass
+    def get_nearest_point(self, coord, data):
+        """
+        Get the nearest neighbour grid point for a given coordinate. The
+        distance between the grid points and the given coordinates is calculated
+        with the haversine formula.
+
+        Parameters
+        ----------
+        coord : tuple(float, float)
+            The data of the nearest grid point to this coordinate
+            (latitude, longitude) will be returned. The coordinate should be in
+            degree.
+        data : numpy.array
+            The return value is extracted from this array. The array should have
+            at least two dimensions. If the array has more than two dimensions 
+            the last two dimensions will be used as horizontal grid dimensions.
+
+        Returns
+        -------
+        nearest_data : numpy.array
+            The extracted data for the nearest neighbour grid point. The
+            dimensions of this array are the same as the input data array
+            without the horizontal coordinate dimensions. There is at least one
+            dimension.
+        """
+        src_lat, src_lon = self._calc_lat_lon()
+        if data.shape[-2:] != src_lat.shape:
+            raise ValueError(
+                'The last two dimension of the data needs the same shape as '
+                'the coordinates of this grid!')
+        calc_distance = distance_haversine(
+            coord,
+            (src_lat.flatten(), src_lon.flatten()))
+        nearest_ind = np.unravel_index(calc_distance.argmin(), src_lat.shape)
+        logging.info(nearest_ind)
+        nearest_data = data[...,nearest_ind[0], nearest_ind[1]]
+        return np.atleast_1d(nearest_data)
 
 
 def distance_haversine(p1, p2):
