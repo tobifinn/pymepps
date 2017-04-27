@@ -58,8 +58,46 @@ class SpatialData(MetData):
             The origin of this data. This could be a model run, a station, a
             database or something else. Default is None.
         """
-        self.grid = grid
         super().__init__(data_base, data_origin)
+        self._grid = None
+        self.grid = grid
+
+    def set_data_coordinates(self, data=None, grid=None):
+        if data is None:
+            data = self.data.values
+        if grid is None:
+            grid = self.grid
+        new_coords = grid.get_coords()
+        for dim in self.data.dims[:-2]:
+            new_coords[dim] = self.data[dim]
+        new_darray = xr.DataArray(
+            data, coords=new_coords,
+            dims=list(self.data.dims[:-2])+list(grid.get_coord_names()),
+            attrs=self.data.attrs
+        )
+        self.data = new_darray
+        self.grid = grid
+
+    @property
+    def grid(self):
+        if self._grid is None:
+            raise ValueError('This spatial data has no grid defined!')
+        else:
+            return self._grid
+
+    @grid.setter
+    def grid(self, grid):
+        if grid is not None and not hasattr(grid, '_grid_dict'):
+            raise TypeError('The given grid is not a valid defined grid type!')
+        self._grid = grid
+
+    def remapnn(self, new_grid):
+        new_data = self.grid.remapnn(self.data.values, new_grid)
+        self.set_data_coordinates(new_data, new_grid)
+
+    def remapbil(self, new_grid):
+        new_data = self.grid.remapbil(self.data.values, new_grid)
+        self.set_data_coordinates(new_data, new_grid)
 
     def plot(self, method='contourf'):
         plot = pymepps.plot.SpatialPlot()

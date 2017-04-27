@@ -67,7 +67,7 @@ class GribHandler(FileHandler):
         return return_value
 
     def _get_varnames(self):
-        var_names = []
+        var_names = [msg['cfVarNameECMF'] for msg in self.ds]
         for msg in self.ds:
             var_names.append(msg['cfVarNameECMF'])
         return set(var_names)
@@ -121,7 +121,7 @@ class GribHandler(FileHandler):
             except RuntimeError:
                 ens = ['det',]
             logger.debug('Got ensemble forecast number')
-            valid_date = [msg.validDate-msg.analDate,]
+            valid_date = [msg.validDate,]
             level = [":".join(str(msg).split(':')[4:6]),]
             logger.debug('Decoded levels')
             # Check if grid is in lat/lon

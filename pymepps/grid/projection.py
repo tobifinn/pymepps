@@ -97,7 +97,11 @@ class BaseProj(object):
 
     @staticmethod
     def _check_lat(lat):
-        if not np.all(-90<=lat<=90):
+        if not np.all(-90<=lat):
+            raise ValueError(
+                'The given latitude {0:.4f} is not between -90\° and '
+                '90\°'.format(lat))
+        elif not np.all(lat<=90):
             raise ValueError(
                 'The given latitude {0:.4f} is not between -90\° and '
                 '90\°'.format(lat))
@@ -105,11 +109,15 @@ class BaseProj(object):
 
     @staticmethod
     def _check_lon(lon):
-        if not np.all(-180<=lon<=360):
+        if not np.all(-180<=lon):
             raise ValueError(
                 'The given longitude {0:.4f} is not between -180\° and '
                 '360\°'.format(lon))
-        elif np.all(180<lon):
+        elif not np.all(lon<=360):
+            raise ValueError(
+                'The given longitude {0:.4f} is not between -180\° and '
+                '360\°'.format(lon))
+        elif np.any(180<lon):
             lon = 360 - lon
         return lon
 
@@ -203,7 +211,7 @@ class RotPoleProj(BaseProj):
     def _post_rotation(self, x, y, z):
         lat = self._rad2deg(np.arcsin(z))
         lon = self._rad2deg(np.arctan2(y, x))
-        if lat==np.pi/2:
+        if np.all(lat==np.pi/2):
             lon = 0
         return lat, lon
 

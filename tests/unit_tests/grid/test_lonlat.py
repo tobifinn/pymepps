@@ -31,6 +31,8 @@ import os
 import numpy as np
 import xarray as xr
 
+from mpl_toolkits.basemap import interp
+
 # Internal modules
 from pymepps.grid import GridBuilder
 
@@ -161,6 +163,87 @@ class TestLatLonGrid(unittest.TestCase):
         self.assertIn(
             self.grid_dict['yname'], returned_coords
         )
+
+    def test_normalize_grid_sorts_data(self):
+        lat = np.arange(90, -90, -30)
+        lon = np.arange(-180, 180, 30)
+        lat, lon = np.meshgrid(lat, lon)
+        lat = lat.transpose()
+        lon = lon.transpose()
+        data = np.random.normal(size=lat.shape)
+        normalized_output = self.grid.normalize_lat_lon(lat, lon, data)
+        sort_order_lat = np.argsort(lat, 0)
+        sort_order_lon = np.argsort(lon, 1)
+        lat = lat[sort_order_lat, sort_order_lon]
+        lon = lon[sort_order_lat, sort_order_lon]
+        data = data[sort_order_lat, sort_order_lon]
+        np.testing.assert_array_equal(lat, normalized_output[0])
+        np.testing.assert_array_equal(lon, normalized_output[1])
+        np.testing.assert_array_equal(data, normalized_output[2])
+
+    def test_normalize_grid_normalize_lon(self):
+        lat = np.arange(90, -90, -30)
+        lon = np.arange(0, 360, 30)
+        lat, lon = np.meshgrid(lat, lon)
+        lat = lat.transpose()
+        lon = lon.transpose()
+        data = np.random.normal(size=lat.shape)
+        normalized_output = self.grid.normalize_lat_lon(lat, lon, data)
+        lon[lon>180] -= 360
+        sort_order_lat = np.argsort(lat, 0)
+        sort_order_lon = np.argsort(lon, 1)
+        lon = lon[sort_order_lat, sort_order_lon]
+        np.testing.assert_array_equal(lon, normalized_output[1])
+
+    def test_remapnn_interpolates_with_nearest_neighbour(self):
+        ll_lat, ll_lon = self.grid._calc_lat_lon()
+        data = np.arange(ll_lat.size).reshape(ll_lat.shape)
+        logging.debug(data.shape)
+        file = os.path.join(BASE_PATH, 'test_grids', 'gaussian_y')
+        builder = GridBuilder(file)
+        gaussian_grid = builder.build_grid()
+        remapped_values = self.grid.remapnn(data, gaussian_grid)
+        g_lat, g_lon = gaussian_grid._calc_lat_lon()
+        ll_lat, ll_lon, data = self.grid.normalize_lat_lon(ll_lat, ll_lon, data)
+        g_lat, g_lon, _ = self.grid.normalize_lat_lon(g_lat, g_lon)
+        interpolated_values = interp(data.T, ll_lat[:, 0], ll_lon[0, :],
+                                     g_lat, g_lon, order=0)
+        np.testing.assert_array_equal(remapped_values, interpolated_values)
+
+    def test_remapbil_interpolates_with_bilinear(self):
+        ll_lat, ll_lon = self.grid._calc_lat_lon()
+        data = np.arange(ll_lat.size).reshape(ll_lat.shape)
+        file = os.path.join(BASE_PATH, 'test_grids', 'gaussian_y')
+        builder = GridBuilder(file)
+        gaussian_grid = builder.build_grid()
+        remapped_values = self.grid.remapbil(data, gaussian_grid)
+        g_lat, g_lon = gaussian_grid._calc_lat_lon()
+        ll_lat, ll_lon, data = self.grid.normalize_lat_lon(ll_lat, ll_lon, data)
+        g_lat, g_lon, _ = self.grid.normalize_lat_lon(g_lat, g_lon)
+        interpolated_values = interp(data.T, ll_lat[:, 0], ll_lon[0, :],
+                                     g_lat, g_lon, order=1)
+        np.testing.assert_array_equal(remapped_values, interpolated_values)
+
+    def test_get_nearest_point(self):
+        ll_lat, ll_lon = self.grid._calc_lat_lon()
+        data = np.random.normal(size=ll_lat.shape)
+        target_point = (53.45, 10.05)
+        trg_lat = (np.abs(ll_lat[:,0] - target_point[0])).argmin()
+        trg_lon = (np.abs(ll_lon[0,:] - target_point[1])).argmin()
+        target_data = data[trg_lat, trg_lon].squeeze()
+        extracted_data = self.grid.get_nearest_point(target_point, data)
+        np.testing.assert_array_equal(target_data, extracted_data)
+
+    def test_get_nearest_point_multi_dim(self):
+        ll_lat, ll_lon = self.grid._calc_lat_lon()
+        data = np.random.normal(size=[5,]+list(ll_lat.shape))
+        target_point = (53.45, 10.05)
+        trg_lat = (np.abs(ll_lat[:,0] - target_point[0])).argmin()
+        trg_lon = (np.abs(ll_lon[0,:] - target_point[1])).argmin()
+        target_data = data[..., trg_lat, trg_lon]
+        extracted_data = self.grid.get_nearest_point(target_point, data)
+        np.testing.assert_array_equal(target_data, extracted_data)
+
 
 if __name__ == '__main__':
     unittest.main()

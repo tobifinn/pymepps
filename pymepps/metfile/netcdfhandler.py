@@ -40,6 +40,27 @@ from .filehandler import FileHandler
 logger = logging.getLogger(__name__)
 
 
+def cube_to_series(cube, var_name):
+    cleaned_dims = list(cube.dims)
+    cleaned_dims.remove('time')
+    splitted_cube = {var_name: cube, }
+    for dim in cleaned_dims:
+        new_cube = {}
+        for temp_cube in splitted_cube:
+            new_cube.update({l[0]: l[1] for l in list(
+                splitted_cube[temp_cube].groupby(dim))})
+        try:
+            splitted_cube = {"{0:s}_{1:s}".format(k_0, k_1):
+                                 new_cube[k_0][k_1]
+                             for k_0 in new_cube for k_1 in new_cube[k_0]}
+        except Exception as e:
+            logger.info('Couldn\'t flatten the dict, due to {0:s}'.
+                        format(e))
+            splitted_cube = new_cube
+    data = {k: splitted_cube[k].to_series() for k in splitted_cube}
+    return data
+
+
 class NetCDFHandler(FileHandler):
     def _get_varnames(self):
         self.open()
@@ -123,23 +144,7 @@ class NetCDFHandler(FileHandler):
         """
         cube = self.load_cube(var_name)
         logger.debug(cube)
-        cleaned_dims = list(cube.dims)
-        cleaned_dims.remove('time')
-        splitted_cube = {var_name: cube,}
-        for dim in cleaned_dims:
-            new_cube = {}
-            for temp_cube in splitted_cube:
-                new_cube.update({l[0]:l[1] for l in list(
-                    splitted_cube[temp_cube].groupby(dim))})
-            try:
-                splitted_cube = {"{0:s}_{1:s}".format(k_0, k_1):
-                                     new_cube[k_0][k_1]
-                                 for k_0 in new_cube for k_1 in new_cube[k_0]}
-            except Exception as e:
-                logger.info('Couldn\'t flatten the dict, due to {0:s}'.
-                            format(e))
-                splitted_cube = new_cube
-        data = {k: splitted_cube[k].to_series() for k in splitted_cube}
+        data = cube_to_series(cube, var_name)
         logger.debug(data)
         return data
 

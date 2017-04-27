@@ -354,4 +354,6 @@ class SpatialDataset(MetDataset):
         logger.debug('Trying to get the grid')
         grid = self.get_grid(var_name)
         logger.debug(grid)
-        return SpatialData(extracted_data, grid=grid, data_origin=self)
+        sp_data = SpatialData(extracted_data, grid=grid, data_origin=self)
+        sp_data.set_data_coordinates()
+        return sp_data
