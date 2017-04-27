@@ -45,7 +45,7 @@ logger = logging.getLogger(__name__)
 
 
 class SpatialDataset(MetDataset):
-    def __init__(self, file_handlers, grid=None, data_origin=None):
+    def __init__(self, file_handlers, grid=None, data_origin=None, processes=1):
         """
         SpatialDataset is a class for a pool of file handlers. Typically a
         spatial dataset combines the files of one model run, such that it is
@@ -80,7 +80,7 @@ class SpatialDataset(MetDataset):
         sellonlatbox
             Method to slice a box with the given coordinates.
         """
-        super().__init__(file_handlers, data_origin)
+        super().__init__(file_handlers, data_origin, processes)
         self.grid = grid
 
     def get_grid(self, var_name):
@@ -134,7 +134,10 @@ class SpatialDataset(MetDataset):
         return grid
 
     def _get_file_data(self, file, var_name):
-        return file.get_messages(var_name)
+        file.open()
+        data = file.get_messages(var_name)
+        file.close()
+        return data
 
     def _cdo_path_helper(self, file_handler, new_path=None, inplace=False):
         file_obj = File(file_handler.file)

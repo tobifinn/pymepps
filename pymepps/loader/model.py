@@ -59,8 +59,8 @@ class ModelLoader(BaseLoader):
         grid will be forwarded to the given SpatialDataset instance. Default is
         None.
     """
-    def __init__(self, data_path, file_type=None, grid=None):
-        super().__init__(data_path, file_type)
+    def __init__(self, data_path, file_type=None, grid=None, processes=1):
+        super().__init__(data_path, file_type, processes)
         self.grid = grid
         self._available_file_type = {
             'nc': NetCDFHandler,
@@ -71,3 +71,7 @@ class ModelLoader(BaseLoader):
     def _convert_filehandlers_to_dataset(self, file_handlers):
         ds = SpatialDataset(file_handlers, self.grid, data_origin=self)
         return ds
+
+def open_model_dataset(data_path, file_type=None, grid=None, processes=1):
+    loader = ModelLoader(data_path, file_type, grid, processes)
+    return loader.load_data()

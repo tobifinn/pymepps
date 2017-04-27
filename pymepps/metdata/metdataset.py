@@ -35,7 +35,7 @@ logger = logging.getLogger(__name__)
 
 
 class MetDataset(object):
-    def __init__(self, file_handlers, data_origin=None):
+    def __init__(self, file_handlers, data_origin=None, processes=1):
         """
         MetDataset is a base class for handling meteorolgical files. The normal
         workroutine would be:
@@ -56,6 +56,7 @@ class MetDataset(object):
         self.data_origin = data_origin
         self._variables = {}
         self.file_handlers = file_handlers
+        self.processes = processes
 
     @property
     def variables(self):
