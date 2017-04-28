@@ -63,9 +63,7 @@ def cube_to_series(cube, var_name):
 
 class NetCDFHandler(FileHandler):
     def _get_varnames(self):
-        self.open()
         var_names = list(self.ds.data_vars)
-        self.close()
         return var_names
 
     def is_type(self):
