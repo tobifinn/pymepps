@@ -120,7 +120,7 @@ class NetCDFHandler(FileHandler):
         if hasattr(variable, '_FillValue'):
             variable.values[variable.values == variable._FillValue] = np.nan
         elif hasattr(variable, 'missing_value'):
-            variable.values[variable.values==variable.missing_value] = np.nan
+            variable.values[variable.values == variable.missing_value] = np.nan
         else:
             variable.values[variable.values==9.96921e+36] = np.nan
         return variable
@@ -217,21 +217,28 @@ class NetCDFHandler(FileHandler):
         cube.attrs.update(self.ds.attrs)
         logger.debug('Updated the attributes')
         cube = self._get_missing_coordinates(cube)
-        splitted_cube = [cube,]
-        for dim in list(cube.dims[:-2]):
-            if len(dim)>1:
-                temp_cube = []
-                for c in splitted_cube:
-                    grouped = list(c.groupby(dim, squeeze=False))
-                    set_grouped = []
-                    for g in grouped:
-                        if g[1][dim] == np.array([0]):
-                            g[1][dim] = [g[0]]
-                        set_grouped.append(g[1])
-                    temp_cube.extend(set_grouped)
-                splitted_cube = temp_cube
-                logger.debug('Splitted {0:s}, due to length of {1:d}'.
-                             format(dim, len(cube[dim])))
-                logger.debug('Splitted cube dim values: {0}'.format(
-                    [c[dim] for c in splitted_cube]))
+        stacked_cube = cube.stack(merge=cube.dims[:-2])
+        divided_cube = [stacked_cube[...,k:k+1]
+                        for k, d in enumerate(stacked_cube['merge'])]
+        unstacked_cube = [a.unstack('merge').transpose(*cube.dims)
+                          for a in divided_cube]
+        splitted_cube = [a.dropna(d, how='all') for a in unstacked_cube
+                         for d in cube.dims[:-2]]
+        # splitted_cube = [cube,]
+        # for dim in list(cube.dims[:-2]):
+        #     if len(dim)>1:
+        #         temp_cube = []
+        #         for c in splitted_cube:
+        #             grouped = list(c.groupby(dim, squeeze=False))
+        #             set_grouped = []
+        #             for g in grouped:
+        #                 if g[1][dim] == np.array([0]):
+        #                     g[1][dim] = [g[0]]
+        #                 set_grouped.append(g[1])
+        #             temp_cube.extend(set_grouped)
+        #         splitted_cube = temp_cube
+        #         logger.debug('Splitted {0:s}, due to length of {1:d}'.
+        #                      format(dim, len(cube[dim])))
+        #         logger.debug('Splitted cube dim values: {0}'.format(
+        #             [c[dim] for c in splitted_cube]))
         return splitted_cube
