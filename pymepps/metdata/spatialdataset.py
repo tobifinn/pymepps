@@ -54,9 +54,11 @@ class SpatialDataset(MetDataset):
 
         Parameters
         ----------
-        file_handlers : list of childs of FileHandler
+        file_handlers : list of childs of FileHandler or None
             The spatial dataset is based on these files. The files should be
-            either instances of GribHandler or NetCDFHandler.
+            either instances of GribHandler or NetCDFHandler. If file handlers
+            is None then the dataset is used for conversion from TSData to
+            SpatialData.
         grid : str or Grid or None
             The grid describes the horizontal grid of the spatial data. The grid 
             will be appended to every created SpatialData instance. If a str is

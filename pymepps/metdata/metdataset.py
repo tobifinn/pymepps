@@ -45,8 +45,10 @@ class MetDataset(object):
 
         Parameters
         ----------
-        file_handlers : list of childs of FileHandler
-            The loaded file handlers. This instance load the variables.
+        file_handlers : list of childs of FileHandler or None.
+            The loaded file handlers. This instance load the variables. If the 
+            file handlers are None then the dataset is used for conversion
+            between Spatial and TSData.
         data_origin : optional
             The class where the data comes from. Normally this would be a
             model or a measurement site. If this is None, this isn't set.
@@ -75,16 +77,16 @@ class MetDataset(object):
 
     @property
     def file_handlers(self):
+        if self._file_handlers is None:
+            raise ValueError(
+                'Do you really want to get a attribute, which is None?')
         return self._file_handlers
 
     @file_handlers.setter
     def file_handlers(self, handlers):
-        if handlers is None:
-            raise ValueError(
-                'There is no file handler, the {0:s} couldn\'t be '
-                'created!'.format(self.__class__.__name__))
         self._file_handlers = handlers
-        if not isinstance(self._file_handlers, list):
+        if not isinstance(self._file_handlers, list) and \
+                        self._file_handlers is not None:
             self._file_handlers = [self._file_handlers, ]
 
     @property
