@@ -61,10 +61,10 @@ class TSData(MetData):
             non-common data form.
         save_type : 'json' or 'hdf'
             The string to determine the file type in which the data is saved.
-        fixed_dims : dict
-            The DataFrameData is valid for this fixed dimensions. The could be
-            for example the coordinates of a weather station. The name of the
-            fixed dimension is the key, while the value are the fixed values.
+        lonlat : tuple(float, float) or None, optional
+            The data of this instance is valid for this coordinates
+            (longitude, latitude). If this is None the coordiantes are not set
+            and not all features could be used. Default is None.
 
         Parameters
         ----------
