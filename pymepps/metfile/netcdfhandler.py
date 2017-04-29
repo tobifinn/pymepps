@@ -218,27 +218,12 @@ class NetCDFHandler(FileHandler):
         logger.debug('Updated the attributes')
         cube = self._get_missing_coordinates(cube)
         stacked_cube = cube.stack(merge=cube.dims[:-2])
-        divided_cube = [stacked_cube[...,k:k+1]
-                        for k, d in enumerate(stacked_cube['merge'])]
-        unstacked_cube = [a.unstack('merge').transpose(*cube.dims)
-                          for a in divided_cube]
-        splitted_cube = [a.dropna(d, how='all') for a in unstacked_cube
-                         for d in cube.dims[:-2]]
-        # splitted_cube = [cube,]
-        # for dim in list(cube.dims[:-2]):
-        #     if len(dim)>1:
-        #         temp_cube = []
-        #         for c in splitted_cube:
-        #             grouped = list(c.groupby(dim, squeeze=False))
-        #             set_grouped = []
-        #             for g in grouped:
-        #                 if g[1][dim] == np.array([0]):
-        #                     g[1][dim] = [g[0]]
-        #                 set_grouped.append(g[1])
-        #             temp_cube.extend(set_grouped)
-        #         splitted_cube = temp_cube
-        #         logger.debug('Splitted {0:s}, due to length of {1:d}'.
-        #                      format(dim, len(cube[dim])))
-        #         logger.debug('Splitted cube dim values: {0}'.format(
-        #             [c[dim] for c in splitted_cube]))
-        return splitted_cube
+        splitted_cubes = [
+            stacked_cube[...,k:k+1].unstack('merge').transpose(*cube.dims)
+            for k in range(len(stacked_cube['merge']))]
+        cleaned_cubes = []
+        for single_cube in splitted_cubes:
+            for dim in cube.dims[:-2]:
+                single_cube = single_cube.dropna(dim, how='all')
+            cleaned_cubes.append(single_cube)
+        return cleaned_cubes
