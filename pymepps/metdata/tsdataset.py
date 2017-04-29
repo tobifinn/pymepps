@@ -38,7 +38,7 @@ logger = logging.getLogger(__name__)
 
 class TSDataset(MetDataset):
     def __init__(self, file_handlers, data_origin=None, save_type='json',
-                 processes=1):
+                 lonlat=None, processes=1):
         """
         TSDataset is a class for a pool of file handlers. Typically a
         time series dataset combines the files of a station, such that it
@@ -47,9 +47,11 @@ class TSDataset(MetDataset):
 
         Parameters
         ----------
-        file_handlers : list of childs of FileHandler
+        file_handlers : list of childs of FileHandler or None
             The spatial dataset is based on these files. The files should be
-            either instances of NetCDFHandler, TextHandler.
+            either instances of NetCDFHandler or TextHandler. If file handlers
+            is None then the dataset is used for conversion from SpatialData to
+            TSData.
         data_origin : optional
             The data origin. This parameter is important to trace the data
             flow. If this is None, there is no data origin and this
@@ -71,16 +73,21 @@ class TSDataset(MetDataset):
                 - : Not human readable,
                     error prone (make sure that you make backups!)
             Default is json.
+        lonlat : tuple(float, float) or None
+            The coordinates (longitude, latitude) where the data is valid. If 
+            this is None the coordinates will be set based on data_origin or 
+            based on the first file handler.
+
         Methods
         -------
         select
             Method to select a variable.
         """
         super().__init__(file_handlers, data_origin, processes)
+        self.lon_lat = lonlat
         self.save_type = save_type
 
-    @property
-    def lon_lat(self):
+    def _get_lon_lat(self):
         if self.data_origin is not None:
             try:
                 return self.data_origin.lon_lat()
@@ -116,6 +123,8 @@ class TSDataset(MetDataset):
             extracted_data = pd.DataFrame(extracted_data)
         else:
             extracted_data = pd.Series(list(extracted_data.values())[0])
+        if self.lon_lat is None:
+            self.lon_lat = self._get_lon_lat()
         return TSData(extracted_data, self, lonlat=self.lon_lat,
                       save_type=self.save_type)
 
