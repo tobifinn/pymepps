@@ -11,6 +11,7 @@ dependencies:
   - conda-forge::python=3.5
   - conda-forge::scipy
   - conda-forge::xarray
-- pip:
-  - netcdf4
-  - cdo
+  - conda-forge::pip
+  - pip:
+    - netcdf4
+    - cdo

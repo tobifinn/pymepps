@@ -45,27 +45,27 @@ Clone repository
 ^^^^^^^^^^^^^^^^
 To clone the repository use:
 
-.. code:: sh
-    git clone git@github.com:maestrotf/pymepps.git
+.. role:: bash(code)
+   :language: bash
+
+    :bash:`git clone git@github.com:maestrotf/pymepps.git`
+
 
 Create virtual environment
 ^^^^^^^^^^^^^^^^^^^^^^^^^^
 via conda:
 
-.. code:: sh
-    conda env create -f environment.yml
+    :bash:`conda env create -f environment.yml`
 
 via pip:
 
-.. code:: sh
-    pip install -r requirements.txt
+    :bash:`pip install -r requirements.txt`
 
 Install the package
 ^^^^^^^^^^^^^^^^^^^
 To install the package use pip:
 
-.. code:: sh
-    pip install .
+    :bash:`pip install .`
 
 Documentation
 -------------
