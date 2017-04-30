@@ -21,15 +21,15 @@ for post-processing of numerical weather model data.
 
 With this package it should be possible to load, process, save and plot the
 data. The central entity of this package is the data itself. The package is
-based on the climate data operators (cdo, [1]). While cdo is used to process
+based on the climate data operators (cdo, [1]_). While cdo is used to process
 meteorological files this package could be used to process extracted file data.
 
-Under the hood this package is based on pandas [2] for processing of time
-series data and xarray [3] for processing spatial data.
+Under the hood this package is based on pandas [2]_ for processing of time
+series data and xarray [3]_ for processing spatial data.
 
 
 References
 ----------
-[1] Climate data operators, https://code.zmaw.de/projects/cdo/
-[2] pandas, http://pandas.pydata.org/
-[3] xarray, http://xarray.pydata.org
+.. [1] Climate data operators, https://code.zmaw.de/projects/cdo/
+.. [2] pandas, http://pandas.pydata.org/
+.. [3] xarray, http://xarray.pydata.org
