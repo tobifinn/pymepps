@@ -8,10 +8,16 @@ pymepps
 
     * - docs
       - |docs|
+    * - reqs
+      - |reqs|
 
 .. |docs| image:: https://readthedocs.org/projects/pymepps/badge/?version=latest
                 :target: http://pymepps.readthedocs.io/en/latest/?badge=latest
                 :alt: Documentation Status
+
+.. |reqs| image:: https://requires.io/github/maestrotf/pymepps/requirements.svg?branch=master
+                :target: https://requires.io/github/maestrotf/pymepps/requirements/?branch=master
+                :alt: Requirements Status
 
 python meteorological post-pprocessing system
 ---------------------------------------------
@@ -26,6 +32,33 @@ meteorological files this package could be used to process extracted file data.
 
 Under the hood this package is based on pandas [2]_ for processing of time
 series data and xarray [3]_ for processing spatial data.
+
+
+Installation
+------------
+We highly recommend to create a virtual environment for this package to prevent
+package collisions.
+At the moment this package is not uploaded via pypi or conda. So it is
+recommended to clone this repository and then install the package.
+
+Clone repository
+^^^^^^^^^^^^^^^^
+To clone the repository use::
+    git clone git@github.com:maestrotf/pymepps.git
+
+Create virtual environment
+^^^^^^^^^^^^^^^^^^^^^^^^^^
+via conda::
+    conda env create -f environment.yml
+
+via pip::
+    pip install -r requirements.txt
+
+Install the package
+^^^^^^^^^^^^^^^^^^^
+To install the package use pip::
+    pip install .
+
 
 
 References
