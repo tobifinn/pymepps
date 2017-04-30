@@ -43,20 +43,28 @@ recommended to clone this repository and then install the package.
 
 Clone repository
 ^^^^^^^^^^^^^^^^
-To clone the repository use::
+To clone the repository use:
+
+.. code:: sh
     git clone git@github.com:maestrotf/pymepps.git
 
 Create virtual environment
 ^^^^^^^^^^^^^^^^^^^^^^^^^^
-via conda::
+via conda:
+
+.. code:: sh
     conda env create -f environment.yml
 
-via pip::
+via pip:
+
+.. code:: sh
     pip install -r requirements.txt
 
 Install the package
 ^^^^^^^^^^^^^^^^^^^
-To install the package use pip::
+To install the package use pip:
+
+.. code:: sh
     pip install .
 
 Documentation
