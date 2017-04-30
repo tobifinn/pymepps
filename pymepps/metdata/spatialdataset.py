@@ -24,14 +24,17 @@
 # """
 # System modules
 import logging
-import datetime as dt
 import operator
 import os.path
 
 # External modules
 import numpy as np
 import xarray as xr
-import cdo
+try:
+    from cdo import Cdo
+except ImportError:
+    print('For full support please install the cdo package via '
+          '"pip install cdo"')
 
 # Internal modules
 from pymepps.data_structures import File
@@ -40,7 +43,6 @@ from .metdataset import MetDataset
 from .spatialdata import SpatialData
 
 
-CDO = cdo.Cdo()
 logger = logging.getLogger(__name__)
 
 
@@ -114,9 +116,20 @@ class SpatialDataset(MetDataset):
             grid = self._get_grid_from_cdo(var_name)
         return grid
 
+    @property
+    def cdo(self):
+        if not hasattr(self, '_CDO'):
+            try:
+                self._CDO = Cdo()
+            except NameError:
+                raise ImportError(
+                    'cdo could not be imported, please install the cdo '
+                    'bindings via "pip install cdo" for full support.')
+        return self._CDO
+
     def _get_grid_from_cdo(self, var_name):
         file = self.variables[var_name][0].file
-        grid_str = CDO.griddes(
+        grid_str = self.cdo.griddes(
             input='-selvar,{0:s} {1:s}'.format(var_name, file))
         grid = self._get_grid_from_str(grid_str)
         return grid
@@ -204,7 +217,7 @@ class SpatialDataset(MetDataset):
             if isinstance(in_opt, str):
                 input_str = in_opt.replace('%FILE%', in_file)
             if not os.path.isfile(out_file) and in_file!=out_file:
-                CDO.remapnn(
+                self.cdo.remapnn(
                     'lon={0:.4f}_lat={1:.4f}'.format(lonlat[0], lonlat[1]),
                     input=input_str,
                     output=out_file,
@@ -259,7 +272,7 @@ class SpatialDataset(MetDataset):
             if isinstance(in_opt, str):
                 input_str = in_opt.replace('%FILE%', in_file)
             if not os.path.isfile(out_file) and in_file!=out_file:
-                CDO.sellonlatbox(lonlatbox[0],lonlatbox[2],lonlatbox[3],
+                self.cdo.sellonlatbox(lonlatbox[0],lonlatbox[2],lonlatbox[3],
                                  lonlatbox[1],
                                  input=input_str,
                                  options=options_str)
