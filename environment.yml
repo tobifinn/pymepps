@@ -1,88 +1,15 @@
-name: pymeppss
+name: pymepps
 channels: !!python/tuple
-- conda-forge
-- defaults
+  - conda-forge
+  - defaults
 dependencies:
-- bokeh=0.12.4=py35_0
-- conda-forge::beautifulsoup4=4.5.3=py35_0
-- conda-forge::bottleneck=1.2.0=np112py35_0
-- conda-forge::ca-certificates=2017.1.23=0
-- conda-forge::certifi=2017.1.23=py35_0
-- conda-forge::cloudpickle=0.2.2=py35_2
-- conda-forge::curl=7.52.1=0
-- conda-forge::cycler=0.10.0=py35_0
-- conda-forge::dask=0.13.0=py35_0
-- conda-forge::dbus=1.10.10=3
-- conda-forge::docopt=0.6.2=py35_0
-- conda-forge::expat=2.1.0=2
-- conda-forge::fontconfig=2.12.1=4
-- conda-forge::freetype=2.7=1
-- conda-forge::gettext=0.19.7=1
-- conda-forge::glib=2.51.4=0
-- conda-forge::gst-plugins-base=1.8.0=0
-- conda-forge::gstreamer=1.8.0=1
-- conda-forge::gsw=3.0.3=py35_0
-- conda-forge::gunicorn=19.7.1=py35_0
-- conda-forge::h5netcdf=0.3.1=py35_0
-- conda-forge::h5py=2.6.0=np112py35_7
-- conda-forge::hdf4=4.2.12=0
-- conda-forge::hdf5=1.8.17=9
-- conda-forge::icu=58.1=1
-- conda-forge::jinja2=2.9.5=py35_0
-- conda-forge::jpeg=9b=0
-- conda-forge::libffi=3.2.1=3
-- conda-forge::libiconv=1.14=4
-- conda-forge::libnetcdf=4.4.1.1=2
-- conda-forge::libpng=1.6.28=0
-- conda-forge::libxcb=1.12=1
-- conda-forge::libxml2=2.9.4=4
-- conda-forge::libxslt=1.1.29=3
-- conda-forge::locket=0.2.0=py35_1
-- conda-forge::lockfile=0.12.2=py35_0
-- conda-forge::lxml=3.7.3=py35_0
-- conda-forge::markupsafe=0.23=py35_1
-- conda-forge::matplotlib=2.0.0=np112py35_3
-- conda-forge::mechanicalsoup=0.6.0=py35_0
-- conda-forge::ncurses=5.9=10
-- conda-forge::netcdf4=1.2.7=np112py35_0
-- conda-forge::nose=1.3.7=py35_2
-- conda-forge::openssl=1.0.2h=3
-- conda-forge::pandas=0.19.2=np112py35_1
-- conda-forge::partd=0.3.7=py35_0
-- conda-forge::pcre=8.39=0
-- conda-forge::pip=9.0.1=py35_0
-- conda-forge::protobuf=3.2.0=py35_0
-- conda-forge::pydap=3.2.0=py35_2
-- conda-forge::pyparsing=2.2.0=py35_0
-- conda-forge::pyqt=5.6.0=py35_0
-- conda-forge::python=3.5.3=1
-- conda-forge::python-dateutil=2.6.0=py35_0
-- conda-forge::pytz=2016.10=py35_0
-- conda-forge::pyyaml=3.12=py35_0
-- conda-forge::qt=5.6.2=1
-- conda-forge::readline=6.2=0
-- conda-forge::requests=2.13.0=py35_0
-- conda-forge::setuptools=33.1.0=py35_0
-- conda-forge::singledispatch=3.4.0.3=py35_0
-- conda-forge::sip=4.18=py35_1
-- conda-forge::six=1.10.0=py35_1
-- conda-forge::sqlite=3.13.0=1
-- conda-forge::tk=8.5.19=1
-- conda-forge::toolz=0.8.2=py35_0
-- conda-forge::tornado=4.4.2=py35_0
-- conda-forge::webob=1.7.1=py35_0
-- conda-forge::wheel=0.29.0=py35_0
-- conda-forge::xarray=0.9.1=py35_0
-- conda-forge::xorg-libxau=1.0.8=3
-- conda-forge::xorg-libxdmcp=1.1.2=3
-- conda-forge::xz=5.2.2=0
-- conda-forge::yaml=0.1.6=0
-- conda-forge::zlib=1.2.11=0
-- libgfortran=3.0.0=1
-- mkl=2017.0.1=0
-- numpy=1.12.0=py35_0
-- scipy=0.18.1=np112py35_1
+  - conda-forge::matplotlib
+  - conda-forge::pygrib
+  - conda-forge::numpy
+  - conda-forge::pandas
+  - conda-forge::python=3.5
+  - conda-forge::scipy
+  - conda-forge::xarray
 - pip:
-  - pymepps (/home/zmaw/u300636/repos/pymepps)==0.0.1
-prefix: /home/zmaw/u300636/miniconda3/envs/pymeppss
-
+  - netcdf4
+  - cdo
