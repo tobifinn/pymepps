@@ -35,25 +35,26 @@ logger = logging.getLogger(__name__)
 
 
 class MetDataset(object):
-    def __init__(self, file_handlers, data_origin=None, processes=1):
-        """
-        MetDataset is a base class for handling meteorolgical files. The normal
-        workroutine would be:
+    """
+    MetDataset is a base class for handling meteorolgical files.
+    
+    The normal workroutine would be:
         1) load the files (use of file handlers)
         2) select the important variables within the files (this object)
         3) post-process the variables (MetData/SpatialData/TSData object)
 
-        Parameters
-        ----------
-        file_handlers : list of childs of FileHandler or None.
-            The loaded file handlers. This instance load the variables. If the 
-            file handlers are None then the dataset is used for conversion
-            between Spatial and TSData.
-        data_origin : optional
-            The class where the data comes from. Normally this would be a
-            model or a measurement site. If this is None, this isn't set.
-            Default is None.
-        """
+    Parameters
+    ----------
+    file_handlers : list of childs of FileHandler or None.
+        The loaded file handlers. This instance load the variables. If the 
+        file handlers are None then the dataset is used for conversion
+        between Spatial and TSData.
+    data_origin : optional
+        The class where the data comes from. Normally this would be a
+        model or a measurement site. If this is None, this isn't set.
+        Default is None.
+    """
+    def __init__(self, file_handlers, data_origin=None, processes=1):
         self._file_handlers = None
         self.data_origin = data_origin
         self._variables = {}
@@ -62,6 +63,9 @@ class MetDataset(object):
 
     @property
     def variables(self):
+        """
+        Return the variable names and the corresponding file handlers.
+        """
         if not any(self._variables):
             new_variables = {}
             for file in self._file_handlers:
@@ -91,6 +95,9 @@ class MetDataset(object):
 
     @property
     def var_names(self):
+        """
+        Get the available variable names.
+        """
         return sorted(self.variables.keys())
 
     def select_by_pattern(self, pattern, return_list=True):
@@ -103,13 +110,13 @@ class MetDataset(object):
         Parameters
         ----------
         pattern : str
-            The pattern fir which should be searched.
+            The pattern for which should be searched.
         return_list : bool
             If the return value should be a list or a dictionary.
 
         Returns
         -------
-        data_list : dict/list with SpatialData instances or None
+        data_list : dict (str, SpatialData or TSData) or list (SpatialData or TSData) or None
             The return value is a dict/list with SpatialData instances, one
             entry for every found variable name. If return_list is False, are
             the keys the variable names. If None is returned no variable with
@@ -150,10 +157,10 @@ class MetDataset(object):
 
         Returns
         -------
-        extracted_data : Child of MetData or None
-            A child instance of MetData with the data of the selected variable
-            as data. If None is returned the variable wasn't found within the
-            list with possible variable names.
+        extracted_data : SpatialData, TSData or None
+            A child instance of MetData with the data of the selected
+            variable as data. If None is returned the variable wasn't found
+            within the list with possible variable names.
         """
         if var_name not in self.var_names:
             logger.error("The variable {0:s} is not in the available variable "

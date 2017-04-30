@@ -37,52 +37,52 @@ logger = logging.getLogger(__name__)
 
 
 class TSDataset(MetDataset):
+    """
+    TSDataset is a class for a pool of file handlers. Typically a
+    time series dataset combines the files of a station, such that it
+    is possible to select a variable and get a TSData instance. For
+    memory reasons the data of a variable is only loaded if it is selected.
+
+    Parameters
+    ----------
+    file_handlers : list of childs of FileHandler or None
+        The spatial dataset is based on these files. The files should be
+        either instances of NetCDFHandler or TextHandler. If file handlers
+        is None then the dataset is used for conversion from SpatialData to
+        TSData.
+    data_origin : optional
+        The data origin. This parameter is important to trace the data
+        flow. If this is None, there is no data origin and this
+        dataset will be the starting point of the data flow. Default is
+        None.
+    save_type : 'json' or 'hdf', optional
+        The string to determine the file type in which the TSData is saved.
+        The DataFrame is saved with the save methods of a pandas.DataFrame.
+        There are different advantages and disadvantages for each file
+        type.
+        Json:
+            + : Human readable,
+                easy to import, it's like a python dict
+            - : File size
+        HDF:
+            + : File compression,
+                efficient save format,
+                standard save format for such data
+            - : Not human readable,
+                error prone (make sure that you make backups!)
+        Default is json.
+    lonlat : tuple(float, float) or None
+        The coordinates (longitude, latitude) where the data is valid. If 
+        this is None the coordinates will be set based on data_origin or 
+        based on the first file handler.
+
+    Methods
+    -------
+    select
+        Method to select a variable.
+    """
     def __init__(self, file_handlers, data_origin=None, save_type='json',
                  lonlat=None, processes=1):
-        """
-        TSDataset is a class for a pool of file handlers. Typically a
-        time series dataset combines the files of a station, such that it
-        is possible to select a variable and get a TSData instance. For
-        memory reasons the data of a variable is only loaded if it is selected.
-
-        Parameters
-        ----------
-        file_handlers : list of childs of FileHandler or None
-            The spatial dataset is based on these files. The files should be
-            either instances of NetCDFHandler or TextHandler. If file handlers
-            is None then the dataset is used for conversion from SpatialData to
-            TSData.
-        data_origin : optional
-            The data origin. This parameter is important to trace the data
-            flow. If this is None, there is no data origin and this
-            dataset will be the starting point of the data flow. Default is
-            None.
-        save_type : 'json' or 'hdf', optional
-            The string to determine the file type in which the TSData is saved.
-            The DataFrame is saved with the save methods of a pandas.DataFrame.
-            There are different advantages and disadvantages for each file
-            type.
-            Json:
-                + : Human readable,
-                    easy to import, it's like a python dict
-                - : File size
-            HDF:
-                + : File compression,
-                    efficient save format,
-                    standard save format for such data
-                - : Not human readable,
-                    error prone (make sure that you make backups!)
-            Default is json.
-        lonlat : tuple(float, float) or None
-            The coordinates (longitude, latitude) where the data is valid. If 
-            this is None the coordinates will be set based on data_origin or 
-            based on the first file handler.
-
-        Methods
-        -------
-        select
-            Method to select a variable.
-        """
         super().__init__(file_handlers, data_origin, processes)
         self.lon_lat = lonlat
         self.save_type = save_type

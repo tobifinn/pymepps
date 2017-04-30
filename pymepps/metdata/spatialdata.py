@@ -39,27 +39,27 @@ logger = logging.getLogger(__name__)
 
 
 class SpatialData(MetData):
-    def __init__(self, data_base, grid=None, data_origin=None):
-        """
-        SpatialData contains spatial based data structures. This class is the
-        standard data type for file types like netCDF or grib. It's prepared
-        for the output of numerical and statistical weather models.
-        Array based data is always saved to netcdf via xarray.
+    """
+    SpatialData contains spatial based data structures. This class is the
+    standard data type for file types like netCDF or grib. It's prepared
+    for the output of numerical and statistical weather models.
+    Array based data is always saved to netcdf via xarray.
 
-        Attributes
-        ----------
-        data_base : xarray.DataArray or None
-            The data of this grid based data structure.
-        grid : Child instance of Grid or None
-            The corresponding grid of this SpatialData instance. This grid is 
-            used to interpolate/remap the data and to select the nearest grid
-            point to a given longitude/latitude pair. The grid is also used to 
-            get a basemap instance to determine the grid boundaries for plotting
-            purpose.
-        data_origin : object of pymepps or None, optional
-            The origin of this data. This could be a model run, a station, a
-            database or something else. Default is None.
-        """
+    Attributes
+    ----------
+    data_base : xarray.DataArray or None
+        The data of this grid based data structure.
+    grid : Child instance of Grid or None
+        The corresponding grid of this SpatialData instance. This grid is 
+        used to interpolate/remap the data and to select the nearest grid
+        point to a given longitude/latitude pair. The grid is also used to 
+        get a basemap instance to determine the grid boundaries for plotting
+        purpose.
+    data_origin : object of pymepps or None, optional
+        The origin of this data. This could be a model run, a station, a
+        database or something else. Default is None.
+    """
+    def __init__(self, data_base, grid=None, data_origin=None):
         super().__init__(data_base, data_origin)
         self._grid = None
         self.grid = grid

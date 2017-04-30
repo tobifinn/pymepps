@@ -45,11 +45,11 @@ math_ops = [
 
 
 class MetData(object):
+    """
+    MetData is the base class for meteorological data, like station data,
+    nwp forecast data etc.
+    """
     def __init__(self, data, data_origin=None):
-        """
-        MetData is the base class for meteorological data, like station data,
-        nwp forecast data etc.
-        """
         self._data = None
         self.data_origin = data_origin
         self.data = data

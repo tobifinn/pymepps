@@ -47,43 +47,43 @@ logger = logging.getLogger(__name__)
 
 
 class SpatialDataset(MetDataset):
+    """
+    SpatialDataset is a class for a pool of file handlers. Typically a
+    spatial dataset combines the files of one model run, such that it is
+    possible to select a variable and get a SpatialData instance. For
+    memory reasons the data of a variable is only loaded if it is selected.
+
+    Parameters
+    ----------
+    file_handlers : list of childs of FileHandler or None
+        The spatial dataset is based on these files. The files should be
+        either instances of GribHandler or NetCDFHandler. If file handlers
+        is None then the dataset is used for conversion from TSData to
+        SpatialData.
+    grid : str or Grid or None
+        The grid describes the horizontal grid of the spatial data. The grid 
+        will be appended to every created SpatialData instance. If a str is
+        given it will be checked if the str is a path to a cdo-conform grid
+        file or a cdo-conform grid string. If this is a instance of a child 
+        of Grid it is assumed that the grid is already initialized and this
+        grid will be used. If this is None the Grid will be automatically 
+        read from the first file handler. Default is None. 
+    data_origin : optional
+        The data origin. This parameter is important to trace the data
+        flow. If this is None, there is no data origin and this
+        dataset will be the starting point of the data flow. Default is
+        None.
+
+    Methods
+    -------
+    select
+        Method to select a variable.
+    selnearest
+        Method to select the nearest grid point for given coordinates.
+    sellonlatbox
+        Method to slice a box with the given coordinates.
+    """
     def __init__(self, file_handlers, grid=None, data_origin=None, processes=1):
-        """
-        SpatialDataset is a class for a pool of file handlers. Typically a
-        spatial dataset combines the files of one model run, such that it is
-        possible to select a variable and get a SpatialData instance. For
-        memory reasons the data of a variable is only loaded if it is selected.
-
-        Parameters
-        ----------
-        file_handlers : list of childs of FileHandler or None
-            The spatial dataset is based on these files. The files should be
-            either instances of GribHandler or NetCDFHandler. If file handlers
-            is None then the dataset is used for conversion from TSData to
-            SpatialData.
-        grid : str or Grid or None
-            The grid describes the horizontal grid of the spatial data. The grid 
-            will be appended to every created SpatialData instance. If a str is
-            given it will be checked if the str is a path to a cdo-conform grid
-            file or a cdo-conform grid string. If this is a instance of a child 
-            of Grid it is assumed that the grid is already initialized and this
-            grid will be used. If this is None the Grid will be automatically 
-            read from the first file handler. Default is None. 
-        data_origin : optional
-            The data origin. This parameter is important to trace the data
-            flow. If this is None, there is no data origin and this
-            dataset will be the starting point of the data flow. Default is
-            None.
-
-        Methods
-        -------
-        select
-            Method to select a variable.
-        selnearest
-            Method to select the nearest grid point for given coordinates.
-        sellonlatbox
-            Method to slice a box with the given coordinates.
-        """
         super().__init__(file_handlers, data_origin, processes)
         self.grid = grid
 
