@@ -19,8 +19,8 @@ pymepps
                 :target: https://requires.io/github/maestrotf/pymepps/requirements/?branch=master
                 :alt: Requirements Status
 
-python meteorological post-pprocessing system
----------------------------------------------
+python meteorological post-processing system
+--------------------------------------------
 
 pymepps is a python package for processing of meteorological data, especially
 for post-processing of numerical weather model data.
@@ -44,7 +44,7 @@ cloned and installed via pip.
 Install the package and dependencies
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-via conda and virtual environment(recommended):
+via conda and virtual environment (recommended):
 
 .. code:: sh
 
@@ -77,4 +77,4 @@ References
 ----------
 .. [1] Climate data operators, https://code.zmaw.de/projects/cdo/
 .. [2] pandas, http://pandas.pydata.org/
-.. [3] xarray, http://xarray.pydata.org
+.. [3] xarray, http://xarray.pydata.org/
