@@ -71,7 +71,8 @@ class GridBuilder(object):
         
         Attributes
         ----------
-        decoded
+        griddes : dict(str, str/float)
+            The grid description as dict.
         """
         self._grid_handler = None
         self._latlon = None
@@ -143,12 +144,12 @@ class GridBuilder(object):
         """
         Method to clean the given grid str and to get a python dict.
         Key and value are separated with =. Every new key value pair needs a new
-        line delimiter (\n). Only alphanumeric characters are allowed as key and
+        line delimiter. Only alphanumeric characters are allowed as key and
         value. To delimit a value list use spaces and new lines. Lines with #
         are used as comment lines.
         
         Steps to decode the grid string:
-            1) String splitting by new line delimiter (\n)
+            1) String splitting by new line delimiter
             2) Clean the lines from unallowed characters
             3) Split the non-comment lines to key, value pairs
             4) Append elements where no key, value pair is available to the

@@ -37,7 +37,7 @@ except ImportError:
           '"pip install cdo"')
 
 # Internal modules
-from pymepps.data_structures import File
+from pymepps.utilities.file import File
 from pymepps.grid import GridBuilder
 from .metdataset import MetDataset
 from .spatialdata import SpatialData
