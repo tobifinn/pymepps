@@ -10,8 +10,8 @@ API
     pymepps.utilities
 
 
-Module contents
----------------
+Submodule contents
+------------------
 
 .. automodule:: pymepps.metfile
     :members:
