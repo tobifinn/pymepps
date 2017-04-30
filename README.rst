@@ -59,6 +59,24 @@ Install the package
 To install the package use pip::
     pip install .
 
+Documentation
+-------------
+For further documentation, especially documentation for the api please take a
+look at `docs <http://pymepps.readthedocs.io/en/latest>`_.
+
+
+Authors
+-------
+* **Tobias Finn** - *Initial creator* - `maestrotf <https://github.com/maestrotf>`_
+
+License
+-------
+
+This project is licensed under the GPL3 License - see the
+`license <LICENSE.md>`_ file for details.
+
+
+
 
 
 References
