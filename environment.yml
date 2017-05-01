@@ -15,4 +15,4 @@ dependencies:
   - pip:
     - netcdf4
     - cdo
-    - git+https://github.com/maestrotf/pymepps.git
+#    - git+https://github.com/maestrotf/pymepps.git

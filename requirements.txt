@@ -5,4 +5,3 @@ numpy
 pandas
 scipy
 xarray
-git+https://github.com/maestrotf/pymepps.git
