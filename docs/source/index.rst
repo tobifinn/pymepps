@@ -8,10 +8,9 @@ Python meteorological post-processing system
 
 The python meteorological post-processing system could be used to post-process
 meteorological data. The main purpose of this project is the post-processing of
-numerical weather forecast data. This package will be the contain methods to
-load meteorological spatial and time series data. Also there will be modules to
-process and plot the data.
-
+numerical weather forecast data. This package has some modules to load and
+process meteorological spatial and time series data. More modules to process and
+plot the data are planned.
 
 
 .. toctree::
@@ -20,4 +19,5 @@ process and plot the data.
 
    install
    history
+   data_structures
    api/pymepps
