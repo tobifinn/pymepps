@@ -1,85 +1,89 @@
 #!/bin/env python
 # -*- coding: utf-8 -*-
-"""
-Created on 10.12.16
-
-Created for pymepps
-
-@author: Tobias Sebastian Finn, tobias.sebastian.finn@studium.uni-hamburg.de
-
-    Copyright (C) {2016}  {Tobias Sebastian Finn}
-
-    This program is free software: you can redistribute it and/or modify
-    it under the terms of the GNU General Public License as published by
-    the Free Software Foundation, either version 3 of the License, or
-    (at your option) any later version.
-
-    This program is distributed in the hope that it will be useful,
-    but WITHOUT ANY WARRANTY; without even the implied warranty of
-    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-    GNU General Public License for more details.
-
-    You should have received a copy of the GNU General Public License
-    along with this program.  If not, see <http://www.gnu.org/licenses/>.
-"""
+# """
+# Created on 10.12.16
+#
+# Created for pymepps
+#
+# @author: Tobias Sebastian Finn, tobias.sebastian.finn@studium.uni-hamburg.de
+#
+#     Copyright (C) {2016}  {Tobias Sebastian Finn}
+#
+#     This program is free software: you can redistribute it and/or modify
+#     it under the terms of the GNU General Public License as published by
+#     the Free Software Foundation, either version 3 of the License, or
+#     (at your option) any later version.
+#
+#     This program is distributed in the hope that it will be useful,
+#     but WITHOUT ANY WARRANTY; without even the implied warranty of
+#     MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+#     GNU General Public License for more details.
+#
+#     You should have received a copy of the GNU General Public License
+#     along with this program.  If not, see <http://www.gnu.org/licenses/>.
+# """
 # System modules
 import logging
-import datetime as dt
 import operator
 import os.path
 
 # External modules
 import numpy as np
 import xarray as xr
-import cdo
+try:
+    from cdo import Cdo
+except ImportError:
+    print('For full support please install the cdo package via '
+          '"pip install cdo"')
 
 # Internal modules
-from pymepps.data_structures import File
+from pymepps.utilities.file import File
 from pymepps.grid import GridBuilder
 from .metdataset import MetDataset
 from .spatialdata import SpatialData
 
 
-CDO = cdo.Cdo()
 logger = logging.getLogger(__name__)
 
 
 class SpatialDataset(MetDataset):
+    """
+    SpatialDataset is a class for a pool of file handlers. Typically a
+    spatial dataset combines the files of one model run, such that it is
+    possible to select a variable and get a SpatialData instance. For
+    memory reasons the data of a variable is only loaded if it is selected.
+
+    Parameters
+    ----------
+    file_handlers : list of childs of FileHandler or None
+        The spatial dataset is based on these files. The files should be
+        either instances of GribHandler or NetCDFHandler. If file handlers
+        is None then the dataset is used for conversion from TSData to
+        SpatialData.
+    grid : str or Grid or None
+        The grid describes the horizontal grid of the spatial data. The grid 
+        will be appended to every created SpatialData instance. If a str is
+        given it will be checked if the str is a path to a cdo-conform grid
+        file or a cdo-conform grid string. If this is a instance of a child 
+        of Grid it is assumed that the grid is already initialized and this
+        grid will be used. If this is None the Grid will be automatically 
+        read from the first file handler. Default is None. 
+    data_origin : optional
+        The data origin. This parameter is important to trace the data
+        flow. If this is None, there is no data origin and this
+        dataset will be the starting point of the data flow. Default is
+        None.
+
+    Methods
+    -------
+    select
+        Method to select a variable.
+    selnearest
+        Method to select the nearest grid point for given coordinates.
+    sellonlatbox
+        Method to slice a box with the given coordinates.
+    """
     def __init__(self, file_handlers, grid=None, data_origin=None, processes=1):
-        """
-        SpatialDataset is a class for a pool of file handlers. Typically a
-        spatial dataset combines the files of one model run, such that it is
-        possible to select a variable and get a SpatialData instance. For
-        memory reasons the data of a variable is only loaded if it is selected.
-
-        Parameters
-        ----------
-        file_handlers : list of childs of FileHandler
-            The spatial dataset is based on these files. The files should be
-            either instances of GribHandler or NetCDFHandler.
-        grid : str or Grid or None
-            The grid describes the horizontal grid of the spatial data. The grid 
-            will be appended to every created SpatialData instance. If a str is
-            given it will be checked if the str is a path to a cdo-conform grid
-            file or a cdo-conform grid string. If this is a instance of a child 
-            of Grid it is assumed that the grid is already initialized and this
-            grid will be used. If this is None the Grid will be automatically 
-            read from the first file handler. Default is None. 
-        data_origin : optional
-            The data origin. This parameter is important to trace the data
-            flow. If this is None, there is no data origin and this
-            dataset will be the starting point of the data flow. Default is
-            None.
-
-        Methods
-        -------
-        select
-            Method to select a variable.
-        selnearest
-            Method to select the nearest grid point for given coordinates.
-        sellonlatbox
-            Method to slice a box with the given coordinates.
-        """
         super().__init__(file_handlers, data_origin, processes)
         self.grid = grid
 
@@ -112,9 +116,20 @@ class SpatialDataset(MetDataset):
             grid = self._get_grid_from_cdo(var_name)
         return grid
 
+    @property
+    def cdo(self):
+        if not hasattr(self, '_CDO'):
+            try:
+                self._CDO = Cdo()
+            except NameError:
+                raise ImportError(
+                    'cdo could not be imported, please install the cdo '
+                    'bindings via "pip install cdo" for full support.')
+        return self._CDO
+
     def _get_grid_from_cdo(self, var_name):
         file = self.variables[var_name][0].file
-        grid_str = CDO.griddes(
+        grid_str = self.cdo.griddes(
             input='-selvar,{0:s} {1:s}'.format(var_name, file))
         grid = self._get_grid_from_str(grid_str)
         return grid
@@ -202,7 +217,7 @@ class SpatialDataset(MetDataset):
             if isinstance(in_opt, str):
                 input_str = in_opt.replace('%FILE%', in_file)
             if not os.path.isfile(out_file) and in_file!=out_file:
-                CDO.remapnn(
+                self.cdo.remapnn(
                     'lon={0:.4f}_lat={1:.4f}'.format(lonlat[0], lonlat[1]),
                     input=input_str,
                     output=out_file,
@@ -257,7 +272,7 @@ class SpatialDataset(MetDataset):
             if isinstance(in_opt, str):
                 input_str = in_opt.replace('%FILE%', in_file)
             if not os.path.isfile(out_file) and in_file!=out_file:
-                CDO.sellonlatbox(lonlatbox[0],lonlatbox[2],lonlatbox[3],
+                self.cdo.sellonlatbox(lonlatbox[0],lonlatbox[2],lonlatbox[3],
                                  lonlatbox[1],
                                  input=input_str,
                                  options=options_str)

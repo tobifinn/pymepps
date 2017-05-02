@@ -87,6 +87,16 @@ class Grid(object):
         return coords
 
     def get_coord_names(self):
+        """
+        Returns the name of the coordinates.
+
+        Returns
+        -------
+        yname : str
+            The name of the y-dimension.
+        xname : str
+            The name of the x-dimension
+        """
         return self._grid_dict['yname'], self._grid_dict['xname']
 
     @abc.abstractmethod
@@ -246,7 +256,7 @@ class Grid(object):
         remapped_data = np.atleast_2d(remapped_data.squeeze())
         return remapped_data
 
-    def get_nearest_point(self, coord, data):
+    def get_nearest_point(self, data, coord):
         """
         Get the nearest neighbour grid point for a given coordinate. The
         distance between the grid points and the given coordinates is calculated
