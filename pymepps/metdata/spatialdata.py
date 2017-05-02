@@ -27,8 +27,6 @@ import logging
 
 # External modules
 import xarray as xr
-import numpy as np
-import pandas as pd
 
 # Internal modules
 from .metdata import MetData
@@ -51,16 +49,12 @@ class SpatialData(MetData):
     ----------
     data_base : xarray.DataArray or None
         The data of this grid based data structure.
-    grid : Child of Grid or None
+    grid : Child instance of Grid or None
         The corresponding grid of this SpatialData instance. This grid is 
         used to interpolate/remap the data and to select the nearest grid
         point to a given longitude/latitude pair. The grid is also used to 
         get a basemap instance to determine the grid boundaries for plotting
         purpose.
-    grid_dims : list(str)
-        The dimensions representing the horizontal grid within the data. If 
-        the list is empty then it is assumed that all data dimensions are non
-        horizontal grid dimensions.
     data_origin : object of pymepps or None, optional
         The origin of this data. This could be a model run, a station, a
         database or something else. Default is None.
@@ -69,7 +63,6 @@ class SpatialData(MetData):
         super().__init__(data_base, data_origin)
         self._grid = None
         self.grid = grid
-        self.grid_dims = []
 
     def set_data_coordinates(self, data=None, grid=None):
         """
@@ -99,38 +92,17 @@ class SpatialData(MetData):
             data = self.data.values
         if grid is None:
             grid = self.grid
-        new_coords, data, grid_dim_names = self._prepare_coords(data, grid)
-        non_grid_dims = [dim for dim in self.data.dims
-                         if dim not in self.grid_dims]
-        for dim in non_grid_dims:
+        new_coords = grid.get_coords()
+        for dim in self.data.dims[:-2]:
             new_coords[dim] = self.data[dim]
         new_darray = xr.DataArray(
             data, coords=new_coords,
-            dims=non_grid_dims+grid_dim_names,
+            dims=list(self.data.dims[:-2])+list(grid.get_coord_names()),
             attrs=self.data.attrs
         )
         self.data = new_darray
         self.grid = grid
-        self.grid_dims = grid_dim_names
         return self
-
-    def _prepare_coords(self, data, grid):
-        grid_coords = grid.get_coords()
-        grid_coords_check = [c.size in data.shape and len(c.shape)==1
-                             for c in grid_coords.values]
-        if not np.all(grid_coords_check):
-            coord_names = grid.get_coord_names()
-            coord_values = [grid_coords[n][1] for n in coord_names]
-            multi_index = pd.MultiIndex.from_arrays(
-                coord_values, names=coord_names
-            )
-            xr_coords = {'coords': multi_index}
-            if len(data.shape)>1 and \
-                    data.shape[-2]*data.shape[1] == len(multi_index):
-                data = data.reshape(list(data.shape[:-2])+[-1, ])
-            return xr_coords, data, 'coords'
-        else:
-            return grid_coords, data, grid.get_coord_names()
 
     @property
     def grid(self):
@@ -171,7 +143,7 @@ class SpatialData(MetData):
             extracted_data = self.grid.get_nearest_point(
                 data=self.data.values, coord=reversed(lonlat))
             dims_wo_grid = [dim for dim in self.data.dims
-                            if dim not in self.grid_dims]
+                            if dim not in self.grid.get_coord_names()]
             coords = {dim: self.data.coords for dim in dims_wo_grid}
             cube = xr.DataArray(
                 extracted_data,
