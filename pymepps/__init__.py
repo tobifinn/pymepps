@@ -26,10 +26,10 @@
 # External modules
 
 # Internal modules
-#from pymepps.grid import GridBuilder
+from pymepps.grid import GridBuilder
 from pymepps.loader import open_model_dataset, open_station_dataset
 
 
-__all__ = ['open_model_dataset', 'open_station_dataset']
+__all__ = ['open_model_dataset', 'open_station_dataset', 'GridBuilder']
 
 __version__ = '0.3.0'

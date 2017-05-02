@@ -32,22 +32,26 @@ In the future some requirements will be added for example
 Installation
 ------------
 At the moment this package is not available on pypi and conda. So you have to
-install this package via github. For an easier install you need only to download
-the environment.yml or the requirements.txt.
+clone this package and install it via pip.
 
-The recommended way to install this package is to create a new conda environment
-based on environment.yml. But it is also possible to install this package via
-the requirements.txt with pip. Both ways includes this package.
+It is recommended to install the requirements via a conda virtual environment,
+but it is also possible to install them via pip.
 
 Installation and activation via conda (recommended)
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 .. code:: sh
 
+    git clone git@github.com:maestrotf/pymepps.git
+    cd pymepps
     conda env create -f environment.yml
     source activate pymepps
+    pip install .
 
 Installation via pip
 ^^^^^^^^^^^^^^^^^^^^
 .. code:: sh
 
+    git clone git@github.com:maestrotf/pymepps.git
+    cd pymepps
     pip install -r requirements.txt
+    pip install .

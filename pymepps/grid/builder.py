@@ -176,25 +176,28 @@ class GridBuilder(object):
         else:
             raise TypeError('The given grid_str has to be a str or a list of '
                             'str!')
-        logger.debug(grid_str_lines)
-        cleaned_lines = [re.sub('[^0-9a-zA-Z=#"\_\.\-\+ ]+', '', gs)
+        preprocessed_lines = [re.sub('[^0-9a-zA-Z=#"\_\.\-\+ ]+', '', gs)
                          for gs in grid_str_lines]
-        splitted_lines = [line.split('=', 1) for line in cleaned_lines
+        splitted_lines = [line.split('=', 1) for line in preprocessed_lines
                           if len(line) > 0 and '#' not in line]
-        logger.debug(splitted_lines)
-        for i in np.arange(len(splitted_lines)-1, -1, -1):
-            if len(splitted_lines[i])==1 and i!=0:
-                splitted_lines[i-1][-1] = "{0:s} {1:s}".format(
-                    splitted_lines[i - 1][-1], splitted_lines[i][-1])
-        logger.debug(splitted_lines)
-        grid_dict = {}
+        # for i in np.arange(len(splitted_lines)-1, -1, -1):
+        #     if len(splitted_lines[i])==1 and i!=0:
+        #         splitted_lines[i-1][-1] = "{0:s} {1:s}".format(splitted_lines[i - 1][-1], splitted_lines[i][-1])
+        def clean_value(val):
+            if '"' in val:
+                val = [val.replace('"', '').strip(), ]
+            else:
+                val = list(filter(None, val.split(' ')))
+            return val
+        cleaned_lines = []
         for line in splitted_lines:
-            if len(line) == 2:
-                if '"' in line[1]:
-                    val = [line[1].replace('"', '').strip(), ]
-                else:
-                    val = list(filter(None, line[1].split(' ')))
-                grid_dict[line[0].strip()] = val
+            line[-1] = clean_value(line[-1])
+            if len(line)==1 and cleaned_lines:
+                cleaned_lines[-1][-1].extend(line[0])
+            elif len(line)==2:
+                line[0] = line[0].strip()
+                cleaned_lines.append(line)
+        grid_dict = {l[0]: l[1] for l in cleaned_lines}
         for k in grid_dict:
             try:
                 grid_dict[k] = [float(val) for val in grid_dict[k]]

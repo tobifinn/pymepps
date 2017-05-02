@@ -38,29 +38,32 @@ Installation
 ------------
 We highly recommend to create a virtual environment for this package to prevent
 package collisions.
-At the moment this package is not uploaded via pypi or conda. So the package is
-cloned and installed via pip.
+At the moment this package is not uploaded via pypi or conda. So the package
+needs to be cloned and installed via pip.
 
-Install the package and dependencies
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-
-via conda and virtual environment (recommended):
-
+via conda (recommended):
+^^^^^^^^^^^^^^^^^^^^^^^^
 .. code:: sh
 
+    git clone git@github.com:maestrotf/pymepps.git
+    cd pymepps
     conda env create -f environment.yml
+    source activate pymepps
+    pip install .
 
 via pip:
-
+^^^^^^^^
 .. code:: sh
 
+    git clone git@github.com:maestrotf/pymepps.git
+    cd pymepps
     pip install -r requirements.txt
+    pip install .
 
 Documentation
 -------------
 For further documentation, especially documentation for the api please take a
 look at `docs <http://pymepps.readthedocs.io/en/latest>`_.
-
 
 Authors
 -------
@@ -71,7 +74,6 @@ License
 
 This project is licensed under the GPL3 License - see the
 `license <LICENSE.md>`_ file for details.
-
 
 References
 ----------
