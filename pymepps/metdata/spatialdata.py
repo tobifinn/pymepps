@@ -142,14 +142,16 @@ class SpatialData(MetData):
         if isinstance(lonlat, tuple) and len(lonlat)==2:
             extracted_data = self.grid.get_nearest_point(
                 data=self.data.values, coord=reversed(lonlat))
+            logger.debug(extracted_data)
             dims_wo_grid = [dim for dim in self.data.dims
                             if dim not in self.grid.get_coord_names()]
-            coords = {dim: self.data.coords for dim in dims_wo_grid}
+            logger.debug(dims_wo_grid)
+            coords = {dim: self.data.coords[dim] for dim in dims_wo_grid}
+            logger.debug(coords)
             cube = xr.DataArray(
                 extracted_data,
                 coords=coords,
                 dims=dims_wo_grid,
-                attrs=self.data.attrs
             )
         else:
             cube = self.data

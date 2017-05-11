@@ -174,7 +174,7 @@ class MetDataset(object):
             logger.debug('Got file data from {0:s}'.format(file.file))
             try:
                 data = data+file_data
-            except TypeError:
+            except (TypeError, ValueError):
                 data = data+[file_data,]
             logger.debug('Added the file data to the dataset data')
         extracted_data = self.data_merge(data, var_name)
