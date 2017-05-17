@@ -10,6 +10,7 @@ dependencies:
   - conda-forge::pandas
   - conda-forge::python=3.5
   - conda-forge::scipy
+  - conda-forge::tqdm
   - conda-forge::xarray
   - conda-forge::pip
   - pip:
