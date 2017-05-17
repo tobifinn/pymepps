@@ -106,53 +106,59 @@ class GribHandler(FileHandler):
                 array_data = np.array(array_data).reshape((1, 1, 1, 1, 1, 1))
             elif isinstance(array_data, np.ndarray):
                 array_data = array_data[
-                         np.newaxis, np.newaxis, np.newaxis, np.newaxis, :, :]
+                         np.newaxis, np.newaxis, np.newaxis, np.newaxis, ...]
             else:
                 raise ValueError(
                     'The type of array data is {0:s}. Array data has to be a '
                     'float or a numpy array.'.format(str(type(array_data))))
+            logger.debug('Values of array data:\n{0}'.format(array_data))
             logger.debug('Got array data')
             anal_date = [msg.analDate,]
-            logger.debug('Got analysis date')
+            logger.debug('Got analysis date {0}'.format(anal_date))
             try:
                 ens_type = msg['typeOfEnsembleForecast']
                 if ens_type in [2,3,4]:
                     ens = [msg['perturbationNumber'],]
             except RuntimeError:
                 ens = ['det',]
-            logger.debug('Got ensemble forecast number')
-            valid_date = [msg.validDate,]
-            level = [":".join(str(msg).split(':')[4:6]),]
-            logger.debug('Decoded levels')
-            # Check if grid is in lat/lon
-            dimensions = {}
-            if 'iDirectionIncrementInDegrees' in msg.keys():
-                y_0 = msg['latitudeOfFirstGridPointInDegrees']
-                y_end = msg['latitudeOfLastGridPointInDegrees']
-                x_0 = msg['longitudeOfFirstGridPointInDegrees']
-                x_end = msg['longitudeOfLastGridPointInDegrees']
-                logger.debug('Found lon/lat')
-            # Unknown grid
+            logger.debug('Got ensemble forecast number {0}'.format(ens))
+            if np.issubdtype(msg.validDate.dtype, np.datetime64) and \
+                    np.issubdtype(msg.analDate.dtype, np.datetime64):
+                valid_date = [msg.validDate-msg.analDate, ]
             else:
-                y_0 = 0
-                y_end = array_data.shape[-2]-1
-                x_0 = 0
-                x_end = array_data.shape[-1]-1
-                logger.debug('No lon/lat available')
-            dimensions['y'] = np.linspace(y_0, y_end, array_data.shape[-2])
-            dimensions['x'] = np.linspace(x_0, x_end, array_data.shape[-1])
+                valid_date = [msg.validDate,]
+            level = [":".join(str(msg).split(':')[4:6]).replace(' ', '_'),]
+            logger.debug('Decoded levels {0}'.format(level))
+            coords = {
+                    'analysis': anal_date,
+                    'ensemble': ens,
+                    'time': valid_date,
+                    'level': level}
+            dims = ['analysis', 'ensemble', 'time', 'level']
+            if len(array_data.shape)==5:
+                logger.debug('Found unstructured grid')
+                grid_coords = {
+                    'grid_coords': np.arange(0, array_data.shape[-1])
+                }
+                dims.append('grid_coords')
+            else:
+                logger.debug('Found structured grid')
+                grid_coords = {
+                    'y': np.arange(0, array_data.shape[-2]),
+                    'x': np.arange(0, array_data.shape[-1])
+                }
+                dims = dims+['y', 'x']
+            coords.update(grid_coords)
             xr_data = xarray.DataArray(
                 data=array_data,
-                coords=[
-                    ('analysis', anal_date), ('ensemble', ens),
-                    ('time', valid_date), ('level', level),
-                    ('y', dimensions['y']), ('x', dimensions['x'])])
+                coords=coords,
+                dims=dims)
             logger.debug('Combines everything into one xr DataArray')
             xr_data.name = msg['cfName']
             xr_data.attrs['unit'] = msg['units']
             try:
                 xr_data.attrs['projection'] = pyproj.Proj(**msg.projparams)
-            except RuntimeError:
+            except (RuntimeError, TypeError):
                 pass
             ecmf_gen = [k for k in msg.keys() if 'ECMF' in k]
             for k in ecmf_gen:
