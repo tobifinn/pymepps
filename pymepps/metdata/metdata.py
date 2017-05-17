@@ -35,14 +35,6 @@ import xarray as xr
 
 logger = logging.getLogger(__name__)
 
-math_ops = [
-    '__add__',
-    '__sub__',
-    '__div__',
-    '__mul__',
-    '__pow__',
-]
-
 
 class MetData(object):
     """
@@ -67,6 +59,9 @@ class MetData(object):
                 '{0:s} needs data!'.format(self.__class__.__name__))
         self._data = data
 
+    def copy(self):
+        return self._copy_of_self()
+
     def _copy_of_self(self):
         return deepcopy(self)
 
@@ -89,10 +84,6 @@ class MetData(object):
                 "Did you try to access properties before",
                 "loading data?"
             ]))
-        elif key in math_ops:
-            def math_method(other):
-                return self._math_ops(key, other)
-            return math_method
         else:
             return self._xr_function(key)
 
