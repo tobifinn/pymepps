@@ -177,6 +177,7 @@ class MetDataset(object):
             except (TypeError, ValueError):
                 data = data+[file_data,]
             logger.debug('Added the file data to the dataset data')
+        logger.info('Extracted the data, now merge the data!')
         extracted_data = self.data_merge(data, var_name)
         return extracted_data
 

@@ -26,6 +26,7 @@
 import logging
 import operator
 import os.path
+import itertools
 
 # External modules
 import numpy as np
@@ -161,7 +162,7 @@ class SpatialDataset(MetDataset):
             out_file = in_file
         else:
             file_name = file_obj.get_basename()
-            if file_obj.get_dir == new_path:
+            if file_obj.get_dir == new_path or new_path is None:
                 file_name = '{0:s}_{1:s}'.format(file_name, 'sliced')
             if new_path is not None:
                 out_file = os.path.join(new_path, file_name)
@@ -203,9 +204,13 @@ class SpatialDataset(MetDataset):
         
         References
         ----------
-        [1] https://code.zmaw.de/boards/2/topics/301
+        ..[1] https://code.zmaw.de/boards/2/topics/301
         """
         new_file_handlers = []
+        cnt = 0
+        num_file_handlers = len(self.file_handlers)
+        logger.info('Started selnearest for {0:d} files'.format(
+            num_file_handlers))
         for file_handler in self.file_handlers:
             in_file, out_file = self._cdo_path_helper(file_handler=file_handler,
                                                       new_path=new_path,
@@ -227,7 +232,11 @@ class SpatialDataset(MetDataset):
                 logger.debug('File already exists. It\'s assumed, that this is '
                              'the already sliced file.')
             new_file_handlers.append(type(file_handler)(out_file))
-        logger.debug('Finished selnearest, set new file_handlers.')
+            cnt += 1
+            if num_file_handlers>100 and cnt%100==0:
+                logger.info('Finished {0:d}/{1:d}'.format(
+                    cnt, num_file_handlers))
+        logger.info('Finished selnearest, set new file_handlers.')
         self.file_handlers = new_file_handlers
         return self
 
@@ -285,6 +294,26 @@ class SpatialDataset(MetDataset):
         self.file_handlers = new_file_handlers
         return self
 
+    def _construct_nan_data(self, combinations, templ_data):
+        nan_data = []
+        for c in combinations:
+            values = np.ones_like(templ_data.values)*np.NaN
+            coords = {}
+            for k, dim in enumerate(templ_data.dims):
+                try:
+                    coords[dim] = c[k]
+                except IndexError:
+                    coords[dim] = templ_data[dim]
+            xr_array = xr.DataArray(
+                data=values,
+                coords=coords,
+                dims=templ_data.dims,
+                attrs=templ_data.attrs
+            )
+            nan_data.append(xr_array)
+        logger.info('Contructed the missing nan_data')
+        return nan_data
+
     def data_merge(self, data, var_name):
         """
         Method to merge instances of xarray.DataArray into a SpatialData
@@ -315,9 +344,18 @@ class SpatialDataset(MetDataset):
             for dim in coordinate_names[:-2]:
                 dim_gen = [d[dim].values for d in data]
                 uniques.append(list(np.unique(dim_gen)))
+            unique_combinations = list(itertools.product(*uniques))
             logger.debug('Got unique coordinates')
             indexes = []
             logger.debug('Start coordinates indexing')
+            data_combinations = [tuple([d.coords[dim].values[0]
+                                        for dim in coordinate_names[:-2]])
+                                 for d in data]
+            nan_combinations = [c for c in unique_combinations
+                                if c not in data_combinations]
+            fake_data = self._construct_nan_data(nan_combinations,
+                                                 templ_data=data[0])
+            data = list(data)+fake_data
             for d in data:
                 d_ind = [d.values]
                 for key, dim in enumerate(coordinate_names[:-2]):
@@ -329,6 +367,7 @@ class SpatialDataset(MetDataset):
                     'Finished coordinates indexing for {0:s}'.format(
                         str(d_ind[1:])))
                 indexes.append(d_ind)
+
             logger.debug('Start data sorting')
             n_dims = len(coordinate_names[:-2])
             sort_dims = tuple(range(1, n_dims+1))
