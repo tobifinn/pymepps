@@ -110,19 +110,10 @@ class TSDataset(MetDataset):
 
     def data_merge(self, data, var_name):
         logger.debug('The data before data_merge is: {0}'.format(data))
-        extracted_data = data[0]
-        for d in data[1:]:
-            for k in d:
-                if k in extracted_data.keys():
-                    extracted_data[k] = extracted_data[k].append(d[k])
-                    extracted_data[k] = extracted_data[k].sort_index()
-                else:
-                    extracted_data.update({k:d[k]})
-        logger.debug(extracted_data)
-        if len(extracted_data.keys())>1:
-            extracted_data = pd.DataFrame(extracted_data)
+        if len(data)>1:
+            extracted_data = pd.DataFrame(data)
         else:
-            extracted_data = pd.Series(list(extracted_data.values())[0])
+            extracted_data = data[0]
         if self.lon_lat is None:
             self.lon_lat = self._get_lon_lat()
         return TSData(extracted_data, self, lonlat=self.lon_lat,
