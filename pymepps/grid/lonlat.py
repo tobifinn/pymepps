@@ -58,10 +58,6 @@ class LonLatGrid(Grid):
     def _calc_single_dim(self, dim_name='x'):
         steps = self._grid_dict['{0:s}size'.format(dim_name)]
         try:
-            calculated_dim = self._grid_dict['{0:s}vals'.format(dim_name)]
-            if isinstance(calculated_dim, float):
-                calculated_dim = [calculated_dim, ]
-        except KeyError:
             start = self._grid_dict['{0:s}first'.format(dim_name)]
             steps = self._grid_dict['{0:s}size'.format(dim_name)]
             width = self._grid_dict['{0:s}inc'.format(dim_name)]
@@ -69,6 +65,10 @@ class LonLatGrid(Grid):
                 start,
                 start + steps * width,
                 width)
+        except KeyError:
+            calculated_dim = self._grid_dict['{0:s}vals'.format(dim_name)]
+            if isinstance(calculated_dim, float):
+                calculated_dim = [calculated_dim, ]
         calculated_dim = calculated_dim[:int(steps)]
         return calculated_dim
 
