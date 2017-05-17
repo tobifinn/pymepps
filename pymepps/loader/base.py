@@ -30,6 +30,7 @@ import os
 from collections import Counter
 
 # External modules
+from tqdm import tqdm
 
 # Internal modules
 
@@ -46,9 +47,15 @@ class BaseLoader(object):
 
     def _get_specific_type_handlers(self, files, file_type):
         base_handler = self._available_file_type[file_type]
-        base_file_handlers = [base_handler(file) for file in files]
-        file_handlers = [handler for handler in base_file_handlers
-                         if handler.is_type()]
+        file_handlers = []
+        logger.info('Started file handler checking for file type: {0:s}'.format(
+            file_type))
+        with tqdm(total=len(files)) as pbar:
+            for file in files:
+                handler = base_handler(file)
+                if handler.is_type():
+                    file_handlers.append(handler)
+                pbar.update()
         return file_handlers
 
     def _get_file_handlers(self, files):

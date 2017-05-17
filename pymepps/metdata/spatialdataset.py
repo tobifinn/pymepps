@@ -27,6 +27,8 @@ import logging
 import operator
 import os.path
 import itertools
+from functools import partial
+from multiprocessing import Pool
 
 # External modules
 import numpy as np
@@ -206,13 +208,10 @@ class SpatialDataset(MetDataset):
         ----------
         ..[1] https://code.zmaw.de/boards/2/topics/301
         """
-        new_file_handlers = []
-        cnt = 0
-        num_file_handlers = len(self.file_handlers)
         logger.info('Started selnearest for {0:d} files'.format(
-            num_file_handlers))
-        for file_handler in self.file_handlers:
-            in_file, out_file = self._cdo_path_helper(file_handler=file_handler,
+            len(self.file_handlers)))
+        def single_func(fh):
+            in_file, out_file = self._cdo_path_helper(file_handler=fh,
                                                       new_path=new_path,
                                                       inplace=inplace)
             options_str = ''
@@ -221,25 +220,20 @@ class SpatialDataset(MetDataset):
             input_str = in_file
             if isinstance(in_opt, str):
                 input_str = in_opt.replace('%FILE%', in_file)
-            if not os.path.isfile(out_file) and in_file!=out_file:
+            if not os.path.isfile(out_file) and in_file != out_file:
                 self.cdo.remapnn(
                     'lon={0:.4f}_lat={1:.4f}'.format(lonlat[0], lonlat[1]),
                     input=input_str,
                     output=out_file,
                     options=options_str)
-                logger.debug('Finished CDO remapnn, set new file_handler')
+                new_fh = fh.__class__(out_file)
             else:
-                logger.debug('File already exists. It\'s assumed, that this is '
-                             'the already sliced file.')
-            new_file_handlers.append(type(file_handler)(out_file))
-            cnt += 1
-            if num_file_handlers>100 and cnt%100==0:
-                logger.info('Finished {0:d}/{1:d}'.format(
-                    cnt, num_file_handlers))
+                new_fh = fh
+            return new_fh
+        self.file_handlers = self.multiprocess_map(
+            single_func, self.file_handlers)
         logger.info('Finished selnearest, set new file_handlers.')
-        self.file_handlers = new_file_handlers
         return self
-
 
     def sellonlatbox(self, lonlatbox, new_path=None, inplace=False,
                      in_opt=None, options=None):
@@ -269,9 +263,10 @@ class SpatialDataset(MetDataset):
         -------
         self
         """
-        new_file_handlers = []
-        for file_handler in self.file_handlers:
-            in_file, out_file = self._cdo_path_helper(file_handler=file_handler,
+        logger.info('Started sellonlatbox for {0:d} files'.format(
+            len(self.file_handlers)))
+        def single_func(fh):
+            in_file, out_file = self._cdo_path_helper(file_handler=fh,
                                                       new_path=new_path,
                                                       inplace=inplace)
             options_str = ''
@@ -285,13 +280,13 @@ class SpatialDataset(MetDataset):
                                  lonlatbox[1],
                                  input=input_str,
                                  options=options_str)
-                logger.debug('Finished CDO sellonlatbox, set new file_handler')
+                new_fh = fh.__class__(out_file)
             else:
-                logger.debug('File already exists. It\'s assumed, that this is '
-                             'the already sliced file.')
-            new_file_handlers.append(type(file_handler)(out_file))
+                new_fh = fh
+            return new_fh
+        self.file_handlers = self.multiprocess_map(single_func,
+                                                    self.file_handlers)
         logger.debug('Finished sellonlatbox, set new file_handlers.')
-        self.file_handlers = new_file_handlers
         return self
 
     def _construct_nan_data(self, combinations, templ_data):
@@ -313,6 +308,15 @@ class SpatialDataset(MetDataset):
             nan_data.append(xr_array)
         logger.info('Contructed the missing nan_data')
         return nan_data
+
+    def _single_data_coord_order(self, data, coordinate_names, uniques):
+        d_ind = [data.values]
+        for key, dim in enumerate(coordinate_names):
+            if dim in data.coords:
+                d_ind.append(uniques[key].index(data[dim].values))
+            else:
+                d_ind.append(0)
+        return d_ind
 
     def data_merge(self, data, var_name):
         """
@@ -342,32 +346,26 @@ class SpatialDataset(MetDataset):
             uniques = []
             logger.debug(coordinate_names)
             for dim in coordinate_names[:-2]:
-                dim_gen = [d[dim].values for d in data]
+                def dim_func(d):
+                    return d[dim.values]
+                dim_gen = self.multiprocess_map(dim_func, data)
                 uniques.append(list(np.unique(dim_gen)))
             unique_combinations = list(itertools.product(*uniques))
             logger.debug('Got unique coordinates')
-            indexes = []
             logger.debug('Start coordinates indexing')
-            data_combinations = [tuple([d.coords[dim].values[0]
-                                        for dim in coordinate_names[:-2]])
-                                 for d in data]
+            def combi_func(d):
+                return tuple([d.coords[dim].values[0]
+                              for dim in coordinate_names[:-2]])
+            data_combinations = self.multiprocess_map(combi_func, data)
             nan_combinations = [c for c in unique_combinations
                                 if c not in data_combinations]
             fake_data = self._construct_nan_data(nan_combinations,
                                                  templ_data=data[0])
             data = list(data)+fake_data
-            for d in data:
-                d_ind = [d.values]
-                for key, dim in enumerate(coordinate_names[:-2]):
-                    if dim in d.coords:
-                        d_ind.append(uniques[key].index(d[dim].values))
-                    else:
-                        d_ind.append(0)
-                logger.debug(
-                    'Finished coordinates indexing for {0:s}'.format(
-                        str(d_ind[1:])))
-                indexes.append(d_ind)
-
+            single_func = partial(self._single_data_coord_order,
+                                  coordinate_names=coordinate_names[:-2],
+                                  uniques=uniques)
+            indexes = self.multiprocess_map(single_func, data)
             logger.debug('Start data sorting')
             n_dims = len(coordinate_names[:-2])
             sort_dims = tuple(range(1, n_dims+1))
