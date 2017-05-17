@@ -43,21 +43,35 @@ logger = logging.getLogger(__name__)
 def cube_to_series(cube, var_name):
     cleaned_dims = list(cube.dims)
     cleaned_dims.remove('time')
-    splitted_cube = {var_name: cube, }
-    for dim in cleaned_dims:
-        new_cube = {}
-        for temp_cube in splitted_cube:
-            new_cube.update({l[0]: l[1] for l in list(
-                splitted_cube[temp_cube].groupby(dim))})
-        try:
-            splitted_cube = {"{0:s}_{1:s}".format(k_0, k_1):
-                                 new_cube[k_0][k_1]
-                             for k_0 in new_cube for k_1 in new_cube[k_0]}
-        except Exception as e:
-            logger.info('Couldn\'t flatten the dict, due to {0:s}'.
-                        format(e))
-            splitted_cube = new_cube
-    data = {k: splitted_cube[k].to_series() for k in splitted_cube}
+    if cleaned_dims:
+        stacked = cube.stack(col=cleaned_dims)
+        pd_stacked = stacked.T.to_pandas()
+        data = [pd_stacked.ix[:,col] for col in pd_stacked.columns]
+    else:
+        data = cube.to_series()
+    # for col in stacked.coords['col']:
+    #     logger.debug('_'.join(str(val) for val in (np.atleast_1d(col.values)[0])))
+    #     #str_col = '_'.join([str(val) for val in col.values])
+    # for dim in cleaned_dims:
+    #     new_cube = {}
+    #     for temp_cube in splitted_cube:
+    #         new_cube.update({l[0]: l[1] for l in list(
+    #             splitted_cube[temp_cube].groupby(dim))})
+    #     logger.debug(new_cube)
+    #     try:
+    #         splitted_cube = {}
+    #         for k_0 in new_cube:
+    #             logger.debug(k_0)
+    #             for k_1 in new_cube[k_0]:
+    #                 logger.debug(k_1)
+    #                 dim_name = "{0:s}_{1:s}".format(str(k_0), str(k_1))
+    #                 dim_value = new_cube[k_0][k_1]
+    #                 splitted_cube[dim_name] = dim_value
+    #     except Exception as e:
+    #         logger.info('Couldn\'t flatten the dict, due to {0:s}'.
+    #                     format(e))
+    #         splitted_cube = new_cube
+    #data = {k: splitted_cube[k].to_series() for k in splitted_cube}
     return data
 
 
@@ -121,6 +135,7 @@ class NetCDFHandler(FileHandler):
             variable.values[variable.values == variable.missing_value] = np.nan
         else:
             variable.values[variable.values==9.96921e+36] = np.nan
+        logger.debug(variable)
         return variable
 
     def get_timeseries(self, var_name):
@@ -157,12 +172,12 @@ class NetCDFHandler(FileHandler):
         logger.debug('The cube coordinates are {0}'.format(cube.coords))
         additional_coords = collections.OrderedDict()
         if not self._check_list_in_list(
-                ['ana', 'runtime'], list(cube.dims[:-2])):
+                ['ana', 'runtime', 'validtime'], list(cube.dims[:-2])):
             try:
                 ana = self._get_dates_from_path(self.file)[0]
             except IndexError:
                 ana = None
-            additional_coords['RunTime'] = ana
+            additional_coords['validtime'] = ana
             logger.debug(
                 'No analysis date within the cube found set the analysis date '
                 'to {0}'.format(ana))
@@ -187,11 +202,13 @@ class NetCDFHandler(FileHandler):
                 'No time within the cube found set the time to '
                 '{0}'.format(time))
         ds_coords = xr.Dataset(coords=additional_coords)
-        logger.info(ds_coords)
-        logger.info(cube.coords)
+        logger.debug(ds_coords)
+        logger.debug(cube.coords)
         cube.coords.update(ds_coords)
+        logger.debug(cube)
         cube = cube.expand_dims(list(additional_coords.keys()))
         logger.debug('The cube coordinates are {0}'.format(cube.coords))
+        logger.debug(cube)
         return cube
 
     def get_messages(self, var_name):
@@ -214,7 +231,12 @@ class NetCDFHandler(FileHandler):
         logger.debug('Loaded the cube')
         cube.attrs.update(self.ds.attrs)
         logger.debug('Updated the attributes')
+        logger.debug(cube)
         cube = self._get_missing_coordinates(cube)
+        time_dim = cube.dims[2]
+        if np.issubdtype(cube[time_dim].values.dtype, np.datetime64) and \
+                np.issubdtype(cube[cube.dims[0]].values.dtype, np.datetime64):
+            cube[time_dim] = cube[time_dim]-cube[cube.dims[0]].values
         stacked_cube = cube.stack(merge=cube.dims[:-2])
         splitted_cubes = [
             stacked_cube[...,k:k+1].unstack('merge').transpose(*cube.dims)
