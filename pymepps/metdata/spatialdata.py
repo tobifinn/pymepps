@@ -24,6 +24,7 @@
 # """
 # System modules
 import logging
+from copy import deepcopy
 
 # External modules
 import xarray as xr
@@ -34,6 +35,7 @@ from .tsdataset import TSDataset
 from pymepps.metfile.netcdfhandler import cube_to_series
 import pymepps.plot
 
+__math_operators = ['__add__', '__sub__']
 
 logger = logging.getLogger(__name__)
 
@@ -204,8 +206,38 @@ class SpatialData(MetData):
         plot.suptitle('{0:s} plot of {1:s}'.format(method, self.data.variable))
         return plot
 
-    def load(self, path):
-        pass
+    def _xr_function(self, key):
+        """
+        Get data function with given key. This is a wrapper around
+        type(self.data) functions to secure a proper return value.
+
+        Parameters
+        ----------
+        key : str
+            The function which should be called. Have to be an available
+            function for type of self.data!
+
+        Returns
+        -------
+        wrapped_func : function
+            The wrapped type(self.data) function. The wrapped function returns
+            a new TS/SpatialData instance, if the result of the function is a
+            type(self.data), else the return value of the function will be
+            returned.
+        """
+        def wrapped_func(*args, **kwargs):
+            try:
+                result = getattr(self.data, key)(*args, **kwargs)
+            except TypeError:
+                result = getattr(self.data, key)
+            if isinstance(result, xr.DataArray):
+                return self.__class__(result, self.grid, self.data_origin)
+            else:
+                return result
+        return wrapped_func
 
     def save(self, path):
-        pass
+        save_array = self.data.copy()
+        save_array.attrs['grid_dict'] = self.grid._grid_dict
+        save_array.attrs['data_origin'] = self.data_origin
+        save_array.to_netcdf(path)
