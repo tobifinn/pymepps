@@ -200,7 +200,8 @@ class GridBuilder(object):
         grid_dict = {l[0]: l[1] for l in cleaned_lines}
         for k in grid_dict:
             try:
-                grid_dict[k] = [float(val) for val in grid_dict[k]]
+                grid_dict[k] = [float(val) if val[-1]!='f' else float(val[:-1])
+                                for val in grid_dict[k]]
             except ValueError:
                 pass
             if len(grid_dict[k])==1:
