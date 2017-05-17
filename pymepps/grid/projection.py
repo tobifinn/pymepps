@@ -97,6 +97,7 @@ class BaseProj(object):
 
     @staticmethod
     def _check_lat(lat):
+        logger.debug(lat)
         if not np.all(-90<=lat):
             raise ValueError(
                 'The given latitude {0:.4f} is not between -90\° and '
@@ -109,6 +110,7 @@ class BaseProj(object):
 
     @staticmethod
     def _check_lon(lon):
+        logger.debug(lon)
         if not np.all(-180<=lon):
             raise ValueError(
                 'The given longitude {0:.4f} is not between -180\° and '

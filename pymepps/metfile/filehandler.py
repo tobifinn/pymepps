@@ -104,13 +104,13 @@ class FileHandler(object):
             if part[:3]=='ens':
                 ens_member = int(part[3:])
             elif part=='det':
-                ens_member = 'det'
+                ens_member = 0
         if ens_member is None:
             ext = os.path.splitext(path)[1]
             try:
                 ens_member = int(ext)
             except ValueError:
-                ens_member = 'det'
+                ens_member = 0
         return ens_member
 
     def _get_dates_from_path(self, path):
@@ -128,8 +128,9 @@ class FileHandler(object):
                         date = datetime.datetime.strptime(part, '%Y%m%d_%H%M')
                     except ValueError:
                         date = -9999
-                if date is not None:
-                    logger.info(part)
-                    logger.info(date)
+                if date != -9999:
+                    logger.debug(part)
+                    logger.debug(date)
                     dates.append(date)
+        logger.debug(dates)
         return dates
