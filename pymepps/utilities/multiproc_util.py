@@ -31,7 +31,6 @@ from multiprocessing import Pool
 # External modules
 
 # Internal modules
-from .tqdm_logging import tqdm_handler
 
 
 logger = logging.getLogger(__name__)
