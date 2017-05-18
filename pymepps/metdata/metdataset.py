@@ -59,14 +59,30 @@ class MetDataset(object):
         The class where the data comes from. Normally this would be a
         model or a measurement site. If this is None, this isn't set.
         Default is None.
+    processes : int, optional
+        This number of processes is used to calculate time-consuming functions.
+        For time-consuming functions a progress bar is shown. If the number of 
+        processes is one the functions will be processed sequential. For more
+        processes than one the multiprocessing module will be used.
+        Default is 1.
     """
     def __init__(self, file_handlers, data_origin=None, processes=1):
         self._file_handlers = None
-        self.data_origin = data_origin
         self._variables = {}
+        self._multiproc = None
+        self._processes = 1
+        self.data_origin = data_origin
         self.file_handlers = file_handlers
         self.processes = processes
-        self._multiproc = MultiProcessing(self.processes)
+
+    @property
+    def processes(self):
+        return self._processes
+
+    @processes.setter
+    def processes(self, nr_proc):
+        self._multiproc = MultiProcessing(nr_proc)
+        self._processes = nr_proc
 
     @property
     def variables(self):
