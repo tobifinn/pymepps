@@ -28,5 +28,7 @@
 
 # Internal modules
 from .path_encoder import *
+from .tqdm_logging import tqdm_handler
+from .multiproc_util import MultiProcessing
 
-__all__ = ['PathEncoder']
+__all__ = ['PathEncoder', 'tqdm_handler', 'MultiProcessing']

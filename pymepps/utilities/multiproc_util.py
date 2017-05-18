@@ -27,7 +27,6 @@
 import logging
 from tqdm import tqdm
 from multiprocessing import Pool
-import types
 
 # External modules
 
@@ -62,13 +61,35 @@ class MultiProcessing(object):
     def _add_return_value_to_list(self, return_val, adding_list):
         is_iter = hasattr(return_val, '__iter__') and \
                   not isinstance(return_val, (str, bytes))
-        if is_iter:
-            adding_list = adding_list + list(return_val)
-        else:
-            adding_list.append(return_val)
-        return adding_list
+        if not is_iter:
+            return_val = [return_val,]
+        return adding_list + list(return_val)
+
 
     def _sequential_map(self, single_func, iter_obj):
+        """
+        Method to map an iterable object to a function with a single input. The
+        mapping will be sequential processed. A progressbar is displayed with 
+        the tqdm module.
+
+        Parameters
+        ----------
+        single_func: python function
+            The mapping is performed for this given function. The function ought 
+            to have only one parameter. For a function with more than one
+            parameter it's recommended to use the partial module to set the
+            other parameters.
+        iter_obj: iterable
+            The iterable python object. The entries of this object are mapped to
+            the function.
+
+        Returns
+        -------
+        return_data: list(obj)
+            The bundled return data for the mapping as list. If single_func has
+            an iterable as return object, the iterable is converted to a list. 
+            The return_data is a flatten list.
+        """
         return_data = []
         for d in tqdm(iter_obj):
             d_ind = single_func(d)
@@ -76,6 +97,29 @@ class MultiProcessing(object):
         return return_data
 
     def _multiprocess_map(self, single_func, iter_obj):
+        """
+        Method to map an iterable object to a function with a single input. The
+        mapping will be performed with a multiprocessing pool. A progressbar is
+        displayed with the tqdm module.
+
+        Parameters
+        ----------
+        single_func: python function
+            The mapping is performed for this given function. The function ought 
+            to have only one parameter. For a function with more than one
+            parameter it's recommended to use the partial module to set the
+            other parameters.
+        iter_obj: iterable
+            The iterable python object. The entries of this object are mapped to
+            the function.
+
+        Returns
+        -------
+        return_data: list(obj)
+            The bundled return data for the mapping as list. If single_func has
+            an iterable as return object, the iterable is converted to a list. 
+            The return_data is a flatten list.
+        """
         return_data = []
         p = Pool(processes=self.processes)
         with tqdm(total=len(iter_obj)) as pbar:

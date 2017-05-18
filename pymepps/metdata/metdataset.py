@@ -32,9 +32,12 @@ from multiprocessing import Pool
 from tqdm import tqdm
 
 # Internal modules
+from pymepps.utilities import MultiProcessing
+from pymepps.utilities import tqdm_handler
 
 
 logger = logging.getLogger(__name__)
+logger.addHandler(tqdm_handler)
 
 
 class MetDataset(object):
@@ -63,24 +66,7 @@ class MetDataset(object):
         self._variables = {}
         self.file_handlers = file_handlers
         self.processes = processes
-
-    def multiprocess_map(self, single_func, iter_obj):
-        """
-        Method to activate multiprocessing for a given function. The output is 
-        bundled and returned.
-        """
-        return_data = []
-        if self.processes > 1:
-            p = Pool(processes=self.processes)
-            with tqdm(total=len(iter_obj)) as pbar:
-                for d_ind in p.imap_unordered(single_func, iter_obj):
-                    return_data.append(d_ind)
-                    pbar.update()
-        else:
-            for d in tqdm(iter_obj):
-                d_ind = single_func(d)
-                return_data.append(d_ind)
-        return return_data
+        self._multiproc = MultiProcessing(self.processes)
 
     @property
     def variables(self):
@@ -193,39 +179,10 @@ class MetDataset(object):
         logger.info('Started select {0:s} for {1:d} files'.format(
             var_name, num_file_handlers))
         single_func = partial(self._get_file_data, var_name=var_name)
-        data = self.multiprocess_map(single_func, self.variables[var_name])
-        if self.processes > 1:
-            data = self._multithread_select(var_name)
-        else:
-            data = self._sequential_select(var_name)
+        data = self._multiproc.map(single_func, self.variables[var_name])
         logger.info('Extracted the data, now merge the data!')
         extracted_data = self.data_merge(data, var_name)
         return extracted_data
-
-    def _sequential_select(self, var_name):
-        data = []
-        for file in tqdm(self.variables[var_name]):
-            file_data = self._get_file_data(file, var_name)
-            try:
-                data = data+file_data
-            except (TypeError, ValueError):
-                data = data+[file_data,]
-        return data
-
-    def _multithread_select(self, var_name):
-        get_file_data_fnc = partial(self._get_file_data, var_name=var_name)
-        num_file_handlers = len(self.variables[var_name])
-        data = []
-        workers = Pool(processes=self.processes)
-        with tqdm(total=num_file_handlers) as pbar:
-            for file_data in workers.imap_unordered(
-                    get_file_data_fnc, self.variables[var_name]):
-                try:
-                    data = data + file_data
-                except (TypeError, ValueError):
-                    data = data + [file_data, ]
-                pbar.update()
-        return data
 
     @abc.abstractmethod
     def _get_file_data(self, file, var_name):
