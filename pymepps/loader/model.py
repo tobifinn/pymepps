@@ -69,7 +69,8 @@ class ModelLoader(BaseLoader):
         }
 
     def _convert_filehandlers_to_dataset(self, file_handlers):
-        ds = SpatialDataset(file_handlers, self.grid, data_origin=self)
+        ds = SpatialDataset(file_handlers, self.grid, data_origin=self,
+                            processes=self.processes)
         return ds
 
 def open_model_dataset(data_path, file_type=None, grid=None, processes=1):
