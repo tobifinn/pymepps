@@ -33,7 +33,7 @@ tqdm_handler to the logger as handler. This module is based on [1]_.
 # System modules
 import logging
 from tqdm import tqdm
-import colorlog
+#import colorlog
 
 # External modules
 
@@ -53,13 +53,5 @@ class TqdmHandler(logging.StreamHandler):
 
 
 tqdm_handler = TqdmHandler()
-tqdm_handler.setFormatter(colorlog.ColoredFormatter(
-    '%(log_color)s%(name)s | %(asctime)s | %(levelname)s | %(message)s',
-    datefmt='%Y-%d-%d %H:%M:%S',
-    log_colors={
-        'DEBUG': 'cyan',
-        'INFO': 'white',
-        'SUCCESS:': 'green',
-        'WARNING': 'yellow',
-        'ERROR': 'red',
-        'CRITICAL': 'red,bg_white'}, ))
+tqdm_handler.setFormatter(
+    '%(log_color)s%(name)s | %(asctime)s | %(levelname)s | %(message)s')

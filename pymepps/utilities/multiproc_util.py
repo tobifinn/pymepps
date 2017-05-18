@@ -35,14 +35,13 @@ from .tqdm_logging import tqdm_handler
 
 
 logger = logging.getLogger(__name__)
-logger.addHandler(tqdm_handler)
 
 
 class MultiProcessing(object):
     def __init__(self, processes):
         self._processes = None
-        self.processes = processes
         self.map = None
+        self.processes = processes
 
     @property
     def processes(self):
@@ -58,15 +57,14 @@ class MultiProcessing(object):
         else:
             self.map = self._sequential_map
 
-    def _add_return_value_to_list(self, return_val, adding_list):
+    def _add_return_value_to_list(self, return_val, adding_list, flatten=True):
         is_iter = hasattr(return_val, '__iter__') and \
                   not isinstance(return_val, (str, bytes))
-        if not is_iter:
+        if not is_iter or not flatten:
             return_val = [return_val,]
         return adding_list + list(return_val)
 
-
-    def _sequential_map(self, single_func, iter_obj):
+    def _sequential_map(self, single_func, iter_obj, flatten=True):
         """
         Method to map an iterable object to a function with a single input. The
         mapping will be sequential processed. A progressbar is displayed with 
@@ -93,10 +91,11 @@ class MultiProcessing(object):
         return_data = []
         for d in tqdm(iter_obj):
             d_ind = single_func(d)
-            return_data = self._add_return_value_to_list(d_ind, return_data)
+            return_data = self._add_return_value_to_list(d_ind, return_data,
+                                                         flatten)
         return return_data
 
-    def _multiprocess_map(self, single_func, iter_obj):
+    def _multiprocess_map(self, single_func, iter_obj, flatten=True):
         """
         Method to map an iterable object to a function with a single input. The
         mapping will be performed with a multiprocessing pool. A progressbar is
@@ -124,7 +123,8 @@ class MultiProcessing(object):
         p = Pool(processes=self.processes)
         with tqdm(total=len(iter_obj)) as pbar:
             for d_ind in p.imap_unordered(single_func, iter_obj):
-                return_data = self._add_return_value_to_list(d_ind, return_data)
+                return_data = self._add_return_value_to_list(d_ind, return_data,
+                                                             flatten)
                 pbar.update()
         p.close()
         return return_data

@@ -33,20 +33,18 @@ from multiprocessing import Pool
 # External modules
 import numpy as np
 import xarray as xr
-try:
-    from cdo import Cdo
-except ImportError:
-    print('For full support please install the cdo package via '
-          '"pip install cdo"')
+from tqdm import tqdm
 
 # Internal modules
-from pymepps.utilities.file import File
+from pymepps.utilities import tqdm_handler
 from pymepps.grid import GridBuilder
+from .cdo_inject import CDO
 from .metdataset import MetDataset
 from .spatialdata import SpatialData
 
 
 logger = logging.getLogger(__name__)
+#logger.addHandler(tqdm_handler)
 
 
 class SpatialDataset(MetDataset):
@@ -76,6 +74,12 @@ class SpatialDataset(MetDataset):
         flow. If this is None, there is no data origin and this
         dataset will be the starting point of the data flow. Default is
         None.
+    processes : int, optional
+        This number of processes is used to calculate time-consuming functions.
+        For time-consuming functions a progress bar is shown. If the number of 
+        processes is one the functions will be processed sequential. For more
+        processes than one the multiprocessing module will be used.
+        Default is 1.
 
     Methods
     -------
@@ -89,6 +93,12 @@ class SpatialDataset(MetDataset):
     def __init__(self, file_handlers, grid=None, data_origin=None, processes=1):
         super().__init__(file_handlers, data_origin, processes)
         self.grid = grid
+        self._cdo = CDO(self._multiproc)
+
+    def __getattr__(self, key):
+        if self._cdo is not None:
+            cdo_func = getattr(self._cdo, key)
+            return partial(cdo_func, ds=self)
 
     def get_grid(self, var_name):
         """
@@ -119,22 +129,16 @@ class SpatialDataset(MetDataset):
             grid = self._get_grid_from_cdo(var_name)
         return grid
 
-    @property
-    def cdo(self):
-        if not hasattr(self, '_CDO'):
-            try:
-                self._CDO = Cdo()
-            except NameError:
-                raise ImportError(
-                    'cdo could not be imported, please install the cdo '
-                    'bindings via "pip install cdo" for full support.')
-        return self._CDO
-
     def _get_grid_from_cdo(self, var_name):
+        grid = None
         file = self.variables[var_name][0].file
-        grid_str = self.cdo.griddes(
-            input='-selvar,{0:s} {1:s}'.format(var_name, file))
-        grid = self._get_grid_from_str(grid_str)
+        try:
+            grid_str = self.griddes(
+                input='-selvar,{0:s} {1:s}'.format(var_name, file))
+            grid = self._get_grid_from_str(grid_str)
+        except AttributeError:
+            logger.warning('To load the grid description with the cdos you '
+                           'need to install the cdos!')
         return grid
 
     def _get_grid_from_str(self, grid_str):
@@ -157,138 +161,6 @@ class SpatialDataset(MetDataset):
         file.close()
         return data
 
-    def _cdo_path_helper(self, file_handler, new_path=None, inplace=False):
-        file_obj = File(file_handler.file)
-        in_file = file_obj.path
-        if inplace:
-            out_file = in_file
-        else:
-            file_name = file_obj.get_basename()
-            if file_obj.get_dir == new_path or new_path is None:
-                file_name = '{0:s}_{1:s}'.format(file_name, 'sliced')
-            if new_path is not None:
-                out_file = os.path.join(new_path, file_name)
-            else:
-                out_file = os.path.join(file_obj.get_dir(), file_name)
-        logger.debug(
-            'Set output path to {0:s} for file {1:s}'.format(out_file, in_file))
-        return in_file, out_file
-
-    def selnearest(self, lonlat, new_path=None, inplace=False, in_opt=None,
-                   options=None):
-        """
-        Method to the nearest grid point to a given latitude/longitude
-        coordinate pair. This method is based on the cdo command remapnn.
-        For more informations see [1]_.
-
-        Parameters
-        ----------
-        lonlat : Tuple of floats
-            The lonlat, which should be extracted. This lonlat has two
-            entries (lon, lat).
-        new_path : str or None, optional
-            If a new path is given as string the new file is saved at this path
-            with the same file name as the input file. If this is None the new
-            file will be saved in the same directory as the input file. Default
-            is None.
-        inplace : bool, optional
-            If True the files would be overridden. If False a '_sliced' will be
-            appended to the file name. Default is True.
-        in_opt : str or None, optional
-            If the input options are given as string, the string will be used as
-            input to the cdo method. %FILE% is a placeholder and will be
-            replaced by the file path. If this is None the file path will be
-            used as input. Default is None.
-
-        Returns
-        -------
-        self
-        
-        References
-        ----------
-        ..[1] https://code.zmaw.de/boards/2/topics/301
-        """
-        logger.info('Started selnearest for {0:d} files'.format(
-            len(self.file_handlers)))
-        def single_func(fh):
-            in_file, out_file = self._cdo_path_helper(file_handler=fh,
-                                                      new_path=new_path,
-                                                      inplace=inplace)
-            options_str = ''
-            if isinstance(options, str):
-                options_str = options
-            input_str = in_file
-            if isinstance(in_opt, str):
-                input_str = in_opt.replace('%FILE%', in_file)
-            if not os.path.isfile(out_file) and in_file != out_file:
-                self.cdo.remapnn(
-                    'lon={0:.4f}_lat={1:.4f}'.format(lonlat[0], lonlat[1]),
-                    input=input_str,
-                    output=out_file,
-                    options=options_str)
-                new_fh = fh.__class__(out_file)
-            else:
-                new_fh = fh
-            return new_fh
-        self.file_handlers = self.multiprocess_map(
-            single_func, self.file_handlers)
-        logger.info('Finished selnearest, set new file_handlers.')
-        return self
-
-    def sellonlatbox(self, lonlatbox, new_path=None, inplace=False,
-                     in_opt=None, options=None):
-        """
-        Method to select a longitude/latitude box and slice the FileHandlers.
-        This method is based on the cdo command sellonlatbox.
-        Parameters
-        ----------
-        lonlatbox : Tuple of floats
-            The lonlatbox, which should be sliced. This lonlatbox has four
-            entries (left, top, right, bottom).
-        new_path : str or None, optional
-            If a new path is given as string the new file is saved at this path
-            with the same file name as the input file. If this is None the new
-            file will be saved in the same directory as the input file. Default
-            is None.
-        inplace : bool, optional
-            If True the files would be overridden. If False a '_sliced' will be
-            appended to the file name. Default is True.
-        in_opt : str or None, optional
-            If the input options are given as string, the string will be used as
-            input to the cdo method. %FILE% is a placeholder and will be
-            replaced by the file path. If this is None the file path will be
-            used as input. Default is None.
-
-        Returns
-        -------
-        self
-        """
-        logger.info('Started sellonlatbox for {0:d} files'.format(
-            len(self.file_handlers)))
-        def single_func(fh):
-            in_file, out_file = self._cdo_path_helper(file_handler=fh,
-                                                      new_path=new_path,
-                                                      inplace=inplace)
-            options_str = ''
-            if isinstance(options, str):
-                options_str = options
-            input_str = in_file
-            if isinstance(in_opt, str):
-                input_str = in_opt.replace('%FILE%', in_file)
-            if not os.path.isfile(out_file) and in_file!=out_file:
-                self.cdo.sellonlatbox(lonlatbox[0],lonlatbox[2],lonlatbox[3],
-                                 lonlatbox[1],
-                                 input=input_str,
-                                 options=options_str)
-                new_fh = fh.__class__(out_file)
-            else:
-                new_fh = fh
-            return new_fh
-        self.file_handlers = self.multiprocess_map(single_func,
-                                                    self.file_handlers)
-        logger.debug('Finished sellonlatbox, set new file_handlers.')
-        return self
-
     def _construct_nan_data(self, combinations, templ_data):
         nan_data = []
         for c in combinations:
@@ -309,14 +181,20 @@ class SpatialDataset(MetDataset):
         logger.info('Contructed the missing nan_data')
         return nan_data
 
-    def _single_data_coord_order(self, data, coordinate_names, uniques):
-        d_ind = [data.values]
+    def _index_data_chunk(self, data_chunk, coordinate_names, uniques):
+        d_ind = [data_chunk.values]
         for key, dim in enumerate(coordinate_names):
-            if dim in data.coords:
-                d_ind.append(uniques[key].index(data[dim].values))
+            if dim in data_chunk.coords:
+                d_ind.append(uniques[key].index(data_chunk[dim].values))
             else:
                 d_ind.append(0)
         return d_ind
+
+    def _combine_index_data_chunk(self, data_chunk, coordinate_names, uniques):
+        combination = tuple([data_chunk.coords[dim].values[0]
+                             for dim in coordinate_names[:-2]])
+        d_index = self._index_data_chunk(data_chunk, coordinate_names, uniques)
+        return combination, d_index
 
     def data_merge(self, data, var_name):
         """
@@ -339,41 +217,52 @@ class SpatialDataset(MetDataset):
         logger.debug('Data coordinates {0}'.format(data[0].coords))
         logger.debug('Data dimensions {0}'.format(data[0].dims))
         if len(data) == 1:
-            logger.debug('Found only one message')
+            logger.info('Found only one message')
             extracted_data = data[0]
         else:
+            logger.info('Get unique coordinates')
             coordinate_names = list(data[0].dims)
             uniques = []
             logger.debug(coordinate_names)
             for dim in coordinate_names[:-2]:
                 def dim_func(d):
-                    return d[dim.values]
-                dim_gen = self.multiprocess_map(dim_func, data)
+                    return d.coords[dim].values
+                dim_gen = self._multiproc.map(dim_func, data)
                 uniques.append(list(np.unique(dim_gen)))
+            logger.info('Calculate possible data combinations')
             unique_combinations = list(itertools.product(*uniques))
-            logger.debug('Got unique coordinates')
-            logger.debug('Start coordinates indexing')
             def combi_func(d):
                 return tuple([d.coords[dim].values[0]
                               for dim in coordinate_names[:-2]])
-            data_combinations = self.multiprocess_map(combi_func, data)
-            nan_combinations = [c for c in unique_combinations
-                                if c not in data_combinations]
-            fake_data = self._construct_nan_data(nan_combinations,
+            logger.info('Remove already satisfied combinations')
+            combine_index_func = partial(
+                self._combine_index_data_chunk,
+                coordinate_names=coordinate_names[:-2],
+                uniques=uniques)
+            indexes = []
+            p = Pool(processes=self.processes)
+            with tqdm(total=len(data)) as pbar:
+                for comb_ind in p.imap_unordered(combine_index_func, data):
+                    unique_combinations.remove(comb_ind[0])
+                    indexes.append(comb_ind[1])
+                    pbar.update()
+            p.close()
+            logger.info('Set nan combinations')
+            fake_data = self._construct_nan_data(unique_combinations,
                                                  templ_data=data[0])
-            data = list(data)+fake_data
-            single_func = partial(self._single_data_coord_order,
+            single_func = partial(self._index_data_chunk,
                                   coordinate_names=coordinate_names[:-2],
                                   uniques=uniques)
-            indexes = self.multiprocess_map(single_func, data)
-            logger.debug('Start data sorting')
+            fake_indexes = self._multiproc.map(single_func, fake_data)
+            indexes = indexes+fake_indexes
+            logger.info('Start data sorting')
             n_dims = len(coordinate_names[:-2])
             sort_dims = tuple(range(1, n_dims+1))
             sorted_data = zip(*sorted(
                 indexes, key=operator.itemgetter(*sort_dims)))
             logger.debug('Start data reordering')
             sorted_data = np.array(list(sorted_data)[0])
-            logger.debug('Start data reshaping and coordinates setting')
+            logger.info('Start data reshaping and coordinates setting')
             logger.debug(sorted_data.shape)
             try:
                 shaped_data = sorted_data.reshape(
@@ -401,7 +290,7 @@ class SpatialDataset(MetDataset):
                 coords=coords)
             logger.debug('Start attribute setting')
             extracted_data.attrs = data[0].attrs
-            logger.debug('Finished data merging')
+        logger.info('Start contruction of SpatialData')
         logger.debug(extracted_data.attrs)
         logger.debug('Trying to get the grid')
         grid = self.get_grid(var_name)

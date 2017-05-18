@@ -69,7 +69,8 @@ class StationLoader(BaseLoader):
         return self.lonlat
 
     def _convert_filehandlers_to_dataset(self, file_handlers):
-        ds = TSDataset(file_handlers, data_origin=self)
+        ds = TSDataset(file_handlers, data_origin=self,
+                       processes=self.processes)
         return ds
 
 def open_station_dataset(data_path, file_type=None, lonlat=None, processes=1):
