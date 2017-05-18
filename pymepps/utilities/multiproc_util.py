@@ -61,9 +61,11 @@ class MultiThread(object):
     def _add_return_value_to_list(self, return_val, adding_list, flatten=True):
         is_iter = hasattr(return_val, '__iter__') and \
                   not isinstance(return_val, (str, bytes))
-        if not is_iter or not flatten:
-            return_val = [return_val,]
-        return adding_list + list(return_val)
+        if return_val is not None:
+            if not is_iter or not flatten:
+                return_val = [return_val,]
+            adding_list = adding_list + list(return_val)
+        return adding_list
 
     def _sequential_map(self, single_func, iter_obj, flatten=True):
         """
