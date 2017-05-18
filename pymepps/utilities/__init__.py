@@ -28,6 +28,6 @@
 
 # Internal modules
 from .path_encoder import *
-from .multiproc_util import MultiProcessing
+from .multiproc_util import MultiThread
 
-__all__ = ['PathEncoder', 'MultiProcessing']
+__all__ = ['PathEncoder', 'MultiThread']

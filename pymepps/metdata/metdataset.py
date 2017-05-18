@@ -26,18 +26,14 @@
 import logging
 import abc
 from functools import partial
-from multiprocessing import Pool
 
 # External modules
 from tqdm import tqdm
 
 # Internal modules
-from pymepps.utilities import MultiProcessing
-from pymepps.utilities import tqdm_handler
-
+from pymepps.utilities import MultiThread
 
 logger = logging.getLogger(__name__)
-logger.addHandler(tqdm_handler)
 
 
 class MetDataset(object):
@@ -81,7 +77,7 @@ class MetDataset(object):
 
     @processes.setter
     def processes(self, nr_proc):
-        self._multiproc = MultiProcessing(nr_proc)
+        self._multiproc = MultiThread(nr_proc)
         self._processes = nr_proc
 
     @property

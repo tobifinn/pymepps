@@ -26,7 +26,8 @@
 # System modules
 import logging
 from tqdm import tqdm
-from multiprocessing import Pool
+import multiprocessing
+import multiprocessing.dummy
 
 # External modules
 
@@ -36,11 +37,12 @@ from multiprocessing import Pool
 logger = logging.getLogger(__name__)
 
 
-class MultiProcessing(object):
-    def __init__(self, processes):
+class MultiThread(object):
+    def __init__(self, processes, threads=True):
         self._processes = None
         self.map = None
         self.processes = processes
+        self.threads = threads
 
     @property
     def processes(self):
@@ -119,9 +121,19 @@ class MultiProcessing(object):
             The return_data is a flatten list.
         """
         return_data = []
-        p = Pool(processes=self.processes)
+        if self.threads:
+            p = multiprocessing.dummy.Pool(processes=self.processes)
+        else:
+            p = multiprocessing.Pool(processes=self.processes)
+
+        ## From the multiprocessing _map_async code.
+        chunksize, extra = divmod(len(iter_obj), self.processes * 4)
+        if extra:
+            chunksize += 1
+
         with tqdm(total=len(iter_obj)) as pbar:
-            for d_ind in p.imap_unordered(single_func, iter_obj):
+            for d_ind in p.imap_unordered(single_func, iter_obj,
+                                          chunksize=chunksize):
                 return_data = self._add_return_value_to_list(d_ind, return_data,
                                                              flatten)
                 pbar.update()

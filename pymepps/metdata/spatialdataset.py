@@ -25,26 +25,21 @@
 # System modules
 import logging
 import operator
-import os.path
 import itertools
 from functools import partial
-from multiprocessing import Pool
 
 # External modules
 import numpy as np
 import xarray as xr
-from tqdm import tqdm
 
 # Internal modules
-from pymepps.utilities import tqdm_handler
 from pymepps.grid import GridBuilder
-from .cdo_inject import CDO
+import pymepps.utilities.cdo_funcs as cdo
 from .metdataset import MetDataset
 from .spatialdata import SpatialData
 
 
 logger = logging.getLogger(__name__)
-#logger.addHandler(tqdm_handler)
 
 
 class SpatialDataset(MetDataset):
@@ -93,12 +88,6 @@ class SpatialDataset(MetDataset):
     def __init__(self, file_handlers, grid=None, data_origin=None, processes=1):
         super().__init__(file_handlers, data_origin, processes)
         self.grid = grid
-        self._cdo = CDO(self._multiproc)
-
-    def __getattr__(self, key):
-        if self._cdo is not None:
-            cdo_func = getattr(self._cdo, key)
-            return partial(cdo_func, ds=self)
 
     def get_grid(self, var_name):
         """
@@ -133,7 +122,7 @@ class SpatialDataset(MetDataset):
         grid = None
         file = self.variables[var_name][0].file
         try:
-            grid_str = self.griddes(
+            grid_str = cdo.griddes(
                 input='-selvar,{0:s} {1:s}'.format(var_name, file))
             grid = self._get_grid_from_str(grid_str)
         except AttributeError:
@@ -161,27 +150,25 @@ class SpatialDataset(MetDataset):
         file.close()
         return data
 
-    def _construct_nan_data(self, combinations, templ_data):
-        nan_data = []
-        for c in combinations:
-            values = np.ones_like(templ_data.values)*np.NaN
-            coords = {}
-            for k, dim in enumerate(templ_data.dims):
-                try:
-                    coords[dim] = c[k]
-                except IndexError:
-                    coords[dim] = templ_data[dim]
-            xr_array = xr.DataArray(
-                data=values,
-                coords=coords,
-                dims=templ_data.dims,
-                attrs=templ_data.attrs
-            )
-            nan_data.append(xr_array)
-        logger.info('Contructed the missing nan_data')
-        return nan_data
+    @staticmethod
+    def _construct_nan_data(c, templ_data):
+        values = np.ones_like(templ_data.values)*np.NaN
+        coords = {}
+        for k, dim in enumerate(templ_data.dims):
+            try:
+                coords[dim] = c[k]
+            except IndexError:
+                coords[dim] = templ_data[dim]
+        xr_array = xr.DataArray(
+            data=values,
+            coords=coords,
+            dims=templ_data.dims,
+            attrs=templ_data.attrs
+        )
+        return xr_array
 
-    def _index_data_chunk(self, data_chunk, coordinate_names, uniques):
+    @staticmethod
+    def _index_data_chunk(data_chunk, coordinate_names, uniques):
         d_ind = [data_chunk.values]
         for key, dim in enumerate(coordinate_names):
             if dim in data_chunk.coords:
@@ -190,11 +177,21 @@ class SpatialDataset(MetDataset):
                 d_ind.append(0)
         return d_ind
 
-    def _combine_index_data_chunk(self, data_chunk, coordinate_names, uniques):
+    @staticmethod
+    def _combine_index_data_chunk(data_chunk, coordinate_names, uniques):
         combination = tuple([data_chunk.coords[dim].values[0]
-                             for dim in coordinate_names[:-2]])
-        d_index = self._index_data_chunk(data_chunk, coordinate_names, uniques)
-        return combination, d_index
+                             for dim in coordinate_names])
+        d_ind = [data_chunk.values]
+        for key, dim in enumerate(coordinate_names):
+            if dim in data_chunk.coords:
+                d_ind.append(uniques[key].index(data_chunk[dim].values))
+            else:
+                d_ind.append(0)
+        return combination, d_ind
+
+    @staticmethod
+    def _get_chunk_dim_values(data_chunk, dim):
+        return data_chunk.coords[dim].values
 
     def data_merge(self, data, var_name):
         """
@@ -206,6 +203,8 @@ class SpatialDataset(MetDataset):
         ----------
         data : list of xarray.DataArray
             The data list.
+        var_name : str
+            The name of the variable which is selected within the data list.
 
         Returns
         -------
@@ -220,41 +219,40 @@ class SpatialDataset(MetDataset):
             logger.info('Found only one message')
             extracted_data = data[0]
         else:
-            logger.info('Get unique coordinates')
+            logger.info('Get unique coordinates and possible combinations')
             coordinate_names = list(data[0].dims)
             uniques = []
             logger.debug(coordinate_names)
             for dim in coordinate_names[:-2]:
-                def dim_func(d):
-                    return d.coords[dim].values
-                dim_gen = self._multiproc.map(dim_func, data)
+                get_dim_values = partial(self._get_chunk_dim_values, dim=dim)
+                dim_gen = self._multiproc.map(get_dim_values, data)
                 uniques.append(list(np.unique(dim_gen)))
-            logger.info('Calculate possible data combinations')
             unique_combinations = list(itertools.product(*uniques))
-            def combi_func(d):
-                return tuple([d.coords[dim].values[0]
-                              for dim in coordinate_names[:-2]])
+
             logger.info('Remove already satisfied combinations')
             combine_index_func = partial(
                 self._combine_index_data_chunk,
                 coordinate_names=coordinate_names[:-2],
                 uniques=uniques)
-            indexes = []
-            p = Pool(processes=self.processes)
-            with tqdm(total=len(data)) as pbar:
-                for comb_ind in p.imap_unordered(combine_index_func, data):
-                    unique_combinations.remove(comb_ind[0])
-                    indexes.append(comb_ind[1])
-                    pbar.update()
-            p.close()
-            logger.info('Set nan combinations')
-            fake_data = self._construct_nan_data(unique_combinations,
-                                                 templ_data=data[0])
-            single_func = partial(self._index_data_chunk,
-                                  coordinate_names=coordinate_names[:-2],
-                                  uniques=uniques)
-            fake_indexes = self._multiproc.map(single_func, fake_data)
+            combined_index = self._multiproc.map(combine_index_func, data,
+                                                 flatten=False)
+            data_combinations = [comb[0] for comb in combined_index]
+            nan_combinations = [comb for comb in unique_combinations
+                                if comb not in data_combinations]
+            indexes = [ind[1] for ind in combined_index]
+
+            logger.info('Construct nan combinations')
+            construct_nan = partial(self._construct_nan_data,
+                                    templ_data=data[0])
+            fake_data = self._multiproc.map(construct_nan, nan_combinations)
+
+            logger.info('Index nan combinations')
+            index_data_func = partial(self._index_data_chunk,
+                                      coordinate_names=coordinate_names[:-2],
+                                      uniques=uniques)
+            fake_indexes = self._multiproc.map(index_data_func, fake_data)
             indexes = indexes+fake_indexes
+
             logger.info('Start data sorting')
             n_dims = len(coordinate_names[:-2])
             sort_dims = tuple(range(1, n_dims+1))
@@ -262,6 +260,7 @@ class SpatialDataset(MetDataset):
                 indexes, key=operator.itemgetter(*sort_dims)))
             logger.debug('Start data reordering')
             sorted_data = np.array(list(sorted_data)[0])
+
             logger.info('Start data reshaping and coordinates setting')
             logger.debug(sorted_data.shape)
             try:
@@ -290,6 +289,7 @@ class SpatialDataset(MetDataset):
                 coords=coords)
             logger.debug('Start attribute setting')
             extracted_data.attrs = data[0].attrs
+
         logger.info('Start contruction of SpatialData')
         logger.debug(extracted_data.attrs)
         logger.debug('Trying to get the grid')
