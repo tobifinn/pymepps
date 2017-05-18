@@ -193,6 +193,17 @@ class SpatialDataset(MetDataset):
     def _get_chunk_dim_values(data_chunk, dim):
         return data_chunk.coords[dim].values
 
+    @staticmethod
+    def _get_ith_element_from_iter(iter_obj, ith):
+        return iter_obj[ith]
+
+    @staticmethod
+    def _check_ele_not_in_iter(ele, iter_obj):
+        if ele not in iter_obj:
+            return ele
+        else:
+            return None
+
     def data_merge(self, data, var_name):
         """
         Method to merge instances of xarray.DataArray into a SpatialData
@@ -236,10 +247,23 @@ class SpatialDataset(MetDataset):
                 uniques=uniques)
             combined_index = self._multiproc.map(combine_index_func, data,
                                                  flatten=False)
-            data_combinations = [comb[0] for comb in combined_index]
-            nan_combinations = [comb for comb in unique_combinations
-                                if comb not in data_combinations]
-            indexes = [ind[1] for ind in combined_index]
+            data_comb_func = partial(
+                self._get_ith_element_from_iter,
+                ith=0
+            )
+            data_combinations = self._multiproc.map(
+                data_comb_func, combined_index, flatten=False)
+            nan_comb_func = partial(
+                self._check_ele_not_in_iter,
+                iter_obj=data_combinations
+            )
+            nan_combinations = self._multiproc.map(
+                nan_comb_func, unique_combinations, flatten=False)
+            get_index_func = partial(
+                self._get_ith_element_from_iter,
+                ith=1
+            )
+            indexes = self._multiproc.map(get_index_func, combined_index, flatten=False)
 
             logger.info('Construct nan combinations')
             construct_nan = partial(self._construct_nan_data,
