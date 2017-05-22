@@ -88,7 +88,7 @@ class SpatialDataset(MetDataset):
         super().__init__(file_handlers, data_origin, processes)
         self.grid = grid
 
-    def get_grid(self, var_name):
+    def get_grid(self, var_name, data_array=None):
         """
         Method to get for given variable name a Grid instance. If the grid
         attribute is already a Grid instance this grid will be returned. If the 
@@ -101,6 +101,10 @@ class SpatialDataset(MetDataset):
         ----------
         var_name: str
             The variable name, which should be used to generate the grid.
+        data_array: xarray.DataArray or None, optional
+            If the data array is given the method will try to load the grid from
+            the data array's attributes. If None the DataArray method will be
+            skipped. Default is None.
 
         Returns
         -------
@@ -108,13 +112,23 @@ class SpatialDataset(MetDataset):
             The returned grid. If the returned grid is None, the grid could not
             be read.
         """
-        grid = None
-        if isinstance(self.grid, str):
-            grid = self._get_grid_from_str(self.grid)
-        elif hasattr(self.grid, 'get_coords'):
-            grid = self.grid
+        grid = self._get_grid_from_dataarray(data_array)
         if grid is None:
-            grid = self._get_grid_from_cdo(var_name)
+            if isinstance(self.grid, str):
+                grid = self._get_grid_from_str(self.grid)
+            elif hasattr(self.grid, 'get_coords'):
+                grid = self.grid
+            if grid is None:
+                grid = self._get_grid_from_cdo(var_name)
+        return grid
+
+    @staticmethod
+    def _get_grid_from_dataarray(data_array):
+        try:
+            grid_builder = GridBuilder(data_array.attrs)
+            grid = grid_builder.build_grid()
+        except (KeyError, ValueError, AttributeError):
+            grid = None
         return grid
 
     def _get_grid_from_cdo(self, var_name):
@@ -139,7 +153,7 @@ class SpatialDataset(MetDataset):
         try:
             grid_builder = GridBuilder(read_str)
             grid = grid_builder.build_grid()
-        except KeyError or ValueError:
+        except (KeyError, ValueError):
             grid = None
         return grid
 
@@ -208,7 +222,7 @@ class SpatialDataset(MetDataset):
             extracted_data.attrs['history'] = history_message
         extracted_data.attrs['name'] = extracted_data._name = var_name
         logger.debug('Trying to get the grid')
-        grid = self.get_grid(var_name)
+        grid = self.get_grid(var_name, extracted_data)
         logger.debug(grid)
         sp_data = SpatialData(extracted_data, grid=grid, data_origin=self)
         sp_data.set_data_coordinates()
