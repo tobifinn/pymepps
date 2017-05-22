@@ -130,11 +130,11 @@ class GribHandler(FileHandler):
             level = [":".join(str(msg).split(':')[4:6]).replace(' ', '_'),]
             logger.debug('Decoded levels {0}'.format(level))
             coords = {
-                    'analysis': anal_date,
+                    'runtime': anal_date,
                     'ensemble': ens,
-                    'time': valid_date,
+                    'validtime': valid_date,
                     'level': level}
-            dims = ['analysis', 'ensemble', 'time', 'level']
+            dims = ['runtime', 'ensemble', 'validtime', 'level']
             if len(array_data.shape)==5:
                 logger.debug('Found unstructured grid')
                 grid_coords = {
