@@ -57,15 +57,15 @@ class MultiThread(object):
             self.map = self._multiprocess_map
         else:
             self.map = self._sequential_map
-
-    def _add_return_value_to_list(self, return_val, adding_list, flatten=True):
-        is_iter = hasattr(return_val, '__iter__') and \
-                  not isinstance(return_val, (str, bytes))
-        if return_val is not None:
-            if not is_iter or not flatten:
-                return_val = [return_val,]
-            adding_list = adding_list + list(return_val)
-        return adding_list
+    #
+    # def _add_return_value_to_list(self, return_val, adding_list, flatten=True):
+    #     is_iter = hasattr(return_val, '__iter__') and \
+    #               not isinstance(return_val, (str, bytes))
+    #     if return_val is not None:
+    #         if not is_iter or not flatten:
+    #             return_val = [return_val,]
+    #         adding_list = adding_list + list(return_val)
+    #     return adding_list
 
     def _sequential_map(self, single_func, iter_obj, flatten=True):
         """
@@ -117,12 +117,12 @@ class MultiThread(object):
 
         Returns
         -------
-        return_data: list(obj)
-            The bundled return data for the mapping as list. If single_func has
-            an iterable as return object, the iterable is converted to a list. 
-            The return_data is a flatten list.
+        data: list(obj)
+            The bundled returned data for the mapping as list. If single_func
+            has an iterable as return object, the iterable is converted to a
+            list.  If flatten is selected, the list will flattened
         """
-        return_data = []
+        returned_data = []
         if self.threads:
             p = multiprocessing.dummy.Pool(processes=self.processes)
         else:
@@ -136,8 +136,16 @@ class MultiThread(object):
         with tqdm(total=len(iter_obj)) as pbar:
             for d_ind in p.imap_unordered(single_func, iter_obj,
                                           chunksize=chunksize):
-                return_data = self._add_return_value_to_list(d_ind, return_data,
-                                                             flatten)
+                returned_data.append(d_ind)
                 pbar.update()
         p.close()
-        return return_data
+        data = []
+        if flatten:
+            for d in returned_data:
+                if isinstance(d, (list,tuple)):
+                    data.extend(list(d))
+                else:
+                    data.append(d)
+        else:
+            data = returned_data
+        return data
