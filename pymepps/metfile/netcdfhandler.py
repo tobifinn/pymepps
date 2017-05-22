@@ -172,34 +172,34 @@ class NetCDFHandler(FileHandler):
         logger.debug('The cube coordinates are {0}'.format(cube.coords))
         additional_coords = collections.OrderedDict()
         if not self._check_list_in_list(
-                ['ana', 'runtime', 'validtime'], list(cube.dims[:-2])):
+                ['ana', 'runtime', 'referencetime'], list(cube.dims[:-2])):
             try:
                 ana = self._get_dates_from_path(self.file)[0]
             except IndexError:
                 ana = None
-            additional_coords['validtime'] = ana
+            additional_coords['runtime'] = ana
             logger.debug(
                 'No analysis date within the cube found set the analysis date '
                 'to {0}'.format(ana))
         if not self._check_list_in_list(
                 ['ens', 'mem'], list(cube.dims[:-2])):
             ens = self._get_ensemble_from_path(self.file)
-            additional_coords['Ensemble'] = ens
+            additional_coords['ensemble'] = ens
             logger.debug(
                 'No ensemble member within the cube found set the ensemble '
                 'to {0}'.format(ens))
         if not self._check_list_in_list(
-                ['time',], list(cube.dims[:-2])):
+                ['time', 'validtime'], list(cube.dims[:-2])):
             try:
-                if 'RunTime' in additional_coords:
+                if 'runtime' in additional_coords:
                     time = self._get_dates_from_path(self.file)[1]
                 else:
                     time = self._get_dates_from_path(self.file)[0]
             except IndexError:
                 time = None
-            additional_coords['Time'] = time
+            additional_coords['validtime'] = time
             logger.debug(
-                'No time within the cube found set the time to '
+                'No valid time within the cube found set the time to '
                 '{0}'.format(time))
         ds_coords = xr.Dataset(coords=additional_coords)
         logger.debug(ds_coords)
@@ -231,19 +231,9 @@ class NetCDFHandler(FileHandler):
         logger.debug('Loaded the cube')
         cube.attrs.update(self.ds.attrs)
         logger.debug('Updated the attributes')
-        logger.debug(cube)
         cube = self._get_missing_coordinates(cube)
         time_dim = cube.dims[2]
         if np.issubdtype(cube[time_dim].values.dtype, np.datetime64) and \
                 np.issubdtype(cube[cube.dims[0]].values.dtype, np.datetime64):
             cube[time_dim] = cube[time_dim]-cube[cube.dims[0]].values
-        stacked_cube = cube.stack(merge=cube.dims[:-2])
-        splitted_cubes = [
-            stacked_cube[...,k:k+1].unstack('merge').transpose(*cube.dims)
-            for k in range(len(stacked_cube['merge']))]
-        cleaned_cubes = []
-        for single_cube in splitted_cubes:
-            for dim in cube.dims[:-2]:
-                single_cube = single_cube.dropna(dim, how='all')
-            cleaned_cubes.append(single_cube)
-        return cleaned_cubes
+        return cube
