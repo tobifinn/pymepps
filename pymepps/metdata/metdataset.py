@@ -188,10 +188,11 @@ class MetDataset(object):
                          format(var_name, str(self.var_names)))
             return None
         num_file_handlers = len(self.variables[var_name])
-        logger.info('Started select {0:s} for {1:d} files'.format(
+        logger.info('Started select {0:s} from {1:d} files'.format(
             var_name, num_file_handlers))
         single_func = partial(self._get_file_data, var_name=var_name)
-        data = self._multiproc.map(single_func, self.variables[var_name])
+        data = self._multiproc.map(single_func, self.variables[var_name],
+                                   flatten=True)
         logger.info('Extracted the data, now merge the data!')
         extracted_data = self.data_merge(data, var_name)
         return extracted_data
