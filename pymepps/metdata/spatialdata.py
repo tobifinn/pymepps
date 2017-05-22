@@ -24,10 +24,11 @@
 # """
 # System modules
 import logging
-from copy import deepcopy
+from collections import OrderedDict
 
 # External modules
 import xarray as xr
+import pandas as pd
 
 # Internal modules
 from .metdata import MetData
@@ -49,7 +50,7 @@ class SpatialData(MetData):
 
     Attributes
     ----------
-    data_base : xarray.DataArray or None
+    data : xarray.DataArray or None
         The data of this grid based data structure.
     grid : Child instance of Grid or None
         The corresponding grid of this SpatialData instance. This grid is 
@@ -61,10 +62,18 @@ class SpatialData(MetData):
         The origin of this data. This could be a model run, a station, a
         database or something else. Default is None.
     """
-    def __init__(self, data_base, grid=None, data_origin=None):
-        super().__init__(data_base, data_origin)
+    def __init__(self, data, grid=None, data_origin=None):
+        super().__init__(data, data_origin)
         self._grid = None
         self.grid = grid
+
+    def __str__(self):
+        dims = str(self.data.dims)
+        coords = str(self.data.coords)
+        grid = str(self.grid)
+        name = "{0:s}({1:s})".format(self.__class__.__name__, self.data.name)
+        return "{0:s}\n{1:s}\ndims: {2:s}\ncoords:{3:s}\n" \
+               "grid:{4:s}".format(name, '-'*len(name), dims, coords, grid)
 
     def set_data_coordinates(self, data=None, grid=None):
         """
@@ -98,7 +107,7 @@ class SpatialData(MetData):
         for dim in self.data.dims[:-2]:
             new_coords[dim] = self.data[dim]
         new_darray = xr.DataArray(
-            data, coords=new_coords,
+            data, name=self.data.name, coords=new_coords,
             dims=list(self.data.dims[:-2])+list(grid.get_coord_names()),
             attrs=self.data.attrs
         )
@@ -238,6 +247,5 @@ class SpatialData(MetData):
 
     def save(self, path):
         save_array = self.data.copy()
-        save_array.attrs['grid_dict'] = self.grid._grid_dict
-        save_array.attrs['data_origin'] = self.data_origin
+        save_array.attrs.update(self.grid._grid_dict)
         save_array.to_netcdf(path)

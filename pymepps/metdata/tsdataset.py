@@ -87,6 +87,10 @@ class TSDataset(MetDataset):
         self.lon_lat = lonlat
         self.save_type = save_type
 
+    def __str__(self):
+        parent_str = super().__str__()
+        return '{0:s}\nLonlat: {1}'.format(parent_str, self._get_lon_lat())
+
     def _get_lon_lat(self):
         if self.data_origin is not None:
             try:

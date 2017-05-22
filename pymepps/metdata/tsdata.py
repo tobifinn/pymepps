@@ -66,16 +66,11 @@ class TSData(MetData):
 
     Parameters
     ----------
-    data_base : pandas.dataframe
+    data : pandas.dataframe
         The data of this time series based data structure.
     data_origin : object of pymepps
         The origin of this data.This could be a model run, a station, a
         database or something else.
-    encoder : child of StationDataEncoder or None
-        For several different saved station data type, we need an encoder.
-        E.g. the data of the Wettermast Hamburg is saved as txt file in a
-        non-common data form. If there is no need of an encoder this is
-        None. Default is None.
     fixed_dims : dict or None, optional
         The DataFrameData is valid for this fixed dimensions. The could be
         for example the coordinates of a weather station. The name of the
@@ -98,16 +93,21 @@ class TSData(MetData):
                 error prone (make sure that you make backups!)
         Default is json.
     """
-    def __init__(self, data_base, data_origin=None,
-                 encoder=None, lonlat=None, save_type='json'):
+    def __init__(self, data, data_origin=None, lonlat=None,
+                 save_type='json'):
         self._save_types = {
             'json': (self._load_json, self._save_json),
             'hdf': (self._load_hdf, self._save_hdf)
         }
         self.load, self.save = self._save_types[save_type]
-        self.encoder = encoder
         self.lonlat = lonlat
-        super().__init__(data_base, data_origin)
+        super().__init__(data, data_origin)
+
+    def __str__(self):
+        name = self.__class__.__name__
+        return '{0:s}\n{1:s}\n{2:s}\nlonlat:{3:s}'.format(
+            name, '-'*len(name), str(self.data.describe()), str(self.lonlat)
+        )
 
     def plot(self, variable, type, color):
         pass

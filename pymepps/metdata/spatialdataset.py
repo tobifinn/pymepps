@@ -24,12 +24,11 @@
 # """
 # System modules
 import logging
-import operator
-import itertools
 from functools import partial
+import getpass
+import datetime as dt
 
 # External modules
-import numpy as np
 import xarray as xr
 
 # Internal modules
@@ -175,7 +174,7 @@ class SpatialDataset(MetDataset):
         """
         logger.debug('Input length of data_merge: {0:d}'.format(len(data)))
         logger.debug('Data coordinates {0}'.format(data[0].coords))
-        logger.info('Data dimensions {0}'.format(data[0].dims))
+        logger.debug('Data dimensions {0}'.format(data[0].dims))
         if len(data) == 1:
             logger.info('Found only one message')
             extracted_data = data[0]
@@ -183,7 +182,6 @@ class SpatialDataset(MetDataset):
             logger.info('Found more than one message, '
                         'needs to merge the messages')
             coordinate_names = list(data[0].dims)
-            logger.info(coordinate_names)
             stack_func = partial(
                 self._stack_ele,
                 coordinate_names=coordinate_names[:-2])
@@ -198,6 +196,17 @@ class SpatialDataset(MetDataset):
             extracted_data = unstacked_data.transpose(*data[0].dims)
         logger.info('Start contruction of SpatialData')
         logger.debug(extracted_data.attrs)
+        history_message = \
+            "{0:s}, {1:s}, Python:pymepps:SpatialDataset:select" \
+            "('{2:s}')".format(
+                    dt.datetime.utcnow().strftime("%Y%m%d %H:%Mz"),
+                    getpass.getuser(),
+                    var_name)
+        if 'history' in extracted_data.attrs:
+            extracted_data.attrs['history'] += '\n{0:s}'.format(history_message)
+        else:
+            extracted_data.attrs['history'] = history_message
+        extracted_data.attrs['name'] = extracted_data._name = var_name
         logger.debug('Trying to get the grid')
         grid = self.get_grid(var_name)
         logger.debug(grid)

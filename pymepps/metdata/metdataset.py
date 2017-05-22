@@ -71,6 +71,13 @@ class MetDataset(object):
         self.file_handlers = file_handlers
         self.processes = processes
 
+    def __str__(self):
+        file_handlers = len(self.file_handlers)
+        var_names = self.var_names
+        return '{0:s}\n{1:s}\nFile handlers: {2:d}\nVariables: {3:s}'.format(
+            self.__class__.__name__, '-'*len(self.__class__.__name__),
+            file_handlers, str(var_names))
+
     @property
     def processes(self):
         return self._processes
