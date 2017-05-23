@@ -290,7 +290,7 @@ class Grid(object):
             coord,
             (src_lat.flatten(), src_lon.flatten()))
         nearest_ind = np.unravel_index(calc_distance.argmin(), src_lat.shape)
-        logging.info(nearest_ind)
+        logging.debug(nearest_ind)
         nearest_data = data[...,nearest_ind[0], nearest_ind[1]]
         return np.atleast_1d(nearest_data)
 

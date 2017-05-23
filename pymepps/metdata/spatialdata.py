@@ -234,15 +234,23 @@ class SpatialData(MetData):
             type(self.data), else the return value of the function will be
             returned.
         """
+        xr_func = getattr(self.data, key)
         def wrapped_func(*args, **kwargs):
             try:
-                result = getattr(self.data, key)(*args, **kwargs)
+                result = xr_func(*args, **kwargs)
             except TypeError:
-                result = getattr(self.data, key)
+                result = xr_func
             if isinstance(result, xr.DataArray):
-                return self.__class__(result, self.grid, self.data_origin)
+                new_dataarray = SpatialData(
+                    result,
+                    grid=self.grid,
+                    data_origin=self.data_origin
+                )
+                new_dataarray.set_data_coordinates()
+                return new_dataarray
             else:
                 return result
+        wrapped_func.__doc__ = xr_func.__doc__
         return wrapped_func
 
     def save(self, path):
