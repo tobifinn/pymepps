@@ -30,6 +30,7 @@ import logging
 import pandas as pd
 
 # Internal modules
+from pymepps.metdata import TSData
 
 
 logger = logging.getLogger(__name__)
@@ -41,25 +42,26 @@ def rank_hist(ens_ts, truth_ts):
 
     Parameters
     ----------
-    ens_ts: pd.DataFrame
-        A pandas data frame with the ensemble member as rows and the valid time
-        as column.
-    truth_ts: pd.Series
-        The time series which should be used as reference time series. These 
+    ens_ts: TSData
+        A TSData instance with the ensemble members as columns and the valid 
+        time as row.
+    truth_ts: TSData
+        The TSData which should be used as reference time series. These 
         values will be ranked within the ensemble time series.
 
     Returns
     -------
-    rank_ts: pd.Series
+    rank_ts: TSData
         The rank as time series with the valid times as time axis.
     """
-    rank_hist_values = ens_ts.copy()
+    rank_hist_values = ens_ts.data.T
     # Trick to get values if the truth is lower than the lowest ensemble member
     rank_hist_values.loc[0, :] = 0
     rank_hist_values = rank_hist_values.sort_index()
     rank_ts = pd.Series({col: rank_hist_values.index[
-                truth_ts.loc[col] > rank_hist_values.loc[:, col]].max()
+                truth_ts.data.loc[col] > rank_hist_values.loc[:, col]].max()
             for col in rank_hist_values.columns})
+    rank_ts = TSData(rank_ts, 'rank_hist', lonlat=truth_ts.lonlat)
     return rank_ts
 
 
@@ -71,21 +73,21 @@ def rank_hist_wo_bias(ens_ts, truth_ts):
 
     Parameters
     ----------
-    ens_ts: pd.DataFrame
-        A pandas data frame with the ensemble member as rows and the valid time
-        as column.
-    truth_ts: pd.Series
-        The time series which should be used as reference time series. These 
+    ens_ts: TSData
+        A TSData instance with the ensemble members as columns and the valid 
+        time as row.
+    truth_ts: TSData
+        The TSData which should be used as reference time series. These 
         values will be ranked within the ensemble time series.
 
     Returns
     -------
-    rank_ts: pd.Series
-        The bias corrected rank as time series with the valid times as time
-        axis.
+    rank_ts: TSData
+        The rank as time series with the valid times as time axis.
     """
+    ens_ts = ens_ts.copy()
     bias_df = pd.DataFrame(
-        {'chh': ens_ts.mean(), 'obs': truth_ts}).dropna().mean()
+        {'chh': ens_ts.data.T.mean(), 'obs': truth_ts.data}).dropna().mean()
     bias = bias_df['chh'] - bias_df['obs']
-    ens_ts = ens_ts-bias
+    ens_ts.data = ens_ts.data-bias
     return rank_hist(ens_ts, truth_ts)

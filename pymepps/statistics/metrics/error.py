@@ -47,10 +47,10 @@ class ErrorMetric(Metric):
     def _calc_error(self):
         truth_ts = self.state['truth'].data
         error = []
-        for iteration in self.state['prediction'].data.coords[self.iterate_axis]:
+        for iteration in self.state['prediction'].coords[self.iterate_axis]:
             logger.debug(iteration.values)
             temp_spdata = self.state['prediction'].copy()
-            temp_spdata.data = self.state['prediction'].data.loc[
+            temp_spdata.data = self.state['prediction'].loc[
                 {self.iterate_axis: iteration}]
             pred_tsdata = temp_spdata.to_tsdata(self.state['truth'].lonlat)
             pred_ts = pred_tsdata.data
