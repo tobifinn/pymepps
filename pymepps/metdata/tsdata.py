@@ -81,6 +81,27 @@ class TSData(MetData):
             name, '-'*len(name), str(self.data.describe()), str(self.lonlat)
         )
 
+    def __getitem__(self, sliced):
+        metdata = self.copy()
+        metdata.data = metdata.data[sliced]
+        return metdata
+
+    def append(self, item, inplace=False):
+        if inplace:
+            self.data.append(item)
+        else:
+            metdata = self.copy()
+            metdata.data.append(item)
+            return metdata
+
+    def remove(self, item, inplace=False):
+        if inplace:
+            self.data.remove(item)
+        else:
+            metdata = self.copy()
+            metdata.data.remove(item)
+            return metdata
+
     def copy(self):
         copied_self = super().copy()
         copied_self.lonlat = self.lonlat

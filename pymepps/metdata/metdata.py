@@ -52,27 +52,6 @@ class MetData(object):
             str(self.data),
             str(self.data_origin))
 
-    def __getitem__(self, sliced):
-        metdata = self.copy()
-        metdata.data = metdata.data[sliced]
-        return metdata
-
-    def append(self, item, inplace=False):
-        if inplace:
-            self.data.append(item)
-        else:
-            metdata = self.copy()
-            metdata.data.append(item)
-            return metdata
-
-    def remove(self, item, inplace=False):
-        if inplace:
-            self.data.remove(item)
-        else:
-            metdata = self.copy()
-            metdata.data.remove(item)
-            return metdata
-
     @property
     def data(self):
         return self._data

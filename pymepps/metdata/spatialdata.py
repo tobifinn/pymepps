@@ -77,6 +77,27 @@ class SpatialData(MetData):
         return "{0:s}\n{1:s}\ndims: {2:s}\ncoords:{3:s}\n" \
                "grid:{4:s}".format(name, '-'*len(name), dims, coords, grid)
 
+    def __getitem__(self, sliced):
+        metdata = self.copy()
+        metdata.data = metdata.data[sliced]
+        return metdata
+
+    def append(self, item, inplace=False):
+        if inplace:
+            self.data.append(item)
+        else:
+            metdata = self.copy()
+            metdata.data.append(item)
+            return metdata
+
+    def remove(self, item, inplace=False):
+        if inplace:
+            self.data.remove(item)
+        else:
+            metdata = self.copy()
+            metdata.data.remove(item)
+            return metdata
+
     def set_data_coordinates(self, data=None, grid=None):
         """
         Set new data and coordinates based on given np.array and and grid.
