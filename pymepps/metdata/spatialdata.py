@@ -106,16 +106,53 @@ class SpatialData(MetData):
         if grid is None:
             grid = self.grid
         new_coords = grid.get_coords()
-        for dim in self.data.dims[:-2]:
+        for dim in self.data.dims[:-grid.len_coords]:
             new_coords[dim] = self.data[dim]
         new_darray = xr.DataArray(
             data, name=self.data.name, coords=new_coords,
-            dims=list(self.data.dims[:-2])+list(grid.get_coord_names()),
+            dims=list(self.data.dims[:-grid.len_coords]) + \
+                 list(grid.get_coord_names()),
             attrs=self.data.attrs
         )
         self.data = new_darray
         self.grid = grid
         return self
+
+    def merge_analysis_timedelta(self, analysis_axis='runtime',
+                                 timedelta_axis='time', inplace=False):
+        """
+        The analysis time axis will be merged with the valid time axis, which
+        should be given as timedelta. The merged time axis is called validtime
+        and will be the first data axis.
+
+        Parameters
+        ----------
+        analysis_axis: str, optional
+            The analysis time axis name. This axis will be used as basis for the
+            valid time. Default is runtime.
+        timedelta_axis: str, optional
+            The time delta axis name. This axis should contain the difference to
+            the analysis time.
+        inplace: bool, optional
+            If the new data should be replacing the data of this SpatialData
+            instance or if the instance should be copied. Default is None.
+
+        Returns
+        -------
+        spdata: SpatialData
+            The SpatialData instance with the replaced axis.
+        """
+        if inplace:
+            spdata = self
+        else:
+            spdata = self.copy()
+        stacked_data = spdata.data.stack(
+            validtime=[analysis_axis, timedelta_axis])
+        stacked_data.coords['validtime'] = [
+            val[0]+val[1] for val in stacked_data.validtime.values]
+        dims_to_transpose = ['validtime',] + list(stacked_data.dims[:-1])
+        spdata.data = stacked_data.transpose(*dims_to_transpose)
+        return spdata
 
     @property
     def grid(self):
@@ -173,7 +210,7 @@ class SpatialData(MetData):
         extracted_data = ts_ds.data_merge(series_data, self.data.name)
         return extracted_data
 
-    def remapnn(self, new_grid):
+    def remapnn(self, new_grid, inplace=False):
         """
         Remap the horizontal grid with the nearest neighbour approach to a given
         new grid.
@@ -182,17 +219,25 @@ class SpatialData(MetData):
         ----------
         new_grid : Child instance of Grid
             The data is remapped to this grid.
+        
+        inplace: bool, optional
+            If the new data should be replacing the data of this SpatialData
+            instance or if the instance should be copied. Default is None.
 
         Returns
         -------
-        self
-            This SpatialData instance.
+        spdata: SpatialData
+            The SpatialData instance with the replaced grid.
         """
-        new_data = self.grid.remapnn(self.data.values, new_grid)
-        self.set_data_coordinates(new_data, new_grid)
-        return self
+        if inplace:
+            spdata = self
+        else:
+            spdata = self.copy()
+        new_data = spdata.grid.remapnn(spdata.data.values, new_grid)
+        spdata.set_data_coordinates(new_data, new_grid)
+        return spdata
 
-    def remapbil(self, new_grid):
+    def remapbil(self, new_grid, inplace=False):
         """
         Remap the horizontal grid with a bilinear approach to a given new grid.
 
@@ -200,15 +245,23 @@ class SpatialData(MetData):
         ----------
         new_grid : Child instance of Grid
             The data is remapped to this grid.
+        
+        inplace: bool, optional
+            If the new data should be replacing the data of this SpatialData
+            instance or if the instance should be copied. Default is None.
 
         Returns
         -------
-        self
-            This SpatialData instance.
+        spdata: SpatialData
+            The SpatialData instance with the replaced grid.
         """
-        new_data = self.grid.remapbil(self.data.values, new_grid)
-        self.set_data_coordinates(new_data, new_grid)
-        return self
+        if inplace:
+            spdata = self
+        else:
+            spdata = self.copy()
+        new_data = spdata.grid.remapbil(spdata.data.values, new_grid)
+        spdata.set_data_coordinates(new_data, new_grid)
+        return spdata
 
     def plot(self, method='contourf'):
         plot = pymepps.plot.SpatialPlot()
@@ -241,7 +294,7 @@ class SpatialData(MetData):
             try:
                 result = xr_func(*args, **kwargs)
             except TypeError:
-                result = xr_func
+                result = xr_func(*args, **kwargs)
             if isinstance(result, xr.DataArray):
                 new_dataarray = SpatialData(
                     result,
