@@ -35,7 +35,7 @@ from .metdata import MetData
 from .tsdataset import TSDataset
 from pymepps.metfile.netcdfhandler import cube_to_series
 import pymepps.plot
-from pymepps import open_model_dataset
+import pymepps.loader
 
 
 __math_operators = ['__add__', '__sub__']
@@ -288,7 +288,7 @@ class SpatialData(MetData):
         spdata: SpatialData
             The loaded SpatialData instance.
         """
-        spatial_ds = open_model_dataset(path, 'nc')
+        spatial_ds = pymepps.loader.open_model_dataset(path, 'nc')
         variable = spatial_ds.var_names[0]
         spdata = spatial_ds.select(variable)
         return spdata

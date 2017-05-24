@@ -79,7 +79,14 @@ class BaseLoader(object):
         pass
 
     def load_data(self):
-        files = [f for f in glob.glob(self.data_path) if not os.path.isdir(f)]
+        if isinstance(self.data_path, str):
+            files = [f for f in glob.glob(self.data_path)
+                     if not os.path.isdir(f)]
+        elif getattr(self.data_path, 'read'):
+            files = [self.data_path]
+        else:
+            raise TypeError('The data path needs to be either a string '
+                            'or an opened file!')
         file_handlers = self._get_file_handlers(files)
         dataset = self._convert_filehandlers_to_dataset(file_handlers)
         return dataset

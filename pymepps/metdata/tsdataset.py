@@ -55,22 +55,6 @@ class TSDataset(MetDataset):
         flow. If this is None, there is no data origin and this
         dataset will be the starting point of the data flow. Default is
         None.
-    save_type : 'json' or 'hdf', optional
-        The string to determine the file type in which the TSData is saved.
-        The DataFrame is saved with the save methods of a pandas.DataFrame.
-        There are different advantages and disadvantages for each file
-        type.
-        Json:
-            + : Human readable,
-                easy to import, it's like a python dict
-            - : File size
-        HDF:
-            + : File compression,
-                efficient save format,
-                standard save format for such data
-            - : Not human readable,
-                error prone (make sure that you make backups!)
-        Default is json.
     lonlat : tuple(float, float) or None
         The coordinates (longitude, latitude) where the data is valid. If 
         this is None the coordinates will be set based on data_origin or 
@@ -81,11 +65,9 @@ class TSDataset(MetDataset):
     select
         Method to select a variable.
     """
-    def __init__(self, file_handlers, data_origin=None, save_type='json',
-                 lonlat=None, processes=1):
+    def __init__(self, file_handlers, data_origin=None, lonlat=None, processes=1):
         super().__init__(file_handlers, data_origin, processes)
         self.lon_lat = lonlat
-        self.save_type = save_type
 
     def __str__(self):
         parent_str = super().__str__()
@@ -120,6 +102,5 @@ class TSDataset(MetDataset):
             extracted_data = data[0]
         if self.lon_lat is None:
             self.lon_lat = self._get_lon_lat()
-        return TSData(extracted_data, self, lonlat=self.lon_lat,
-                      save_type=self.save_type)
+        return TSData(extracted_data, self, lonlat=self.lon_lat)
 

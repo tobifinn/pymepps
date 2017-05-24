@@ -24,8 +24,11 @@
 # """
 # System modules
 import logging
+import io
 
 # External modules
+import json
+import pandas as pd
 
 # Internal modules
 from .metdata import MetData
@@ -53,12 +56,6 @@ class TSData(MetData):
     data_origin : object of pymepps
         The origin of this data.This could be a model run, a station, a
         database or something else.
-    encoder : child of StationDataEncoder
-        For several different saved station data type, we need an encoder.
-        E.g. the data of the Wettermast Hamburg is saved as txt file in a
-        non-common data form.
-    save_type : 'json' or 'hdf'
-        The string to determine the file type in which the data is saved.
     lonlat : tuple(float, float) or None, optional
         The data of this instance is valid for this coordinates
         (longitude, latitude). If this is None the coordiantes are not set
@@ -71,35 +68,10 @@ class TSData(MetData):
     data_origin : object of pymepps
         The origin of this data.This could be a model run, a station, a
         database or something else.
-    fixed_dims : dict or None, optional
-        The DataFrameData is valid for this fixed dimensions. The could be
-        for example the coordinates of a weather station. The name of the
-        fixed dimension is the key, while the value are the fixed values.
-        If they are None, there are no fixed dimensions. Default is None.
-    save_type : 'json' or 'hdf', optional
-        The string to determine the file type in which the data is saved.
-        The DataFrame is saved with the save methods of a pandas.DataFrame.
-        There are different advantages and disadvantages for each file
-        type.
-        Json:
-            + : Human readable,
-                easy to import, it's like a python dict
-            - : File size
-        HDF:
-            + : File compression,
-                efficient save format,
-                standard save format for such data
-            - : Not human readable,
-                error prone (make sure that you make backups!)
-        Default is json.
+    lonlat: tuple(float, float) or None
+        The data is valid for these coordinates.
     """
-    def __init__(self, data, data_origin=None, lonlat=None,
-                 save_type='json'):
-        self._save_types = {
-            'json': (self._load_json, self._save_json),
-            'hdf': (self._load_hdf, self._save_hdf)
-        }
-        self.load, self.save = self._save_types[save_type]
+    def __init__(self, data, data_origin=None, lonlat=None):
         self.lonlat = lonlat
         super().__init__(data, data_origin)
 
@@ -112,14 +84,71 @@ class TSData(MetData):
     def plot(self, variable, type, color):
         pass
 
-    def _load_json(self):
-        pass
+    def save(self, path):
+        """
+        The data is saved as json file. The pandas to_json method is used to 
+        generate convert the data to json. If lonlat was given it will be saved
+        under a lonlat key. Json is used instead of HDF5 due to possible
+        corruption problems.
 
-    def _save_json(self):
-        pass
+        Parameters
+        ----------
+        path: str
+            Path where the json file should be saved.
+        """
+        # self.data.to_json(path, orient='split')
+        save_dict = dict(pd_data=self.data.to_json(orient='split'),
+                         lonlat=self.lonlat)
+        with open(path, mode='w+') as fp:
+            json.dump(save_dict, fp)
 
-    def _load_hdf(self):
-        pass
+    @staticmethod
+    def load(path):
+        """
+        Load the given json file and return a TSData instance with the loaded 
+        file. The loader uses tries to locate the lonlat and the data keys
+        within the json file. If there are not these keys the loader tries to 
+        load the whole json file into pandas.
 
-    def _save_hdf(self):
-        pass
+        Parameters
+        ----------
+        path: str
+            Path to the json file which should be loaded. It is recommended to 
+            load only previously saved TSData instances.
+
+
+        Returns
+        -------
+        tsdata: TSData
+            The loaded TSData instance.
+        """
+        if isinstance(path, str):
+            fp = open(path, mode='r')
+        elif getattr(path, 'read'):
+            fp = path
+        else:
+            raise TypeError('Path needs to be either a string '
+                            'or an opened file!')
+        json_str = fp.read()
+        if not isinstance(json_str, str):
+            json_str = json_str.decode()
+        saved_json_instance = json.loads(json_str)
+        fp.close()
+        if 'lonlat' in list(saved_json_instance.keys()) and \
+                saved_json_instance['lonlat'] is not None:
+            lonlat = tuple(saved_json_instance['lonlat'])
+        else:
+            lonlat = None
+        if 'pd_data' in list(saved_json_instance.keys()):
+            pd_data_json = saved_json_instance['pd_data']
+
+        else:
+            pd_data_json = saved_json_instance
+        try:
+            pd_data = pd.read_json(pd_data_json, orient='split',
+                                   typ='frame')
+        except ValueError:
+            pd_data = pd.read_json(pd_data_json, orient='split',
+                                   typ='series')
+        tsdata = TSData(data=pd_data, data_origin=path, lonlat=lonlat)
+        return tsdata
