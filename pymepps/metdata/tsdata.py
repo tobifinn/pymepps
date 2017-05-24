@@ -86,6 +86,43 @@ class TSData(MetData):
         metdata.data = metdata.data[sliced]
         return metdata
 
+    def _wrapped_data_function(self, key):
+        """
+        Get data function with given key. This is a wrapper around
+        type(self.data) functions to secure a proper return value.
+
+        Parameters
+        ----------
+        key : str
+            The function which should be called. Have to be an available
+            function for type of self.data!
+
+        Returns
+        -------
+        wrapped_func : function
+            The wrapped type(self.data) function. The wrapped function returns
+            a new TS/SpatialData instance, if the result of the function is a
+            type(self.data), else the return value of the function will be
+            returned.
+        """
+        data_function = getattr(self.data, key)
+        if hasattr(data_function, '__call__'):
+            def wrapped_func(*args, **kwargs):
+                result = data_function(*args, **kwargs)
+                if isinstance(result, (pd.DataFrame, pd.Series)):
+                    new_tsdata = TSData(
+                        result,
+                        data_origin=self.data_origin,
+                        lonlat=self.lonlat
+                    )
+                    return new_tsdata
+                else:
+                    return result
+            wrapped_func.__doc__ = data_function.__doc__
+            return wrapped_func
+        else:
+            return data_function
+
     def append(self, item, inplace=False):
         if inplace:
             self.data.append(item)

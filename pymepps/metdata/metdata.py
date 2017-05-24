@@ -25,6 +25,7 @@
 # System modules
 import logging
 from copy import deepcopy
+import abc
 
 # External modules
 import pandas as pd
@@ -88,7 +89,7 @@ class MetData(object):
                 "loading data?"
             ]))
         else:
-            return self._xr_function(key)
+            return self._wrapped_data_function(key)
 
     def __getitem__(self, key):
         return type(self)(self.data.__getitem__(key), self.data_origin)
@@ -99,7 +100,8 @@ class MetData(object):
     def __call__(self):
         return self.data
 
-    def _xr_function(self, key):
+    @abc.abstractmethod
+    def _wrapped_data_function(self, key):
         """
         Get data function with given key. This is a wrapper around
         type(self.data) functions to secure a proper return value.
@@ -118,16 +120,7 @@ class MetData(object):
             type(self.data), else the return value of the function will be
             returned.
         """
-        def wrapped_func(*args, **kwargs):
-            try:
-                result = getattr(self.data, key)(*args, **kwargs)
-            except TypeError:
-                result = getattr(self.data, key)
-            if isinstance(result, (pd.DataFrame, pd.Series, xr.DataArray)):
-                return type(self)(result, self.data_origin)
-            else:
-                return result
-        return wrapped_func
+        pass
 
     def data_plot(self, **kwargs):
         """

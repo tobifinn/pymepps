@@ -291,7 +291,7 @@ class SpatialData(MetData):
         plot.suptitle('{0:s} plot of {1:s}'.format(method, self.data.variable))
         return plot
 
-    def _xr_function(self, key):
+    def _wrapped_data_function(self, key):
         """
         Get data function with given key. This is a wrapper around
         type(self.data) functions to secure a proper return value.
@@ -310,24 +310,24 @@ class SpatialData(MetData):
             type(self.data), else the return value of the function will be
             returned.
         """
-        xr_func = getattr(self.data, key)
-        def wrapped_func(*args, **kwargs):
-            try:
-                result = xr_func(*args, **kwargs)
-            except TypeError:
-                result = xr_func(*args, **kwargs)
-            if isinstance(result, xr.DataArray):
-                new_dataarray = SpatialData(
-                    result,
-                    grid=self.grid,
-                    data_origin=self.data_origin
-                )
-                new_dataarray.set_data_coordinates()
-                return new_dataarray
-            else:
-                return result
-        wrapped_func.__doc__ = xr_func.__doc__
-        return wrapped_func
+        data_function = getattr(self.data, key)
+        if hasattr(data_function, '__call__'):
+            def wrapped_func(*args, **kwargs):
+                result = data_function(*args, **kwargs)
+                try:
+                    new_spdata = SpatialData(
+                        result,
+                        grid=self.grid,
+                        data_origin=self.data_origin
+                    )
+                    new_spdata.set_data_coordinates()
+                    return new_spdata
+                except ValueError:
+                    return result
+            wrapped_func.__doc__ = data_function.__doc__
+            return wrapped_func
+        else:
+            return data_function
 
     def save(self, path):
         """
