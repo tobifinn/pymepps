@@ -48,6 +48,18 @@ class Grid(object):
     def __init__(self, grid_dict):
         self._lat_lon = None
         self._grid_dict = None
+        self._nr_coords = 2
+
+    @property
+    def len_coords(self):
+        """
+        Get the number of coordinates for this grid.
+        Returns
+        -------
+        int
+            Number of coordinates for this grid.
+        """
+        return self._nr_coords
 
     @staticmethod
     def convert_to_deg(field, unit):

@@ -53,6 +53,7 @@ class UnstructuredGrid(Grid):
             'yname': 'lat',
             'yunits': 'degrees',
         }
+        self._nr_coords = 1
         self._grid_dict.update(grid_dict)
 
     def _construct_dim(self):
