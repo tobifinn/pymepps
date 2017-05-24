@@ -72,14 +72,37 @@ class TSData(MetData):
         The data is valid for these coordinates.
     """
     def __init__(self, data, data_origin=None, lonlat=None):
-        self.lonlat = lonlat
         super().__init__(data, data_origin)
+        self.lonlat = lonlat
 
     def __str__(self):
         name = self.__class__.__name__
         return '{0:s}\n{1:s}\n{2:s}\nlonlat:{3:s}'.format(
             name, '-'*len(name), str(self.data.describe()), str(self.lonlat)
         )
+
+    def copy(self):
+        copied_self = super().copy()
+        copied_self.lonlat = self.lonlat
+        return copied_self
+
+    def slice_index(self, start='', end='', inplace=False):
+        """
+        inplace: bool, optional
+            If the new data should be replacing the data of this TSData
+            instance or if the instance should be copied. Default is None.
+
+        Returns
+        -------
+        tsdata: TSData
+            The TSData instance with the sliced index.
+        """
+        if inplace:
+            tsdata = self
+        else:
+            tsdata = self.copy()
+        tsdata.data = tsdata.data.loc[start:end]
+        return tsdata
 
     def plot(self, variable, type, color):
         pass
