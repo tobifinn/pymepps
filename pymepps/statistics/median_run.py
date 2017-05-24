@@ -88,5 +88,5 @@ def median_run(spdata, ens_dim='ensemble', iterate_dim='runtime'):
     else:
         ensemble_member = mean_squared_dev.argmin()
         median_run.data = spdata.data.loc[{ens_dim: ensemble_member}]
-    median_run.data.coords[ens_dim] = ['median_run',]
+    #median_run.data.coords[ens_dim] = ['median_run',]
     return median_run
