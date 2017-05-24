@@ -170,7 +170,7 @@ class Grid(object):
         if data is None:
             return_data = None
         else:
-            return_data = data[sort_order_lat, sort_order_lon]
+            return_data = data[..., sort_order_lat, sort_order_lon]
         return lat[sort_order_lat, sort_order_lon], \
                lon[sort_order_lat, sort_order_lon], \
                return_data
@@ -265,7 +265,7 @@ class Grid(object):
                                             trg_lat, trg_lon, order=order)
         remapped_shape = list(data.shape[:-2])+list(remapped_data.shape[-2:])
         remapped_data = remapped_data.reshape(remapped_shape)
-        remapped_data = np.atleast_2d(remapped_data.squeeze())
+        remapped_data = np.atleast_2d(remapped_data)
         return remapped_data
 
     def get_nearest_point(self, data, coord):
