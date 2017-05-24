@@ -66,9 +66,6 @@ class MetData(object):
         self._data = data
 
     def copy(self):
-        return self._copy_of_self()
-
-    def _copy_of_self(self):
         return deepcopy(self)
 
     def _extract_math_data(self, obj):
