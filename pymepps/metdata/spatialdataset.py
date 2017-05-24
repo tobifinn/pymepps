@@ -127,6 +127,7 @@ class SpatialDataset(MetDataset):
         try:
             grid_builder = GridBuilder(data_array.attrs)
             grid = grid_builder.build_grid()
+            logger.debug('Got the grid from the data array')
         except (KeyError, ValueError, AttributeError):
             grid = None
         return grid

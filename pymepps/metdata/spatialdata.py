@@ -35,6 +35,8 @@ from .metdata import MetData
 from .tsdataset import TSDataset
 from pymepps.metfile.netcdfhandler import cube_to_series
 import pymepps.plot
+from pymepps import open_model_dataset
+
 
 __math_operators = ['__add__', '__sub__']
 
@@ -254,6 +256,39 @@ class SpatialData(MetData):
         return wrapped_func
 
     def save(self, path):
+        """
+        To save the SpatialData a copy of this instance is created and the 
+        grid dict of the grid is added to the SpatialData attributes. Then the 
+        instance is saved as NetCDF file.
+
+        Parameters
+        ----------
+        path: str
+            The path where the netcdf file should be saved.
+        """
         save_array = self.data.copy()
         save_array.attrs.update(self.grid._grid_dict)
         save_array.to_netcdf(path)
+
+    @staticmethod
+    def load(path):
+        """
+        Load a SpatialData instance from a given path. The path is loaded as 
+        SpatialDataset. A correct saved SpatialData instance will have only one 
+        variable within the NetCDF file. So the first variable will be returned
+        as newly constructed SpatialData instance.
+
+        Parameters
+        ----------
+        path: str
+            The path to the saved SpatialData instance.
+
+        Returns
+        -------
+        spdata: SpatialData
+            The loaded SpatialData instance.
+        """
+        spatial_ds = open_model_dataset(path, 'nc')
+        variable = spatial_ds.var_names[0]
+        spdata = spatial_ds.select(variable)
+        return spdata
