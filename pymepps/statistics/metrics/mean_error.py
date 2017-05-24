@@ -35,17 +35,17 @@ from .error import ErrorMetric
 logger = logging.getLogger(__name__)
 
 
-class MeanSquaredError(ErrorMetric):
-    """
-    The MeanSquaredError class calculates the mean squared error based on 
-    given data.
-    """
+class MeanError(ErrorMetric):
     def _calc_metric(self, X=None, y=None):
         error_array = self._calc_error()
-        mse = (error_array ** 2).mean(dim=self.iterate_axis)
-        return mse
+        bias = error_array.mean(dim=self.iterate_axis)
+        return bias
 
 
-def mean_squared_error(prediction, truth, iterate_axis='runtime'):
-    metric = MeanSquaredError(iterate_axis)
+def mean_error(prediction, truth, iterate_axis='runtime'):
+    metric = MeanError(iterate_axis)
     return metric(prediction, truth)
+
+
+def bias(prediction, truth, iterate_axis='runtime'):
+    return mean_error(prediction, truth, iterate_axis)

@@ -29,23 +29,18 @@ import logging
 # External modules
 
 # Internal modules
-from .error import ErrorMetric
+from .mean_squared_error import MeanSquaredError
 
 
 logger = logging.getLogger(__name__)
 
 
-class MeanSquaredError(ErrorMetric):
-    """
-    The MeanSquaredError class calculates the mean squared error based on 
-    given data.
-    """
+class RootMeanSquaredError(MeanSquaredError):
     def _calc_metric(self, X=None, y=None):
-        error_array = self._calc_error()
-        mse = (error_array ** 2).mean(dim=self.iterate_axis)
-        return mse
+        mse = super()._calc_metric(X, y)
+        return mse.sqrt()
 
 
-def mean_squared_error(prediction, truth, iterate_axis='runtime'):
-    metric = MeanSquaredError(iterate_axis)
+def rmse(prediction, truth, iterate_axis='runtime'):
+    metric = RootMeanSquaredError(iterate_axis)
     return metric(prediction, truth)

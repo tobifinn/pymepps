@@ -42,7 +42,10 @@ logger = logging.getLogger(__name__)
 
 def cube_to_series(cube, var_name):
     cleaned_dims = list(cube.dims)
-    cleaned_dims.remove('time')
+    if 'index' in cleaned_dims:
+        cleaned_dims.remove('index')
+    elif 'time' in cleaned_dims:
+        cleaned_dims.remove('time')
     if cleaned_dims:
         stacked = cube.stack(col=cleaned_dims)
         pd_stacked = stacked.T.to_pandas()

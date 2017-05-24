@@ -33,6 +33,7 @@ from pandas.core.datetools import is_timedelta64_dtype
 
 # Internal modules
 from .metric import Metric
+from pymepps.metdata import TSData, SpatialData
 
 
 logger = logging.getLogger(__name__)
@@ -67,3 +68,18 @@ class ErrorMetric(Metric):
             error.append(error_xr)
         error = xr.concat(error, dim=self.iterate_axis)
         return error
+
+    def predict(self, X=None, y=None):
+        calculated_metric = self._calc_metric(X, y)
+        if self._truth_is_ts():
+            calculated_metric = calculated_metric.to_dataframe()
+            metric = TSData(calculated_metric, self,
+                            lonlat=self.state['truth'].lonlat)
+        else:
+            metric = SpatialData(calculated_metric,
+                                 grid=self.state['truth'].grid,
+                                 data_origin=self)
+        return metric
+
+    def _truth_is_ts(self):
+        return isinstance(self.state['truth'], TSData)
