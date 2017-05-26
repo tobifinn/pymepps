@@ -192,39 +192,18 @@ class SpatialDataset(MetDataset):
         logger.debug('Data dimensions {0}'.format(data[0].dims))
         logger.debug('Trying to get the grid')
         grid = self.get_grid(var_name, data[0])
-        logger.debug(grid)
-        if len(data) == 1:
-            logger.info('Found only one message')
-            extracted_data = data[0]
-        else:
-            logger.info('Found more than one message, '
-                        'needs to merge the messages')
-            coordinate_names = list(data[0].dims)
-            stack_func = partial(
-                self._stack_ele,
-                coordinate_names=coordinate_names[:-grid.len_coords])
-            stacked_data = self._multiproc.map(stack_func, data, flatten=False)
-            logger.info('Now concat the data')
-            concated_data = xr.concat(stacked_data, dim='merge')
-            logger.info('Now unstack the data')
-            try:
-                unstacked_data = concated_data.unstack('merge')
-            except ValueError:
-                logger.info(concated_data.coords['merge'])
-            extracted_data = unstacked_data.transpose(*data[0].dims)
-        logger.info('Start contruction of SpatialData')
-        logger.debug(extracted_data.attrs)
+        spdata = SpatialData(data[0], grid=grid, data_origin=self)
+        if len(data)>1:
+            spdata = spdata.update(*data[1:])
         history_message = \
             "{0:s}, {1:s}, Python:pymepps:SpatialDataset:select" \
             "('{2:s}')".format(
                     dt.datetime.utcnow().strftime("%Y%m%d %H:%Mz"),
                     getpass.getuser(),
                     var_name)
-        if 'history' in extracted_data.attrs:
-            extracted_data.attrs['history'] += '\n{0:s}'.format(history_message)
+        if 'history' in spdata.data.attrs:
+            spdata.data.attrs['history'] += '\n{0:s}'.format(history_message)
         else:
-            extracted_data.attrs['history'] = history_message
-        extracted_data.attrs['name'] = extracted_data._name = var_name
-        sp_data = SpatialData(extracted_data, grid=grid, data_origin=self)
-        sp_data.set_data_coordinates()
-        return sp_data
+            spdata.data.attrs['history'] = history_message
+        spdata.data.attrs['name'] = spdata.data._name = var_name
+        return spdata

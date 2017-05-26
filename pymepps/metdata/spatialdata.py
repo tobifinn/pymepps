@@ -29,6 +29,7 @@ from collections import OrderedDict
 # External modules
 import xarray as xr
 import pandas as pd
+import numpy as np
 
 # Internal modules
 from .metdata import MetData
@@ -97,6 +98,81 @@ class SpatialData(MetData):
             metdata = self.copy()
             metdata.data.remove(item)
             return metdata
+
+    def update(self, *items):
+        """
+        The update routine could be used to update the data of this SpatialData,
+        based on either xarray.DataArrays or other SpatialData. There are some 
+        assumptions done:
+            1. The used data to update this SpatialData instance has the same 
+            grid and coordinate names as this instance.
+            2. Beginning from the left the given items are used to update the 
+            data. Such that intersection problems are resolved in favor of the
+            newest data.
+
+        Parameters
+        ----------
+        items: xarray.DataArray or SpatialData
+            The items are used to update the data of this SpatialData instance.
+            The grid has to be same as this SpatialData instance.
+
+        Returns
+        -------
+        self
+            This updated SpatialData instance with the updated data.
+        """
+        update_data = [self.data.copy(), ]
+        for item in items:
+            self._test_item_da_sd(item)
+            if isinstance(item, SpatialData):
+                update_data.append(item.data)
+            else:
+                update_data.append(item)
+        stack_dims = [dim for dim in self.data.dims
+                      if dim not in self.grid.get_coord_names()]
+        stacked_data = [d.stack(merge=stack_dims) for d in update_data]
+        concated_data = xr.concat(stacked_data, dim='merge')
+        merged_dim_coords = concated_data.coords['merge'].values
+        resolving_indexes = [False if val in merged_dim_coords[k+1:] else True
+                             for k, val in enumerate(merged_dim_coords)]
+        unstacked_data = concated_data[..., resolving_indexes].unstack('merge')
+        self.data = unstacked_data.transpose(*self.data.dims)
+        logger.info('Updated the data')
+        return self
+
+    def _test_item_da_sd(self, item):
+        """
+        Test if the given item is either a xarray.DataArray or a SpatialData 
+        instance and test if the grid of the given instance has the same
+        dimension lengths as the grid of this instance, assuming that the same 
+        grid dimension lengths are belonging to the same grid.
+
+        Parameters
+        ----------
+        item: xarray.DataArray or SpatialData
+            Instance to test for type and grid dimension length.
+
+        Raises
+        ------
+        TypeError:
+            The given item is not either a xarray.DataArray or a SpatialData 
+            instance.
+        ValueError:
+            The given item has not the same grid dimensions as the Data of this
+            SpatialData instance.
+        """
+        if not isinstance(item, (xr.DataArray, SpatialData)):
+            raise TypeError('The given item needs to be either a'
+                            'xarray.DataArray or a SpatialData instance!')
+        len_grid_coordinates = self.grid.len_coords
+        item_grid_length = item.values.shape[-len_grid_coordinates:]
+        data_grid_length = np.array(self.grid._construct_dim).shape
+        grid_lengths_equal = all(
+            (i==g for i, g in zip(item_grid_length, data_grid_length)))
+        if not grid_lengths_equal:
+            raise ValueError( 'The grid of the given item has not the same grid'
+                              'dimension length as the original grid of this'
+                              'SpatialData instance!')
 
     def set_data_coordinates(self, data=None, grid=None):
         """

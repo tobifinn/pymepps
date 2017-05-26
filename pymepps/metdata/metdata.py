@@ -48,10 +48,9 @@ class MetData(object):
         self.data = data
 
     def __repr__(self):
-        return "{0:s}(data={1:s}, data_origin={2:s})".format(
+        return "{0:s}(data={1:s})".format(
             str(self.__class__.__name__),
-            str(self.data),
-            str(self.data_origin))
+            repr(self.data))
 
     @property
     def data(self):
