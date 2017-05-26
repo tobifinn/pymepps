@@ -144,6 +144,17 @@ class TSData(MetData):
         copied_self.lonlat = self.lonlat
         return copied_self
 
+    def update(self, *items):
+        update_data = [self.data.copy(), ]
+        for item in items:
+            if isinstance(item, TSData):
+                update_data.append(item.data)
+            else:
+                update_data.append(item)
+        new_data = pd.concat(update_data)
+        self.data = new_data
+        logger.info('Updated the data')
+
     def slice_index(self, start='', end='', inplace=False):
         """
         inplace: bool, optional

@@ -115,11 +115,6 @@ class SpatialData(MetData):
         items: xarray.DataArray or SpatialData
             The items are used to update the data of this SpatialData instance.
             The grid has to be same as this SpatialData instance.
-
-        Returns
-        -------
-        self
-            This SpatialData instance with the updated data.
         """
         update_data = [self.data.copy(), ]
         for item in items:
@@ -136,12 +131,12 @@ class SpatialData(MetData):
         except ValueError:
             raise ValueError('The given items have not the same dimension '
                              'variables as the original data!')
-        resolving_indexes = concated_data.indexes['merge'].duplicated(
+        resolving_indexes = ~concated_data.indexes['merge'].duplicated(
             keep='last')
-        unstacked_data = concated_data[..., resolving_indexes].unstack('merge')
+        resolved_data = concated_data[..., resolving_indexes]
+        unstacked_data = resolved_data.unstack('merge')
         self.data = unstacked_data.transpose(*self.data.dims)
         logger.info('Updated the data')
-        return self
 
     def _test_item_da_sd(self, item):
         """

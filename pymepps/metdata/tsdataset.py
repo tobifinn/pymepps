@@ -96,11 +96,10 @@ class TSDataset(MetDataset):
 
     def data_merge(self, data, var_name):
         logger.debug('The data before data_merge is: {0}'.format(data))
-        if len(data)>1:
-            extracted_data = pd.DataFrame(data)
-        else:
-            extracted_data = data[0]
         if self.lon_lat is None:
             self.lon_lat = self._get_lon_lat()
-        return TSData(extracted_data, self, lonlat=self.lon_lat)
+        tsdata = TSData(data[0], self, lonlat=self.lon_lat)
+        if len(data)>1:
+            tsdata.update(*data[1:])
+        return tsdata
 

@@ -51,8 +51,8 @@ def cube_to_series(cube, var_name):
         cleaned_dims.remove('validtime')
     if cleaned_dims:
         stacked = cube.stack(col=cleaned_dims)
-        pd_stacked = stacked.T.to_pandas()
-        logger.debug(pd_stacked)
+        pd_stacked = stacked.to_pandas()
+        logger.info(pd_stacked)
         data = [pd_stacked.ix[:,col] for col in pd_stacked.columns]
     else:
         data = cube.to_series()
