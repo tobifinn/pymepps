@@ -52,6 +52,10 @@ class MetData(object):
             str(self.__class__.__name__),
             repr(self.data))
 
+    @abc.abstractmethod
+    def update(self, *items):
+        pass
+
     @property
     def data(self):
         return self._data
