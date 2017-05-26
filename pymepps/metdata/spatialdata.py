@@ -115,11 +115,6 @@ class SpatialData(MetData):
         items: xarray.DataArray or SpatialData
             The items are used to update the data of this SpatialData instance.
             The grid has to be same as this SpatialData instance.
-
-        Returns
-        -------
-        self
-            This SpatialData instance with the updated data.
         """
         update_data = [self.data.copy(), ]
         for item in items:
@@ -128,6 +123,7 @@ class SpatialData(MetData):
                 update_data.append(item.data)
             else:
                 update_data.append(item)
+        # Dimension names without grid dimensions
         stack_dims = [dim for dim in self.data.dims
                       if dim not in self.grid.get_coord_names()]
         stacked_data = [d.stack(merge=stack_dims) for d in update_data]
@@ -141,7 +137,6 @@ class SpatialData(MetData):
         unstacked_data = concated_data[..., resolving_indexes].unstack('merge')
         self.data = unstacked_data.transpose(*self.data.dims)
         logger.info('Updated the data')
-        return self
 
     def _test_item_da_sd(self, item):
         """
