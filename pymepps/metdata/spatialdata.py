@@ -105,7 +105,7 @@ class SpatialData(MetData):
         based on either xarray.DataArrays or other SpatialData. There are some 
         assumptions done:
             1. The used data to update this SpatialData instance has the same 
-            grid and coordinate names as this instance.
+            grid and dimension variables as this instance.
             2. Beginning from the left the given items are used to update the 
             data. Such that intersection problems are resolved in favor of the
             newest data.
@@ -131,7 +131,11 @@ class SpatialData(MetData):
         stack_dims = [dim for dim in self.data.dims
                       if dim not in self.grid.get_coord_names()]
         stacked_data = [d.stack(merge=stack_dims) for d in update_data]
-        concated_data = xr.concat(stacked_data, dim='merge')
+        try:
+            concated_data = xr.concat(stacked_data, dim='merge')
+        except ValueError as e:
+            raise ValueError('The given items have not the same dimension '
+                             'variables as the original data!')
         merged_dim_coords = concated_data.coords['merge'].values
         resolving_indexes = [False if val in merged_dim_coords[k+1:] else True
                              for k, val in enumerate(merged_dim_coords)]
