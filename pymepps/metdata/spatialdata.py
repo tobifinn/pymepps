@@ -119,7 +119,7 @@ class SpatialData(MetData):
         Returns
         -------
         self
-            This updated SpatialData instance with the updated data.
+            This SpatialData instance with the updated data.
         """
         update_data = [self.data.copy(), ]
         for item in items:
@@ -133,12 +133,11 @@ class SpatialData(MetData):
         stacked_data = [d.stack(merge=stack_dims) for d in update_data]
         try:
             concated_data = xr.concat(stacked_data, dim='merge')
-        except ValueError as e:
+        except ValueError:
             raise ValueError('The given items have not the same dimension '
                              'variables as the original data!')
-        merged_dim_coords = concated_data.coords['merge'].values
-        resolving_indexes = [False if val in merged_dim_coords[k+1:] else True
-                             for k, val in enumerate(merged_dim_coords)]
+        resolving_indexes = concated_data.indexes['merge'].duplicated(
+            keep='last')
         unstacked_data = concated_data[..., resolving_indexes].unstack('merge')
         self.data = unstacked_data.transpose(*self.data.dims)
         logger.info('Updated the data')
@@ -166,6 +165,7 @@ class SpatialData(MetData):
             SpatialData instance.
         """
         if not isinstance(item, (xr.DataArray, SpatialData)):
+            logger.info(type(item))
             raise TypeError('The given item needs to be either a'
                             'xarray.DataArray or a SpatialData instance!')
         len_grid_coordinates = self.grid.len_coords
@@ -236,7 +236,7 @@ class SpatialData(MetData):
             the analysis time.
         inplace: bool, optional
             If the new data should be replacing the data of this SpatialData
-            instance or if the instance should be copied. Default is None.
+            instance or if the instance should be copied. Default is False.
 
         Returns
         -------
@@ -323,7 +323,7 @@ class SpatialData(MetData):
         
         inplace: bool, optional
             If the new data should be replacing the data of this SpatialData
-            instance or if the instance should be copied. Default is None.
+            instance or if the instance should be copied. Default is False.
 
         Returns
         -------
@@ -349,7 +349,7 @@ class SpatialData(MetData):
         
         inplace: bool, optional
             If the new data should be replacing the data of this SpatialData
-            instance or if the instance should be copied. Default is None.
+            instance or if the instance should be copied. Default is False.
 
         Returns
         -------
