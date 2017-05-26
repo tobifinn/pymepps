@@ -58,8 +58,8 @@ class Metric(Model):
         return self.transform()
 
     def fit(self, X, y=None):
-        self.state['prediction'] = X
-        self.state['truth'] = y
+        self.state['prediction'] = X.copy()
+        self.state['truth'] = y.copy()
 
     def update(self, X=None, y=None):
         self.state['prediction'].update(X)
