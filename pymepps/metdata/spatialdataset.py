@@ -194,7 +194,7 @@ class SpatialDataset(MetDataset):
         grid = self.get_grid(var_name, data[0])
         spdata = SpatialData(data[0], grid=grid, data_origin=self)
         if len(data)>1:
-            spdata.update(*data[1:])
+            spdata = spdata.update(*data[1:])
         history_message = \
             "{0:s}, {1:s}, Python:pymepps:SpatialDataset:select" \
             "('{2:s}')".format(
