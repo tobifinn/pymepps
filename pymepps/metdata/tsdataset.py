@@ -98,8 +98,10 @@ class TSDataset(MetDataset):
         logger.debug('The data before data_merge is: {0}'.format(data))
         if self.lon_lat is None:
             self.lon_lat = self._get_lon_lat()
-        tsdata = TSData(data[0], self, lonlat=self.lon_lat)
-        if len(data)>1:
-            tsdata.update(*data[1:])
+        if isinstance(data, (list, tuple)):
+            tsdata = TSData(data[0], self, lonlat=self.lon_lat)
+            if len(data) > 1:
+                tsdata.update(*data[1:])
+        else:
+            tsdata = TSData(data, self, lonlat=self.lon_lat)
         return tsdata
-

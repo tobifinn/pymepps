@@ -51,34 +51,11 @@ def cube_to_series(cube, var_name):
         cleaned_dims.remove('validtime')
     if cleaned_dims:
         stacked = cube.stack(col=cleaned_dims)
-        pd_stacked = stacked.to_pandas()
-        logger.info(pd_stacked)
-        data = [pd_stacked.ix[:,col] for col in pd_stacked.columns]
+        data = stacked.to_pandas()
+        #data = [pd_stacked.ix[:,col] for col in pd_stacked.columns]
     else:
         data = cube.to_series()
-    # for col in stacked.coords['col']:
-    #     logger.debug('_'.join(str(val) for val in (np.atleast_1d(col.values)[0])))
-    #     #str_col = '_'.join([str(val) for val in col.values])
-    # for dim in cleaned_dims:
-    #     new_cube = {}
-    #     for temp_cube in splitted_cube:
-    #         new_cube.update({l[0]: l[1] for l in list(
-    #             splitted_cube[temp_cube].groupby(dim))})
-    #     logger.debug(new_cube)
-    #     try:
-    #         splitted_cube = {}
-    #         for k_0 in new_cube:
-    #             logger.debug(k_0)
-    #             for k_1 in new_cube[k_0]:
-    #                 logger.debug(k_1)
-    #                 dim_name = "{0:s}_{1:s}".format(str(k_0), str(k_1))
-    #                 dim_value = new_cube[k_0][k_1]
-    #                 splitted_cube[dim_name] = dim_value
-    #     except Exception as e:
-    #         logger.info('Couldn\'t flatten the dict, due to {0:s}'.
-    #                     format(e))
-    #         splitted_cube = new_cube
-    #data = {k: splitted_cube[k].to_series() for k in splitted_cube}
+        data.name = var_name
     return data
 
 

@@ -81,11 +81,6 @@ class TSData(MetData):
             name, '-'*len(name), str(self.data.describe()), str(self.lonlat)
         )
 
-    def __getitem__(self, sliced):
-        metdata = self.copy()
-        metdata.data = metdata.data[sliced]
-        return metdata
-
     def _wrapped_data_function(self, key):
         """
         Get data function with given key. This is a wrapper around
@@ -123,22 +118,6 @@ class TSData(MetData):
         else:
             return data_function
 
-    def append(self, item, inplace=False):
-        if inplace:
-            self.data.append(item)
-        else:
-            metdata = self.copy()
-            metdata.data.append(item)
-            return metdata
-
-    def remove(self, item, inplace=False):
-        if inplace:
-            self.data.remove(item)
-        else:
-            metdata = self.copy()
-            metdata.data.remove(item)
-            return metdata
-
     def copy(self):
         copied_self = super().copy()
         copied_self.lonlat = self.lonlat
@@ -149,10 +128,14 @@ class TSData(MetData):
         for item in items:
             if isinstance(item, TSData):
                 update_data.append(item.data)
-            else:
+            elif isinstance(item, (pd.Series, pd.DataFrame)):
                 update_data.append(item)
-        new_data = pd.concat(update_data)
-        self.data = new_data
+            else:
+                raise TypeError(
+                    'The given item {0} need to be in an either TSData or '
+                    'pandas conform data type!'.format(item))
+        concated_data = pd.concat(update_data, axis=0)
+        self.data = concated_data[~concated_data.index.duplicated(keep='last')]
         logger.info('Updated the data')
 
     def slice_index(self, start='', end='', inplace=False):

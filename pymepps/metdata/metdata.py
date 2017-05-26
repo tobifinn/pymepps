@@ -52,6 +52,31 @@ class MetData(object):
             str(self.__class__.__name__),
             repr(self.data))
 
+    def __len__(self):
+        return len(self.data)
+
+
+    def __getitem__(self, sliced):
+        metdata = self.copy()
+        metdata.data = metdata.data[sliced]
+        return metdata
+
+    def append(self, item, inplace=False):
+        if inplace:
+            self.data.append(item)
+        else:
+            metdata = self.copy()
+            metdata.data.append(item)
+            return metdata
+
+    def remove(self, item, inplace=False):
+        if inplace:
+            self.data.remove(item)
+        else:
+            metdata = self.copy()
+            metdata.data.remove(item)
+            return metdata
+
     @abc.abstractmethod
     def update(self, *items):
         pass

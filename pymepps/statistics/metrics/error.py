@@ -62,6 +62,8 @@ class ErrorMetric(Metric):
             else:
                 error_ts = pred_ts.subtract(truth_ts, axis=0).dropna()
             error_xr = error_ts.to_xarray()
+            if isinstance(error_xr, xr.DataArray):
+                error_xr = error_xr.to_dataset(name=temp_spdata.name)
             error_xr[self.iterate_axis] = iteration
             error_xr = error_xr.set_coords(self.iterate_axis).expand_dims(
                 self.iterate_axis)
