@@ -65,6 +65,7 @@ class MultiThread(object):
                 data.extend(list(d))
             else:
                 data.append(d)
+        data = [d for d in data if d is not None]
         return data
 
     def _sequential_map(self, single_func, iter_obj, flatten=True):

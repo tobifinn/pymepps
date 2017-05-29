@@ -27,12 +27,14 @@
 import logging
 import glob
 import os
+from functools import partial
 from collections import Counter
 
 # External modules
 from tqdm import tqdm
 
 # Internal modules
+from pymepps.utilities.multiproc_util import MultiThread
 
 
 logger = logging.getLogger(__name__)
@@ -45,17 +47,22 @@ class BaseLoader(object):
         self.processes = processes
         self._available_file_type = {}
 
+    @staticmethod
+    def _check_file_handler(file_path, base_handler):
+        handler = base_handler(file_path)
+        if handler.is_type():
+            return handler
+        else:
+            return None
+
     def _get_specific_type_handlers(self, files, file_type):
         base_handler = self._available_file_type[file_type]
         file_handlers = []
         logger.info('Started file handler checking for file type: {0:s}'.format(
             file_type))
-        with tqdm(total=len(files)) as pbar:
-            for file in files:
-                handler = base_handler(file)
-                if handler.is_type():
-                    file_handlers.append(handler)
-                pbar.update()
+        check_fh =  partial(self._check_file_handler, base_handler=base_handler)
+        mt = MultiThread(processes=self.processes)
+        file_handlers = mt.map(check_fh, files)
         return file_handlers
 
     def _get_file_handlers(self, files):

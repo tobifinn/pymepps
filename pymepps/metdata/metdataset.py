@@ -87,6 +87,13 @@ class MetDataset(object):
         self._multiproc = MultiThread(nr_proc)
         self._processes = nr_proc
 
+    @staticmethod
+    def _get_variables(file_handler):
+        file_handler.open()
+        var_names = list(file_handler.var_names)
+        file_handler.close()
+        return var_names
+
     @property
     def variables(self):
         """
@@ -95,14 +102,15 @@ class MetDataset(object):
         if not any(self._variables):
             new_variables = {}
             logger.info('Started generating variable dict')
-            for file in tqdm(self._file_handlers):
-                file.open()
-                for var in file.var_names:
-                    if var not in new_variables.keys():
-                        new_variables[var] = [file]
-                    else:
-                        new_variables[var].append(file)
-                file.close()
+            mt = MultiThread(processes=self.processes)
+            var_names_list = mt.map(self._get_variables, self._file_handlers,
+                                    flatten=False)
+            for key, var_names in enumerate(var_names_list):
+                for var_name in var_names:
+                    try:
+                        new_variables[var_name].append(self._file_handlers[key])
+                    except KeyError:
+                        new_variables[var_name] = [self._file_handlers[key], ]
             self._variables = new_variables
         return self._variables
 
