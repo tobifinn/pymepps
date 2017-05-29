@@ -134,8 +134,12 @@ class TSData(MetData):
                 raise TypeError(
                     'The given item {0} need to be in an either TSData or '
                     'pandas conform data type!'.format(item))
-        concated_data = pd.concat(update_data, axis=0)
-        self.data = concated_data[~concated_data.index.duplicated(keep='last')]
+        concated_data = pd.concat(update_data, axis=1)
+        unique_cols = ~concated_data.columns.duplicated(keep='last')
+        concated_data = concated_data.loc[:, unique_cols].sort_index(axis=1)
+        concated_data = concated_data.squeeze()
+        unique_rows = ~concated_data.index.duplicated(keep='last')
+        self.data = concated_data.loc[unique_rows].sort_index(axis=0)
         logger.info('Updated the data')
 
     def slice_index(self, start='', end='', inplace=False):

@@ -94,6 +94,11 @@ class TSDataset(MetDataset):
         file.close()
         return ts_data
 
+    def select_by_pattern(self, pattern, return_list=False):
+        return_list = super().select_by_pattern(pattern, return_list=True)
+        return self.data_merge(
+            [pd.DataFrame(l.data) for l in return_list], pattern)
+
     def data_merge(self, data, var_name):
         logger.debug('The data before data_merge is: {0}'.format(data))
         if self.lon_lat is None:
