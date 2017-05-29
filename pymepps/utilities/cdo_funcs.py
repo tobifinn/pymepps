@@ -53,7 +53,7 @@ def selnearest(ds, lonlat, new_path=None, inplace=False, in_opt=None,
     multiproc = MultiThread(processes)
     single_fh_func = partial(
         _single_fh_selnearest,
-        lonlatbox=lonlat,
+        lonlat=lonlat,
         new_path=new_path,
         inplace=inplace,
         in_opt=in_opt,
