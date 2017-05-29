@@ -78,6 +78,27 @@ class SpatialData(MetData):
         return "{0:s}\n{1:s}\ndims: {2:s}\ncoords:{3:s}\n" \
                "grid:{4:s}".format(name, '-'*len(name), dims, coords, grid)
 
+    def __getitem__(self, sliced):
+        metdata = self.copy()
+        metdata.data = metdata.data[sliced]
+        return metdata
+
+    def append(self, item, inplace=False):
+        if inplace:
+            self.data.append(item)
+        else:
+            metdata = self.copy()
+            metdata.data.append(item)
+            return metdata
+
+    def remove(self, item, inplace=False):
+        if inplace:
+            self.data.remove(item)
+        else:
+            metdata = self.copy()
+            metdata.data.remove(item)
+            return metdata
+
     def update(self, *items):
         """
         The update routine could be used to update the data of this SpatialData,
