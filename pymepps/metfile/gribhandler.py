@@ -116,16 +116,21 @@ class GribHandler(FileHandler):
             anal_date = [msg.analDate,]
             logger.debug('Got analysis date {0}'.format(anal_date))
             try:
-                ens_type = msg['typeOfEnsembleForecast']
-                if ens_type in [2,3,4]:
-                    ens = [msg['perturbationNumber'],]
+                ens = [msg['perturbationNumber'],]
             except RuntimeError:
                 ens = ['det',]
+            #logger.info(msg['perturbationNumber'])
             logger.debug('Got ensemble forecast number {0}'.format(ens))
-            if np.issubdtype(msg.validDate.dtype, np.datetime64) and \
-                    np.issubdtype(msg.analDate.dtype, np.datetime64):
-                valid_date = [msg.validDate-msg.analDate, ]
+            valid_date = None
+            if isinstance(msg.validDate, np.ndarray):
+                if np.issubdtype(msg.validDate.dtype, np.datetime64) and \
+                        np.issubdtype(msg.analDate.dtype, np.datetime64):
+                    valid_date = [msg.validDate-msg.analDate, ]
             else:
+                if isinstance(msg.validDate, dt.datetime) and \
+                        isinstance(msg.analDate, dt.datetime):
+                    valid_date = [msg.validDate-msg.analDate, ]
+            if valid_date is None:
                 valid_date = [msg.validDate,]
             level = [":".join(str(msg).split(':')[4:6]).replace(' ', '_'),]
             logger.debug('Decoded levels {0}'.format(level))

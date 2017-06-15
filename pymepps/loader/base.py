@@ -57,10 +57,9 @@ class BaseLoader(object):
 
     def _get_specific_type_handlers(self, files, file_type):
         base_handler = self._available_file_type[file_type]
-        file_handlers = []
         logger.info('Started file handler checking for file type: {0:s}'.format(
             file_type))
-        check_fh =  partial(self._check_file_handler, base_handler=base_handler)
+        check_fh = partial(self._check_file_handler, base_handler=base_handler)
         mt = MultiThread(processes=self.processes)
         file_handlers = mt.map(check_fh, files)
         return file_handlers
