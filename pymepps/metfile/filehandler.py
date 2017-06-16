@@ -57,14 +57,7 @@ class FileHandler(object):
         self.ds = None
         self.file = file_path
         self._var_names = None
-    #
-    # @property
-    # def ds(self):
-    #     return self._ds
-    #
-    # @ds.setter
-    # def ds(self, ds):
-    #     self._ds = ds
+
     @property
     def var_names(self):
         if self._var_names is None:

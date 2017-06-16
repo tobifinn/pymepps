@@ -73,11 +73,13 @@ class NetCDFHandler(FileHandler):
             return False
 
     def open(self):
-        self.ds = xr.open_dataset(self.file)
+        if self.ds is None:
+            self.ds = xr.open_dataset(self.file)
         return self
 
     def close(self):
         self.ds.close()
+        self.ds = None
 
     @property
     def lon_lat(self):

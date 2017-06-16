@@ -51,11 +51,13 @@ logger = logging.getLogger(__name__)
 
 class GribHandler(FileHandler):
     def open(self):
-        self.ds = pygrib.open(self.file)
+        if self.ds is None:
+            self.ds = pygrib.open(self.file)
         return self
 
     def close(self):
         self.ds.close()
+        self.ds = None
 
     def is_type(self):
         self.open()
