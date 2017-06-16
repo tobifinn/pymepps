@@ -24,11 +24,9 @@
 # """
 # System modules
 import logging
-from collections import OrderedDict
 
 # External modules
 import xarray as xr
-import pandas as pd
 import numpy as np
 
 # Internal modules
@@ -38,8 +36,6 @@ from pymepps.metfile.netcdfhandler import cube_to_series
 import pymepps.plot
 import pymepps.loader
 
-
-__math_operators = ['__add__', '__sub__']
 
 logger = logging.getLogger(__name__)
 
@@ -77,27 +73,6 @@ class SpatialData(MetData):
         name = "{0:s}({1:s})".format(self.__class__.__name__, self.data.name)
         return "{0:s}\n{1:s}\ndims: {2:s}\ncoords:{3:s}\n" \
                "grid:{4:s}".format(name, '-'*len(name), dims, coords, grid)
-
-    def __getitem__(self, sliced):
-        metdata = self.copy()
-        metdata.data = metdata.data[sliced]
-        return metdata
-
-    def append(self, item, inplace=False):
-        if inplace:
-            self.data.append(item)
-        else:
-            metdata = self.copy()
-            metdata.data.append(item)
-            return metdata
-
-    def remove(self, item, inplace=False):
-        if inplace:
-            self.data.remove(item)
-        else:
-            metdata = self.copy()
-            metdata.data.remove(item)
-            return metdata
 
     def update(self, *items):
         """
@@ -173,46 +148,38 @@ class SpatialData(MetData):
                               'dimension length as the original grid of this'
                               'SpatialData instance!')
 
-    def set_data_coordinates(self, data=None, grid=None):
+    def set_grid_coordinates(self, grid=None, data=None):
         """
-        Set new data and coordinates based on given np.array and and grid.
+        Set the coordinates of the data to the coordinates of the given grid.
 
         Parameters
         ----------
-        data : np.ndarray or None, optional
-            The data of this instance is set to this data. If this is None the 
-            data is set to the values of instance's data. The data needs the 
-            same number of dimensions as instance's data. The length of the 
-            coordinates needs also to be the same as instance's coordinates
-            except the horizontal grid coordinates. The length of the horizontal
-            grid coordinates needs to be the same as specified in the grid.
-            Default is None.
         grid : Child instance of Grid or None, optional
             The grid of this instance is set to this grid. If this is None
-            instance's grid is used. The last two dimensions of instance's data
+            instance's grid is used. The last dimensions of instance's data
             is set according to to the grid. Default is None.
-
-        Returns
-        -------
-        self
-            This spatial data instance with the set data and coordinates.
+        data : np.ndarray or None, optional
+            The data is set to this data values. The data values should have the
+            same last dimension as the new grid. If this is None, the data
+            values of this instance are used. Default is None.
         """
-        if data is None:
-            data = self.data.values
         if grid is None:
             grid = self.grid
+        if data is None:
+            data = self.data.values
         new_coords = grid.get_coords()
         for dim in self.data.dims[:-grid.len_coords]:
             new_coords[dim] = self.data[dim]
         new_darray = xr.DataArray(
-            data, name=self.data.name, coords=new_coords,
+            data,
+            name=self.data.name,
+            coords=new_coords,
             dims=list(self.data.dims[:-grid.len_coords]) + \
                  list(grid.get_coord_names()),
             attrs=self.data.attrs
         )
         self.data = new_darray
         self.grid = grid
-        return self
 
     def merge_analysis_timedelta(self, analysis_axis='runtime',
                                  timedelta_axis='time', inplace=False):
@@ -330,7 +297,7 @@ class SpatialData(MetData):
         else:
             spdata = self.copy()
         new_data = spdata.grid.remapnn(spdata.data.values, new_grid)
-        spdata.set_data_coordinates(new_data, new_grid)
+        spdata.set_grid_coordinates(new_data, new_grid)
         return spdata
 
     def remapbil(self, new_grid, inplace=False):
@@ -356,7 +323,7 @@ class SpatialData(MetData):
         else:
             spdata = self.copy()
         new_data = spdata.grid.remapbil(spdata.data.values, new_grid)
-        spdata.set_data_coordinates(new_data, new_grid)
+        spdata.set_grid_coordinates(new_data, new_grid)
         return spdata
 
     def plot(self, method='contourf'):
@@ -395,7 +362,7 @@ class SpatialData(MetData):
                         grid=self.grid,
                         data_origin=self.data_origin
                     )
-                    new_spdata.set_data_coordinates()
+                    new_spdata.set_grid_coordinates()
                     return new_spdata
                 except ValueError:
                     return result

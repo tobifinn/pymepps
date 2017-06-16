@@ -5,6 +5,7 @@ channels: !!python/tuple
 dependencies:
   - conda-forge::basemap
   - conda-forge::matplotlib
+  - conda-forge::openblas
   - conda-forge::pygrib
   - conda-forge::numpy
   - conda-forge::pandas
