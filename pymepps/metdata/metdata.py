@@ -28,8 +28,6 @@ from copy import deepcopy
 import abc
 
 # External modules
-import pandas as pd
-import xarray as xr
 
 # Internal modules
 
@@ -48,18 +46,55 @@ class MetData(object):
         self.data = data
 
     def __repr__(self):
-        return "{0:s}(data={1:s})".format(
+        return "{0:s}\n\tdata:\n\t{1:s}".format(
             str(self.__class__.__name__),
             repr(self.data))
 
     def __len__(self):
         return len(self.data)
 
+    def __getattr__(self, key):
+        if key == 'data':
+            logger.exception(" ".join([
+                "Can't access data attribute.",
+                "Did you try to access properties before",
+                "loading data?"
+            ]))
+        else:
+            return self._wrapped_data_function(key)
 
     def __getitem__(self, sliced):
         metdata = self.copy()
         metdata.data = metdata.data[sliced]
         return metdata
+
+    def __setitem__(self, key, value):
+        return self.data.__setitem__(key, value)
+
+    def __call__(self):
+        return self.data
+
+    @abc.abstractmethod
+    def _wrapped_data_function(self, key):
+        """
+        Get data function with given key. This is a wrapper around
+        type(self.data) functions to secure a proper return value.
+
+        Parameters
+        ----------
+        key : str
+            The function which should be called. Have to be an available
+            function for type of self.data!
+
+        Returns
+        -------
+        wrapped_func : function
+            The wrapped type(self.data) function. The wrapped function returns
+            a new TS/SpatialData instance, if the result of the function is a
+            type(self.data), else the return value of the function will be
+            returned.
+        """
+        pass
 
     def append(self, item, inplace=False):
         if inplace:
@@ -96,59 +131,6 @@ class MetData(object):
 
     def copy(self):
         return deepcopy(self)
-
-    def _extract_math_data(self, obj):
-        try:
-            return getattr(obj, 'data')
-        except AttributeError:
-            return obj
-
-    def _math_ops(self, op, other):
-        data_obj = self._copy_of_self()
-        other = self._extract_math_data(other)
-        data_obj.data = getattr(data_obj.data, op)(other)
-        return data_obj
-
-    def __getattr__(self, key):
-        if key == 'data':
-            logger.exception(" ".join([
-                "Can't access data attribute.",
-                "Did you try to access properties before",
-                "loading data?"
-            ]))
-        else:
-            return self._wrapped_data_function(key)
-
-    def __getitem__(self, key):
-        return type(self)(self.data.__getitem__(key), self.data_origin)
-
-    def __setitem__(self, key, value):
-        return self.data.__setitem__(key, value)
-
-    def __call__(self):
-        return self.data
-
-    @abc.abstractmethod
-    def _wrapped_data_function(self, key):
-        """
-        Get data function with given key. This is a wrapper around
-        type(self.data) functions to secure a proper return value.
-
-        Parameters
-        ----------
-        key : str
-            The function which should be called. Have to be an available
-            function for type of self.data!
-
-        Returns
-        -------
-        wrapped_func : function
-            The wrapped type(self.data) function. The wrapped function returns
-            a new TS/SpatialData instance, if the result of the function is a
-            type(self.data), else the return value of the function will be
-            returned.
-        """
-        pass
 
     def data_plot(self, **kwargs):
         """
