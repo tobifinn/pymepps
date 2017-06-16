@@ -60,5 +60,15 @@ class UnstructuredGrid(Grid):
     def _construct_dim(self):
         return np.arange(0, self._grid_dict['gridsize'], 1)
 
+    def get_coord_names(self):
+        """
+        Returns the name of the coordinates.
+
+        Returns
+        -------
+        ncells
+        """
+        return ['ncells',]
+
     def _calc_lat_lon(self):
         return self._grid_dict['yvals'], self._grid_dict['xvals']

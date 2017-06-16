@@ -31,6 +31,7 @@ import abc
 import numpy as np
 import xarray as xr
 from mpl_toolkits.basemap import interp
+from scipy.interpolate import griddata
 
 # Internal modules
 
@@ -156,7 +157,35 @@ class Grid(object):
         """
         return self._grid_dict['yname'], self._grid_dict['xname']
 
-    def _interpolate(self, data, src_lat, src_lon, trg_lat, trg_lon, order=0):
+    def _interpolate_unstructured(self, data, src_lat, src_lon,
+                                  trg_lat, trg_lon, order=0):
+        """
+        The interpolation is done with scipy.interpolate.griddata.
+        """
+        if order==1:
+            method='linear'
+        else:
+            method='nearest'
+        reshaped_data = data.reshape((-1, src_lat.size))
+        unravel_shape = data.shape[:-self.len_coords]
+        src_lat = src_lat.ravel()
+        src_lon = src_lon.ravel()
+        src_coords = np.concatenate((src_lat, src_lon), axis=1)
+        unravel_shape = tuple(list(unravel_shape)+list(trg_lat.shape))
+        remapped_data = np.zeros((reshaped_data.shape[0], trg_lat.size))
+        trg_lat = trg_lat.ravel()
+        trg_lon = trg_lon.ravel()
+        trg_coords = np.concatenate((trg_lat, trg_lon), axis=1)
+        for i in range(reshaped_data.shape[0]):
+            sliced_array = reshaped_data[i, :]
+            remapped_data[i, :] = griddata(src_coords, sliced_array, trg_coords,
+                                           method=method)
+        remapped_data = remapped_data.reshape(unravel_shape)
+        remapped_data = np.atleast_1d(remapped_data)
+        return remapped_data
+
+    def _interpolate_structured(self, data, src_lat, src_lon,
+                                trg_lat, trg_lon, order=0):
         reshaped_data = data.reshape((-1, data.shape[-2], data.shape[-1]))
         remapped_data = np.zeros(
             (reshaped_data.shape[0], trg_lat.shape[-2], trg_lat.shape[-1]))
@@ -195,18 +224,22 @@ class Grid(object):
         data.
         """
         src_lat, src_lon = self._calc_lat_lon()
-        if data.shape[-2:] != src_lat.shape:
+        if data.shape[-self.len_coords:] != src_lat.shape:
             raise ValueError(
-                'The last two dimension of the data needs the same shape as '
-                'the coordinates of this grid!')
+                'The last {0:d} dimensions of the data needs the same shape as '
+                'the coordinates of this grid!'.format())
         src_lat, src_lon, data = self.normalize_lat_lon(src_lat, src_lon, data)
         try:
             trg_lat, trg_lon = other_grid._calc_lat_lon()
         except AttributeError:
             raise TypeError('other_grid has to be a child instance of Grid!')
         trg_lat, trg_lon, _ = self.normalize_lat_lon(trg_lat, trg_lon)
-        remapped_data = self._interpolate(data, src_lat[:, 0], src_lon[0, :],
-                                          trg_lat, trg_lon, order=0)
+        if min((self.len_coords, other_grid.len_coords))==1:
+            remapped_data = self._interpolate_unstructured(
+                data, src_lat, src_lon, trg_lat, trg_lon, order=0)
+        else:
+            remapped_data = self._interpolate_structured(
+                data, src_lat[:, 0], src_lon[0, :], trg_lat, trg_lon, order=0)
         return remapped_data
 
     def remapbil(self, data, other_grid):
@@ -235,9 +268,9 @@ class Grid(object):
         data.
         """
         src_lat, src_lon = self._calc_lat_lon()
-        if data.shape[-2:] != src_lat.shape:
+        if data.shape[-self.len_coords:] != src_lat.shape:
             raise ValueError(
-                'The last two dimension of the data needs the same shape as '
+                'The last dimensions of the data needs the same shape as '
                 'the coordinates of this grid!')
         src_lat, src_lon, data = self.normalize_lat_lon(src_lat, src_lon, data)
         try:
@@ -245,8 +278,12 @@ class Grid(object):
         except AttributeError:
             raise TypeError('other_grid has to be a child instance of Grid!')
         trg_lat, trg_lon, _ = self.normalize_lat_lon(trg_lat, trg_lon)
-        remapped_data = self._interpolate(data, src_lat[:, 0], src_lon[0, :],
-                                          trg_lat, trg_lon, order=1)
+        if min((self.len_coords, other_grid.len_coords))==1:
+            remapped_data = self._interpolate_unstructured(
+                data, src_lat, src_lon, trg_lat, trg_lon, order=0)
+        else:
+            remapped_data = self._interpolate_structured(
+                data, src_lat[:, 0], src_lon[0, :], trg_lat, trg_lon, order=0)
         return remapped_data
 
     def get_nearest_point(self, data, coord):
@@ -275,7 +312,7 @@ class Grid(object):
             dimension.
         """
         src_lat, src_lon = self._calc_lat_lon()
-        if data.shape[-2:] != src_lat.shape:
+        if data.shape[-self.len_coords:] != src_lat.shape:
             raise ValueError(
                 'The last two dimension of the data needs the same shape as '
                 'the coordinates of this grid!')
@@ -283,7 +320,10 @@ class Grid(object):
             coord,
             (src_lat.flatten(), src_lon.flatten()))
         nearest_ind = np.unravel_index(calc_distance.argmin(), src_lat.shape)
-        nearest_data = data[...,nearest_ind[0], nearest_ind[1]]
+        if self.len_coords==1:
+            nearest_data = data[..., nearest_ind[0]]
+        else:
+            nearest_data = data[..., nearest_ind[0], nearest_ind[1]]
         return np.atleast_1d(nearest_data)
 
     @staticmethod
