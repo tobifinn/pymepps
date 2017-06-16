@@ -217,6 +217,35 @@ class MetDataset(object):
         extracted_data = self.data_merge(data, var_name)
         return extracted_data
 
+    @property
+    def ds_to_data(self):
+        """
+        Transform the dataset into a data instance.
+
+        Returns
+        -------
+        extracted_data: TSData or SpatialData
+            The extracted data instance.
+        """
+        raw_data = []
+        for var_name in self.var_names:
+            num_file_handlers = len(self.variables[var_name])
+            logger.info('Started select {0:s} from {1:d} files'.format(
+                var_name, num_file_handlers))
+            single_func = partial(self._get_file_data, var_name=var_name)
+            data = self._multiproc.map(single_func, self.variables[var_name],
+                                       flatten=True)
+            for d in data:
+                add_coordinate = d.expand_dims('parameter')
+                add_coordinate = add_coordinate.assign_coords(
+                    parameter=[var_name,])
+                raw_data.append(add_coordinate)
+            logger.info('Finished variable {0:s}'.format(var_name))
+        logger.info('Extracted the data, now merge the data!')
+        extracted_data = self.data_merge(raw_data, self.var_names[0])
+        return extracted_data
+
+
     @abc.abstractmethod
     def _get_file_data(self, file, var_name):
         pass
