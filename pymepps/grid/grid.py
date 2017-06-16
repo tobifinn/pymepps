@@ -320,6 +320,7 @@ class Grid(object):
             coord,
             (src_lat.flatten(), src_lon.flatten()))
         nearest_ind = np.unravel_index(calc_distance.argmin(), src_lat.shape)
+        logger.info('Selected point {0}'.format(nearest_ind))
         if self.len_coords==1:
             nearest_data = data[..., nearest_ind[0]]
         else:
