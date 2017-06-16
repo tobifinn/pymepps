@@ -28,7 +28,6 @@ import logging
 import re
 
 # External modules
-import numpy as np
 
 # Internal modules
 from .lonlat import LonLatGrid
@@ -100,14 +99,17 @@ class GridBuilder(object):
         self._grid_dict = grid_dict
 
     def _set_grid_handler(self, grid_dict):
-        if 'gridtype' not in grid_dict:
-            raise KeyError('There is no gridtype defined. Griddes is no '
-                             'valid cdo grid definition!')
-        if grid_dict['gridtype'] not in available_grids:
-            raise ValueError('The given gridtype "{0:s}" has no defined '
-                             'decoder yet, please use one of the available '
-                             'gridtypes!'.format(grid_dict['gridtype']))
-        self._grid_handler = available_grids[grid_dict['gridtype']]
+        if 'proj4' in self._grid_dict:
+            self._grid_handler = ProjectionGrid
+        else:
+            if 'gridtype' not in grid_dict:
+                raise KeyError('There is no gridtype defined. Griddes is no '
+                                 'valid cdo grid definition!')
+            if grid_dict['gridtype'] not in available_grids:
+                raise ValueError('The given gridtype "{0:s}" has no defined '
+                                 'decoder yet, please use one of the available '
+                                 'gridtypes!'.format(grid_dict['gridtype']))
+            self._grid_handler = available_grids[grid_dict['gridtype']]
         logger.debug('Set _latlon_decoder to {0:s}'.format(
             self._grid_handler.__name__))
 
@@ -180,9 +182,6 @@ class GridBuilder(object):
                          for gs in grid_str_lines]
         splitted_lines = [line.split('=', 1) for line in preprocessed_lines
                           if len(line) > 0 and '#' not in line]
-        # for i in np.arange(len(splitted_lines)-1, -1, -1):
-        #     if len(splitted_lines[i])==1 and i!=0:
-        #         splitted_lines[i-1][-1] = "{0:s} {1:s}".format(splitted_lines[i - 1][-1], splitted_lines[i][-1])
         def clean_value(val):
             if '"' in val:
                 val = [val.replace('"', '').strip(), ]
