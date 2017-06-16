@@ -105,6 +105,7 @@ class MetDataset(object):
             mt = MultiThread(processes=self.processes)
             var_names_list = mt.map(self._get_variables, self._file_handlers,
                                     flatten=False)
+            logger.info('Got the variable name list, now converting to dict')
             for key, var_names in enumerate(var_names_list):
                 for var_name in var_names:
                     try:
@@ -123,10 +124,10 @@ class MetDataset(object):
 
     @file_handlers.setter
     def file_handlers(self, handlers):
-        self._file_handlers = handlers
-        if not isinstance(self._file_handlers, list) and \
-                        self._file_handlers is not None:
-            self._file_handlers = [self._file_handlers, ]
+        if not isinstance(handlers, list) and handlers is not None:
+            self._file_handlers = [handlers, ]
+        else:
+            self._file_handlers = handlers
 
     @property
     def var_names(self):
@@ -151,7 +152,8 @@ class MetDataset(object):
 
         Returns
         -------
-        data_list : dict (str, SpatialData or TSData) or list (SpatialData or TSData) or None
+        data_list : dict(str, SpatialData or TSData) or
+                    list(SpatialData or TSData) or None
             The return value is a dict/list with SpatialData instances, one
             entry for every found variable name. If return_list is False, are
             the keys the variable names. If None is returned no variable with
@@ -168,6 +170,9 @@ class MetDataset(object):
                 data_list = []
             else:
                 data_list = {}
+            logger.info(
+                'Started to extract variables from file handlers with pattern '
+                '{0:s}'.format(pattern))
             for var in found_variables:
                 data = self.select(var)
                 if return_list:
@@ -222,8 +227,4 @@ class MetDataset(object):
         Method to merge the given data by given metadata into one data
         structure.
         """
-        pass
-
-    @abc.abstractmethod
-    def plot(self, variable, fashion, color, **kwargs):
         pass

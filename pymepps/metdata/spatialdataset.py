@@ -20,16 +20,13 @@
 #     GNU General Public License for more details.
 #
 #     You should have received a copy of the GNU General Public License
-#     along with this program.  If not, see <http://www.gnu.org/licenses/>.
+#     along with this program.  If not, see <http://www.gn
 # """
+
 # System modules
 import logging
-from functools import partial
 import getpass
 import datetime as dt
-
-# External modules
-import xarray as xr
 
 # Internal modules
 from pymepps.grid import GridBuilder
@@ -127,7 +124,7 @@ class SpatialDataset(MetDataset):
         try:
             grid_builder = GridBuilder(data_array.attrs)
             grid = grid_builder.build_grid()
-            logger.debug('Got the grid from the data array')
+            logger.info('Got the grid from the data array')
         except (KeyError, ValueError, AttributeError):
             grid = None
         return grid
@@ -163,10 +160,6 @@ class SpatialDataset(MetDataset):
         data = file.get_messages(var_name)
         file.close()
         return data
-
-    @staticmethod
-    def _stack_ele(ele, coordinate_names):
-        return ele.stack(merge=coordinate_names)
 
     def data_merge(self, data, var_name):
         """
