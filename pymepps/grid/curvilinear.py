@@ -29,13 +29,13 @@ import logging
 # External modules
 
 # Internal modules
-from .unstructured import UnstructuredGrid
+from .lonlat import LonLatGrid
 
 
 logger = logging.getLogger(__name__)
 
 
-class CurvilinearGrid(UnstructuredGrid):
+class CurvilinearGrid(LonLatGrid):
     """
     A curvilinear grid could be described as special case of a unstructured grid
     where the number of vertices is 4. At the moment the values had to be
@@ -54,3 +54,6 @@ class CurvilinearGrid(UnstructuredGrid):
             'nvertex': 4,
         }
         self._grid_dict.update(grid_dict)
+
+    def _calc_lat_lon(self):
+        return self._grid_dict['yvals'], self._grid_dict['xvals']

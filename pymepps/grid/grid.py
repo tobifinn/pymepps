@@ -48,7 +48,7 @@ class Grid(object):
     def __init__(self, grid_dict):
         self._lat_lon = None
         self._grid_dict = None
-        self._nr_coords = 2
+        self.__nr_coords = 2
 
     @property
     def len_coords(self):
@@ -59,36 +59,7 @@ class Grid(object):
         int
             Number of coordinates for this grid.
         """
-        return self._nr_coords
-
-    @staticmethod
-    def convert_to_deg(field, unit):
-        """
-        Method to convert given field with given unit into degree.
-
-        Parameters
-        ----------
-        field
-        unit
-
-        Returns
-        -------
-
-        """
-        try:
-            calculated_field = [known_units[known](field)
-                                for known in known_units
-                                if known in unit.lower()][0]
-        except IndexError:
-            raise ValueError('There is no calculating rule for the given unit '
-                             '{0:s} defined yet!'.format(unit))
-        return calculated_field
-
-    @property
-    def lat_lon(self):
-        if self._lat_lon is None:
-            self._lat_lon = self._get_lat_lon()
-        return self._lat_lon
+        return self.__nr_coords
 
     def get_coords(self):
         dy, dx = self._construct_dim()
@@ -98,26 +69,19 @@ class Grid(object):
         }
         return coords
 
-    def get_coord_names(self):
-        """
-        Returns the name of the coordinates.
-
-        Returns
-        -------
-        yname : str
-            The name of the y-dimension.
-        xname : str
-            The name of the x-dimension
-        """
-        return self._grid_dict['yname'], self._grid_dict['xname']
-
     @abc.abstractmethod
     def _construct_dim(self):
         pass
 
-    @abc.abstractmethod
-    def _calc_lat_lon(self):
-        pass
+    @property
+    def raw_dim(self):
+        return self._construct_dim()
+
+    @property
+    def lat_lon(self):
+        if self._lat_lon is None:
+            self._lat_lon = self._get_lat_lon()
+        return self._lat_lon
 
     def _get_lat_lon(self):
         coords = self.get_coords()
@@ -132,6 +96,10 @@ class Grid(object):
             coords=coords
         )
         return ds
+
+    @abc.abstractmethod
+    def _calc_lat_lon(self):
+        pass
 
     @staticmethod
     def normalize_lat_lon(lat, lon, data=None):
@@ -174,6 +142,32 @@ class Grid(object):
         return lat[sort_order_lat, sort_order_lon], \
                lon[sort_order_lat, sort_order_lon], \
                return_data
+
+    def get_coord_names(self):
+        """
+        Returns the name of the coordinates.
+
+        Returns
+        -------
+        yname : str
+            The name of the y-dimension.
+        xname : str
+            The name of the x-dimension
+        """
+        return self._grid_dict['yname'], self._grid_dict['xname']
+
+    def _interpolate(self, data, src_lat, src_lon, trg_lat, trg_lon, order=0):
+        reshaped_data = data.reshape((-1, data.shape[-2], data.shape[-1]))
+        remapped_data = np.zeros(
+            (reshaped_data.shape[0], trg_lat.shape[-2], trg_lat.shape[-1]))
+        for i in range(reshaped_data.shape[0]):
+            sliced_array = reshaped_data[i, :, :]
+            remapped_data[i, :, :] = interp(sliced_array.T, src_lat, src_lon,
+                                            trg_lat, trg_lon, order=order)
+        remapped_shape = list(data.shape[:-2])+list(remapped_data.shape[-2:])
+        remapped_data = remapped_data.reshape(remapped_shape)
+        remapped_data = np.atleast_2d(remapped_data)
+        return remapped_data
 
     def remapnn(self, data, other_grid):
         """
@@ -255,19 +249,6 @@ class Grid(object):
                                           trg_lat, trg_lon, order=1)
         return remapped_data
 
-    def _interpolate(self, data, src_lat, src_lon, trg_lat, trg_lon, order=0):
-        reshaped_data = data.reshape((-1, data.shape[-2], data.shape[-1]))
-        remapped_data = np.zeros(
-            (reshaped_data.shape[0], trg_lat.shape[-2], trg_lat.shape[-1]))
-        for i in range(reshaped_data.shape[0]):
-            sliced_array = reshaped_data[i, :, :]
-            remapped_data[i, :, :] = interp(sliced_array.T, src_lat, src_lon,
-                                            trg_lat, trg_lon, order=order)
-        remapped_shape = list(data.shape[:-2])+list(remapped_data.shape[-2:])
-        remapped_data = remapped_data.reshape(remapped_shape)
-        remapped_data = np.atleast_2d(remapped_data)
-        return remapped_data
-
     def get_nearest_point(self, data, coord):
         """
         Get the nearest neighbour grid point for a given coordinate. The
@@ -302,10 +283,31 @@ class Grid(object):
             coord,
             (src_lat.flatten(), src_lon.flatten()))
         nearest_ind = np.unravel_index(calc_distance.argmin(), src_lat.shape)
-        logging.debug(nearest_ind)
         nearest_data = data[...,nearest_ind[0], nearest_ind[1]]
         return np.atleast_1d(nearest_data)
 
+    @staticmethod
+    def convert_to_deg(field, unit):
+        """
+        Method to convert given field with given unit into degree.
+
+        Parameters
+        ----------
+        field
+        unit
+
+        Returns
+        -------
+
+        """
+        try:
+            calculated_field = [known_units[known](field)
+                                for known in known_units
+                                if known in unit.lower()][0]
+        except IndexError:
+            raise ValueError('There is no calculating rule for the given unit '
+                             '{0:s} defined yet!'.format(unit))
+        return calculated_field
 
 def distance_haversine(p1, p2):
     """

@@ -27,6 +27,7 @@
 import logging
 
 # External modules
+import numpy as np
 
 # Internal modules
 from .lonlat import Grid
@@ -53,11 +54,11 @@ class UnstructuredGrid(Grid):
             'yname': 'lat',
             'yunits': 'degrees',
         }
-        self._nr_coords = 1
+        self.__nr_coords = 1
         self._grid_dict.update(grid_dict)
 
     def _construct_dim(self):
-        return self._grid_dict['yvals'], self._grid_dict['xvals']
+        return np.arange(0, self._grid_dict['gridsize'], 1)
 
     def _calc_lat_lon(self):
-        return self._construct_dim()
+        return self._grid_dict['yvals'], self._grid_dict['xvals']
