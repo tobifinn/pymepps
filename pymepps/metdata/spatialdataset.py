@@ -199,4 +199,5 @@ class SpatialDataset(MetDataset):
         else:
             spdata.data.attrs['history'] = history_message
         spdata.data.attrs['name'] = spdata.data._name = var_name
+        spdata.set_grid_coordinates()
         return spdata
