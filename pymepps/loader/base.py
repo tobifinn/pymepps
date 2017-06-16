@@ -85,7 +85,9 @@ class BaseLoader(object):
         pass
 
     def load_data(self):
-        if isinstance(self.data_path, str):
+        if self.data_path[:4] == 'http':
+            files = [self.data_path, ]
+        elif isinstance(self.data_path, str):
             files = [f for f in glob.glob(self.data_path)
                      if not os.path.isdir(f)]
         elif getattr(self.data_path, 'read'):
