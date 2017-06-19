@@ -31,7 +31,6 @@ from functools import partial
 from collections import Counter
 
 # External modules
-from tqdm import tqdm
 
 # Internal modules
 from pymepps.utilities.multiproc_util import MultiThread

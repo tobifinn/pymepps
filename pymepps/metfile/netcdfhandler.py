@@ -24,13 +24,10 @@
 # """
 # System modules
 import logging
-import re
-import itertools
 import collections
 
 # External modules
 import xarray as xr
-import netCDF4
 import numpy as np
 
 # Internal modules
@@ -78,7 +75,8 @@ class NetCDFHandler(FileHandler):
         return self
 
     def close(self):
-        self.ds.close()
+        if self.ds is not None:
+            self.ds.close()
         self.ds = None
 
     @property

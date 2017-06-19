@@ -66,7 +66,9 @@ class UnstructuredGrid(Grid):
 
         Returns
         -------
-        ncells
+        coord_names: list(str)
+            The coordinate name for this unstructured grid. This is always a
+            list, with only one entry: ncells.
         """
         return ['ncells',]
 

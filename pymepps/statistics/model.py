@@ -69,23 +69,52 @@ class Model(object):
         self.state = None
 
     def copy(self):
+        """
+        Copy this model instance.
+
+        Returns
+        -------
+        copied_self: self
+            This instance copied with deepcopy.
+        """
         return deepcopy(self)
 
     @abc.abstractmethod
     def fit(self, X, y=None):
+        """
+        Fit the model. This method could be used for an initial fit of the
+        model. With this method the internal state is overwritten.
+        """
         pass
 
     @abc.abstractmethod
     def predict(self, X=None, y=None):
+        """
+        Predict with the model.
+        """
         pass
 
     def transform(self, X=None, y=None):
+        """
+        This is a method for pre-processing steps to get a sklearn-conform api.
+
+        Notes
+        -----
+        Internally only the predict method is called.
+        """
         return self.predict(X, y)
 
     @abc.abstractmethod
     def update(self, X=None, y=None):
+        """
+        Update the internal state of the model. This method should be used if an
+        internal state is set and an initial fit was done.
+        """
         pass
 
     @abc.abstractmethod
     def save(self, path):
+        """
+        Save the model and its internal states.
+        """
         pass

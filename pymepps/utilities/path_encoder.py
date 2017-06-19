@@ -29,7 +29,6 @@ import datetime
 from collections import Counter
 
 # External modules
-import numpy as np
 
 # Internal modules
 

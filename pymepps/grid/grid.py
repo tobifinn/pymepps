@@ -46,6 +46,9 @@ known_units = {
 
 
 class Grid(object):
+    """
+    The base class for every grid type.
+    """
     def __init__(self, grid_dict):
         self._lat_lon = None
         self._grid_dict = None
@@ -55,14 +58,26 @@ class Grid(object):
     def len_coords(self):
         """
         Get the number of coordinates for this grid.
+
         Returns
         -------
-        int
+        len_coords: int
             Number of coordinates for this grid.
         """
         return self.__nr_coords
 
     def get_coords(self):
+        """
+        Get the coordinates in a xarray-compatible way.
+
+        Returns
+        -------
+        coords: dict(str, (str, numpy.ndarray))
+            The coordinates in a xarray compatible coordinates format. The key
+            is the coordinate name. The coordinates have as value a tuple with
+            their own name, indicating that the they are self-describing, and
+            the coordinate values as numpy array.
+        """
         dy, dx = self._construct_dim()
         coords = {
             self._grid_dict['yname']: ((self._grid_dict['yname'],), dy),
@@ -76,10 +91,29 @@ class Grid(object):
 
     @property
     def raw_dim(self):
+        """
+        Get the raw dimension values, as they are constructed by the grid
+        description.
+
+        Returns
+        -------
+        constructed_dim: tuple(numpy.ndarray) or numpy.ndarray
+            The constructed dimensions. Depending on the given grid type, it is
+            either a tuple of arrays or a single array.
+        """
         return self._construct_dim()
 
     @property
     def lat_lon(self):
+        """
+        Get latitudes and longitudes for every grid point as xarray.Dataset.
+
+        Returns
+        -------
+        lat_lon: xarray.Dataset
+            The latitude and longitude values for every grid point as
+            xarray.Dataset with latitude and longitude as variables.
+        """
         if self._lat_lon is None:
             self._lat_lon = self._get_lat_lon()
         return self._lat_lon

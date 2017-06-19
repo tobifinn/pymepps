@@ -37,8 +37,9 @@ logger = logging.getLogger(__name__)
 
 class CurvilinearGrid(LonLatGrid):
     """
-    A curvilinear grid could be described as special case of a unstructured grid
-    where the number of vertices is 4. At the moment the values had to be
+    A curvilinear grid could be described as special case of a lonlat grid
+    where the number of vertices is 4. The raw grid values are calculated based
+    on the given grid rules. At the moment the lon lat values had to be
     precomputed.
     """
     def __init__(self, grid_dict):

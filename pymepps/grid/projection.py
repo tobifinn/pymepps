@@ -81,6 +81,9 @@ class ProjectionGrid(LonLatGrid):
 
 
 class BaseProj(object):
+    """
+    BaseProj is a base class for every projection in a proj4-conform way.
+    """
     def __call__(self, x, y, inverse=False):
         if inverse:
             return self.transform_to_latlon(x, y)
@@ -89,10 +92,16 @@ class BaseProj(object):
 
     @abc.abstractmethod
     def transform_to_latlon(self, x, y):
+        """
+        Transform the given x and y arrays to latitude and longitude values.
+        """
         pass
 
     @abc.abstractmethod
     def transform_from_latlon(self, lon, lat):
+        """
+        Transform the given lon, lat arrays to x and  y values.
+        """
         pass
 
     @staticmethod
@@ -149,8 +158,7 @@ class RotPoleProj(BaseProj):
     
     References
     ----------
-    [1] http://de.mathworks.com/matlabcentral/fileexchange/
-            43435-rotated-grid-transform
+    [1] http://de.mathworks.com/matlabcentral/fileexchange/43435-rotated-grid-transform
     """
     def __init__(self, npole_lat, npole_lon):
         self._north_pole = None
@@ -164,6 +172,9 @@ class RotPoleProj(BaseProj):
 
     @property
     def north_pole(self):
+        """
+        Get the north pole for the rotated pole projection.
+        """
         return {k: self._rad2deg(self._north_pole[k]) for k in self._north_pole}
 
     @north_pole.setter
@@ -218,12 +229,18 @@ class RotPoleProj(BaseProj):
         return lat, lon
 
     def transform_from_lonlat(self, lon, lat):
+        """
+        Transform the given lon, lat arrays to x and  y values.
+        """
         x, y, z, theta, phi = self._prepare_rotation(lat, lon)
         rot_x, rot_y, rot_z = self._rotate_coords(x, y, z, theta, phi)
         rot_lat, rot_lon = self._post_rotation(rot_x, rot_y, rot_z)
         return rot_lon, rot_lat
 
     def transform_to_lonlat(self, x, y):
+        """
+        Transform the given x and y arrays to latitude and longitude values.
+        """
         rot_x, rot_y, rot_z, theta, phi = self._prepare_rotation(y, x)
         x, y, z = self._derotate_coords(rot_x, rot_y, rot_z, theta, phi)
         lat, lon = self._post_rotation(x, y, z)

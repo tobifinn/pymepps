@@ -28,15 +28,8 @@ import getpass
 import logging
 
 # External modules
-import numpy as np
 import datetime as dt
-try:
-    import pyproj
-except ImportError:
-    try:
-        from mpl_toolkits.basemap import pyproj
-    except:
-        raise ImportError("either pyproj or basemap required")
+import pyproj
 
 import pygrib
 import xarray
@@ -56,16 +49,20 @@ class GribHandler(FileHandler):
         return self
 
     def close(self):
-        self.ds.close()
+        if self.ds is not None:
+            self.ds.close()
         self.ds = None
 
     def is_type(self):
-        self.open()
-        if len(self.ds[:])==0:
+        try:
+            self.open()
+            if len(self.ds[:])==0:
+                return_value = False
+            else:
+                return_value = True
+            self.close()
+        except OSError:
             return_value = False
-        else:
-            return_value = True
-        self.close()
         return return_value
 
     def _get_varnames(self):

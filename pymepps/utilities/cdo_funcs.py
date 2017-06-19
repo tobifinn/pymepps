@@ -34,12 +34,11 @@ try:
     from cdo import Cdo
     CDO = Cdo()
 except ImportError:
-    raise ImportWarning('For full support please install the cdo package via '
-                        '"pip install cdo"')
+    print('For full support please install the cdo package via '
+          '"pip install cdo"')
 except FileNotFoundError:
-    raise ImportWarning(
-        'For full support please install cdo see more at: '
-        '"https://code.mpimet.mpg.de/projects/cdo/wiki/Cdo#Documentation"')
+    print('For full support please install cdo see more at: '
+          '"https://code.mpimet.mpg.de/projects/cdo/wiki/Cdo#Documentation"')
 
 # Internal modules
 from pymepps.utilities.file import File
