@@ -94,6 +94,12 @@ class TSDataset(MetDataset):
         file.close()
         return ts_data
 
+    def _multi_select_var(self, data, var_name):
+        for d in data:
+            d = pd.DataFrame(d.data)
+            d.columns = ["{0:s}_{1:s}".format(var_name, d.name), ]
+            yield d
+
     def select_by_pattern(self, pattern, return_list=False):
         return_list = super().select_by_pattern(pattern, return_list=True)
         return self.data_merge(

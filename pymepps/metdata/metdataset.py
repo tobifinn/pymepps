@@ -217,34 +217,74 @@ class MetDataset(object):
         extracted_data = self.data_merge(data, var_name)
         return extracted_data
 
-    @property
-    def ds_to_data(self):
+    def select_ds(self, include=None, exclude=None):
         """
-        Transform the dataset into a data instance.
+        Extract the dataset data into a MetData instance. The include list is
+        handled superior to the exclude list. If both lists are None all
+        available variables are used.
+
+        Parameters
+        ----------
+        include: iterable or None
+            Within the include iterable are all variable names, which should be
+            included into the MetData data. The list will be filtered for
+            available  variable names. If no variable name is available a
+            ValueError will be raised. If this is None, the include will be
+            skipped and the exclude list will be used. Default is None.
+        exclude: iterable or None
+            If no include iterable is given, this exclude iterable is used.
+            In this case, any available variable name, which is not within this
+            list is used. If this iterable is also None, all available data
+            variables are used to construct the MetData instance. Default is
+            None.
 
         Returns
         -------
         extracted_data: TSData or SpatialData
             The extracted data instance.
+
+        Raises
+        ------
+        ValueError:
+            A ValueError is raised if no variable was selected from the dataset.
         """
+        if isinstance(include, (tuple, list, set,)):
+            extract_vars = [var for var in include if var in self.var_names]
+            logger.debug(extract_vars)
+            logger.info(
+                'Filtered out the following variables, they are not within the '
+                'dataset! {0:s}'.format(
+                    str([var for var in include if var not in extract_vars])))
+        else:
+            if isinstance(exclude, (tuple, list, set,)):
+                extract_vars = [var for var in self.var_names
+                                if var not in exclude]
+                logger.info(
+                    'Filtered out the following variables, they are not within '
+                    'the dataset! {0:s}'.format(str(
+                        [var for var in self.var_names
+                         if var not in extract_vars])))
+            else:
+                extract_vars = self.var_names
+                logger.info('Used all available variables within this dataset')
+
         raw_data = []
-        for var_name in self.var_names:
+        for var_name in extract_vars:
             num_file_handlers = len(self.variables[var_name])
             logger.info('Started select {0:s} from {1:d} files'.format(
                 var_name, num_file_handlers))
             single_func = partial(self._get_file_data, var_name=var_name)
             data = self._multiproc.map(single_func, self.variables[var_name],
                                        flatten=True)
-            for d in data:
-                add_coordinate = d.expand_dims('parameter')
-                add_coordinate = add_coordinate.assign_coords(
-                    parameter=[var_name,])
-                raw_data.append(add_coordinate)
+            raw_data.extend(self._multi_select_var(data, var_name))
             logger.info('Finished variable {0:s}'.format(var_name))
         logger.info('Extracted the data, now merge the data!')
         extracted_data = self.data_merge(raw_data, self.var_names[0])
         return extracted_data
 
+    @abc.abstractmethod
+    def _multi_select_var(self, data, var_name):
+        pass
 
     @abc.abstractmethod
     def _get_file_data(self, file, var_name):
