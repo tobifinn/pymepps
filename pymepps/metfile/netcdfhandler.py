@@ -74,7 +74,7 @@ class NetCDFHandler(FileHandler):
 
     def open(self):
         if self.ds is None:
-            self.ds = xr.open_dataset(self.file)
+            self.ds = xr.open_dataset(self.file, engine='netcdf4')
         return self
 
     def close(self):
@@ -114,7 +114,7 @@ class NetCDFHandler(FileHandler):
             The DataArray of the variable.
         """
         logger.debug('Get {0:s} from {1:s}'.format(var_name, self.file))
-        variable = self.ds[var_name].load()
+        variable = self.ds[var_name]
         if hasattr(variable, '_FillValue'):
             variable.values[variable.values == variable._FillValue] = np.nan
         elif hasattr(variable, 'missing_value'):
@@ -141,7 +141,7 @@ class NetCDFHandler(FileHandler):
             The selected variable is extracted as dict with pandas series as
             values.
         """
-        cube = self.load_cube(var_name)
+        cube = self.load_cube(var_name).load()
         logger.debug(cube)
         data = cube_to_series(cube, var_name)
         logger.debug(data)
@@ -222,4 +222,5 @@ class NetCDFHandler(FileHandler):
         if np.issubdtype(cube[time_dim].values.dtype, np.datetime64) and \
                 np.issubdtype(cube[cube.dims[0]].values.dtype, np.datetime64):
             cube[time_dim] = cube[time_dim]-cube[cube.dims[0]].values
+        cube = cube.load()
         return cube
