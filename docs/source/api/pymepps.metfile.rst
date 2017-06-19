@@ -25,3 +25,11 @@ NetCDF file handler
     :members:
     :undoc-members:
     :show-inheritance:
+
+Opendap file handler
+^^^^^^^^^^^^^^^^^^^^
+
+.. automodule:: pymepps.metfile.opendaphandler
+    :members:
+    :undoc-members:
+    :show-inheritance:
