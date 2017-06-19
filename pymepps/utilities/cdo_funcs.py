@@ -36,6 +36,10 @@ try:
 except ImportError:
     raise ImportWarning('For full support please install the cdo package via '
                         '"pip install cdo"')
+except FileNotFoundError:
+    raise ImportWarning(
+        'For full support please install cdo see more at: '
+        '"https://code.mpimet.mpg.de/projects/cdo/wiki/Cdo#Documentation"')
 
 # Internal modules
 from pymepps.utilities.file import File
