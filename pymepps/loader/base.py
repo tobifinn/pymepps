@@ -96,5 +96,7 @@ class BaseLoader(object):
             raise TypeError('The data path needs to be either a string '
                             'or an opened file!')
         file_handlers = self._get_file_handlers(files)
+        if not file_handlers:
+            raise ValueError('Found no suitable FileHandler')
         dataset = self._convert_filehandlers_to_dataset(file_handlers)
         return dataset
