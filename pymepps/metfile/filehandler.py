@@ -32,6 +32,7 @@ import datetime
 import collections
 
 # External modules
+import xarray as xr
 
 # Internal modules
 
