@@ -29,6 +29,7 @@ import dateutil.parser
 import pytz
 import logging
 import datetime
+import collections
 
 # External modules
 
@@ -78,6 +79,57 @@ class FileHandler(object):
 
     def _get_metadata(self):
         pass
+
+    @staticmethod
+    def _check_list_in_list(sublist, check_list):
+        in_list = False
+        for ele in check_list:
+            if [sub for sub in sublist if sub in ele]:
+                in_list = True
+        return in_list
+
+    def _get_missing_coordinates(self, cube):
+        logger.debug('The cube coordinates are {0}'.format(cube.coords))
+        additional_coords = collections.OrderedDict()
+        if not self._check_list_in_list(
+                ['ana', 'runtime', 'referencetime'], list(cube.dims[:-2])):
+            try:
+                ana = self._get_dates_from_path(self.file)[0]
+            except IndexError:
+                ana = None
+            additional_coords['runtime'] = ana
+            logger.debug(
+                'No analysis date within the cube found set the analysis date '
+                'to {0}'.format(ana))
+        if not self._check_list_in_list(
+                ['ens', 'mem'], list(cube.dims[:-2])):
+            ens = self._get_ensemble_from_path(self.file)
+            additional_coords['ensemble'] = ens
+            logger.debug(
+                'No ensemble member within the cube found set the ensemble '
+                'to {0}'.format(ens))
+        if not self._check_list_in_list(
+                ['time', 'validtime'], list(cube.dims[:-2])):
+            try:
+                if 'runtime' in additional_coords:
+                    time = self._get_dates_from_path(self.file)[1]
+                else:
+                    time = self._get_dates_from_path(self.file)[0]
+            except IndexError:
+                time = None
+            additional_coords['validtime'] = time
+            logger.debug(
+                'No valid time within the cube found set the time to '
+                '{0}'.format(time))
+        ds_coords = xr.Dataset(coords=additional_coords)
+        logger.debug(ds_coords)
+        logger.debug(cube.coords)
+        cube.coords.update(ds_coords)
+        logger.debug(cube)
+        cube = cube.expand_dims(list(additional_coords.keys()))
+        logger.debug('The cube coordinates are {0}'.format(cube.coords))
+        logger.debug(cube)
+        return cube
 
     @staticmethod
     def _get_path_parts(path):
