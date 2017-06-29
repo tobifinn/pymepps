@@ -314,10 +314,10 @@ class Grid(object):
         trg_lat, trg_lon, _ = self.normalize_lat_lon(trg_lat, trg_lon)
         if min((self.len_coords, other_grid.len_coords))==1:
             remapped_data = self._interpolate_unstructured(
-                data, src_lat, src_lon, trg_lat, trg_lon, order=0)
+                data, src_lat, src_lon, trg_lat, trg_lon, order=1)
         else:
             remapped_data = self._interpolate_structured(
-                data, src_lat[:, 0], src_lon[0, :], trg_lat, trg_lon, order=0)
+                data, src_lat[:, 0], src_lon[0, :], trg_lat, trg_lon, order=1)
         return remapped_data
 
     def get_nearest_point(self, data, coord):
@@ -339,7 +339,7 @@ class Grid(object):
 
         Returns
         -------
-        nearest_data : numpy.array
+        nearest_data : numpy.ndarray
             The extracted data for the nearest neighbour grid point. The
             dimensions of this array are the same as the input data array
             without the horizontal coordinate dimensions. There is at least one
@@ -360,6 +360,26 @@ class Grid(object):
         else:
             nearest_data = data[..., nearest_ind[0], nearest_ind[1]]
         return np.atleast_1d(nearest_data)
+
+    def lonlatbox(self, data, ll_box):
+        """
+        The data is sliced with given lonlat box.
+        Parameters
+        ----------
+        data : numpy.ndarray
+            The data which should be sliced. The shape of the last two
+            dimensions should be the same as the  grid dimensions. The other
+            dimensions are used to iterate.
+        ll_box : tuple(float)
+            The longitude and latitude box with four entries as degree. The
+            entries are handled in the following way:
+                (left/west, top/north, right/east, bottom/south)
+        Returns
+        -------
+        sliced_data : numpy.ndarray
+            The sliced data.
+        """
+        pass
 
     @staticmethod
     def convert_to_deg(field, unit):

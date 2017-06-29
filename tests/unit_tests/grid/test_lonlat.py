@@ -231,7 +231,7 @@ class TestLatLonGrid(unittest.TestCase):
         trg_lat = (np.abs(ll_lat[:,0] - target_point[0])).argmin()
         trg_lon = (np.abs(ll_lon[0,:] - target_point[1])).argmin()
         target_data = data[trg_lat, trg_lon].squeeze()
-        extracted_data = self.grid.get_nearest_point(target_point, data)
+        extracted_data = self.grid.get_nearest_point(data, target_point)
         np.testing.assert_array_equal(target_data, extracted_data)
 
     def test_get_nearest_point_multi_dim(self):
@@ -241,7 +241,7 @@ class TestLatLonGrid(unittest.TestCase):
         trg_lat = (np.abs(ll_lat[:,0] - target_point[0])).argmin()
         trg_lon = (np.abs(ll_lon[0,:] - target_point[1])).argmin()
         target_data = data[..., trg_lat, trg_lon]
-        extracted_data = self.grid.get_nearest_point(target_point, data)
+        extracted_data = self.grid.get_nearest_point(data, target_point)
         np.testing.assert_array_equal(target_data, extracted_data)
 
 

@@ -14,6 +14,7 @@ dependencies:
   - conda-forge::tqdm
   - conda-forge::xarray
   - conda-forge::pip
+  - conda-forge::pycairo
   - pip:
     - netcdf4
     - cdo

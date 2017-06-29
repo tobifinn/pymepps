@@ -3,6 +3,7 @@ matplotlib
 netcdf4
 numpy
 pandas
+pycairo
 scipy
 tqdm
 xarray

@@ -58,7 +58,8 @@ class UnstructuredGrid(Grid):
         self._grid_dict.update(grid_dict)
 
     def _construct_dim(self):
-        return np.arange(0, self._grid_dict['gridsize'], 1)
+        contructed_dim = np.arange(0, self._grid_dict['gridsize'], 1)
+        return contructed_dim
 
     def get_coord_names(self):
         """

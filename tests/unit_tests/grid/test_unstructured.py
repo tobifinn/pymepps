@@ -40,7 +40,7 @@ logging.basicConfig(level=logging.DEBUG)
 BASE_PATH = os.path.dirname(os.path.realpath(__file__))
 
 
-class TestLatLonGrid(unittest.TestCase):
+class TestUnstructuredGrid(unittest.TestCase):
     def setUp(self):
         file = os.path.join(BASE_PATH, 'test_grids', 'unstructured')
         builder = GridBuilder(file)
@@ -48,15 +48,21 @@ class TestLatLonGrid(unittest.TestCase):
         self.grid = builder.build_grid()
 
     def test_construct_dim_calcs_dim_lat_lon(self):
-        calculated_lat_lon = self.grid._construct_dim()
-        lon = self.grid_dict['xvals']
-        lat = self.grid_dict['yvals']
+        constructed_dim = self.grid._construct_dim()
         np.testing.assert_array_equal(
-            lat,
-            calculated_lat_lon[0])
+            np.arange(self.grid._grid_dict['gridsize']),
+            constructed_dim)
+
+    def test__calc_lat_lon_gets_lat_lon(self):
+        returned_lat, returned_lon = self.grid._calc_lat_lon()
         np.testing.assert_array_equal(
-            lon,
-            calculated_lat_lon[1])
+            returned_lat,
+            self.grid._grid_dict['yvals']
+        )
+        np.testing.assert_array_equal(
+            returned_lon,
+            self.grid._grid_dict['xvals']
+        )
 
 if __name__ == '__main__':
     unittest.main()
