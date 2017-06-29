@@ -24,6 +24,7 @@
 # """
 # System modules
 import logging
+import warnings
 
 # External modules
 import xarray as xr
@@ -91,26 +92,33 @@ class SpatialData(MetData):
             The items are used to update the data of this SpatialData instance.
             The grid has to be same as this SpatialData instance.
         """
-        update_data = [self.data.copy(), ]
+        update_data = [self.data, ]
         for item in items:
             self._test_item_da_sd(item)
             if isinstance(item, SpatialData):
                 update_data.append(item.data)
-            else:
+            elif isinstance(item, xr.DataArray):
                 update_data.append(item)
-        stack_dims = [dim for dim in self.data.dims
-                      if dim not in self.grid.get_coord_names()]
-        stacked_data = [d.stack(merge=stack_dims) for d in update_data]
-        try:
-            concated_data = xr.concat(stacked_data, dim='merge')
-        except ValueError:
-            raise ValueError('The given items have not the same dimension '
-                             'variables as the original data!')
-        resolving_indexes = ~concated_data.indexes['merge'].duplicated(
-            keep='last')
-        resolved_data = concated_data[..., resolving_indexes]
-        unstacked_data = resolved_data.unstack('merge')
-        self.data = unstacked_data.transpose(*self.data.dims)
+            else:
+                warnings.warn('The given item {0:d} isn\'t a valid SpatialData '
+                              'or a xr.DataArray instance and is skipped',
+                              ResourceWarning)
+        if len(update_data) > 1:
+            stack_dims = [dim for dim in self.data.dims
+                          if dim not in self.grid.get_coord_names()]
+            stacked_data = [d.stack(merge=stack_dims) for d in update_data]
+            try:
+                concated_data = xr.concat(stacked_data, dim='merge')
+            except ValueError:
+                raise ValueError('The given items have not the same dimension '
+                                 'variables as the original data!')
+            resolving_indexes = ~concated_data.indexes['merge'].duplicated(
+                keep='last')
+            resolved_data = concated_data[..., resolving_indexes]
+            unstacked_data = resolved_data.unstack('merge')
+            self.data = unstacked_data.transpose(*self.data.dims)
+        else:
+            self.data = update_data[0]
         logger.info('Updated the data')
 
     def _test_item_da_sd(self, item):
