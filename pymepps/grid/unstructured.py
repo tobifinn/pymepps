@@ -57,6 +57,18 @@ class UnstructuredGrid(Grid):
         self.__nr_coords = 1
         self._grid_dict.update(grid_dict)
 
+    @property
+    def len_coords(self):
+        """
+        Get the number of coordinates for this grid.
+
+        Returns
+        -------
+        len_coords: int
+            Number of coordinates for this grid.
+        """
+        return self.__nr_coords
+
     def _construct_dim(self):
         constructed_dim = np.arange(0, self._grid_dict['gridsize'], 1)
         return constructed_dim
@@ -74,7 +86,8 @@ class UnstructuredGrid(Grid):
         return ['ncells',]
 
     def _calc_lat_lon(self):
-        return self._grid_dict['yvals'], self._grid_dict['xvals']
+        return np.array(self._grid_dict['yvals']),\
+               np.array(self._grid_dict['xvals'])
 
     def lonlatbox(self, data, ll_box):
         """
