@@ -139,11 +139,16 @@ class TSData(MetData):
                     'The given item {0} need to be in an either TSData or '
                     'pandas conform data type!'.format(item))
         concated_data = pd.concat(update_data, axis=1)
-        unique_cols = ~concated_data.columns.duplicated(keep='last')
-        concated_data = concated_data.loc[:, unique_cols].sort_index(axis=1)
-        concated_data = concated_data.squeeze()
-        unique_rows = ~concated_data.index.duplicated(keep='last')
-        self.data = concated_data.loc[unique_rows].sort_index(axis=0)
+        dup_cols = concated_data.columns.duplicated(keep='last')
+        columned_data = concated_data.loc[:, ~dup_cols].sort_index(axis=1)
+        for name, val in concated_data.loc[:, dup_cols][::-1].iteritems():
+            columned_data[name] = columned_data[name].fillna(val)
+        columned_data = columned_data.squeeze()
+        dup_rows = columned_data.index.duplicated(keep='last')
+        merged_data = columned_data.loc[~dup_rows].sort_index(axis=0)
+        for ind, val in concated_data.loc[dup_rows][::-1].T.iteritems():
+            merged_data.loc[ind] = merged_data.loc[ind].fillna(val)
+        self.data = merged_data
         logger.info('Updated the data')
 
     def slice_index(self, start='', end='', inplace=False):
