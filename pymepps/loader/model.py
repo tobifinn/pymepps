@@ -54,7 +54,11 @@ class ModelLoader(BaseLoader):
         The file type determines which file handler will be used to load the
         data. If the file type is None it will be determined automatically based
         on given files. All the files with the majority file type will be used 
-        to generate the SpatialDataset.
+        to generate the SpatialDataset. The available file_types are:
+            nc: NetCDF files
+            grib2: Grib2 files
+            grib1: Grib1 files
+            dap: Opendap urls
     grid : str or Grid or None, optional
         The grid describes the horizontal grid of the spatial data. The given 
         grid will be forwarded to the given SpatialDataset instance. Default is

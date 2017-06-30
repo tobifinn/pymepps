@@ -29,6 +29,7 @@
 # Internal modules
 from .gribhandler import *
 from .netcdfhandler import *
+from .wmtexthandler import *
 
 
 file_handler_dict = {'grib': GribHandler,
@@ -37,7 +38,8 @@ file_handler_dict = {'grib': GribHandler,
                      'grb1': GribHandler,
                      'nc': NetCDFHandler,
                      'netcdf': NetCDFHandler,
-                     'nc4': NetCDFHandler}
+                     'nc4': NetCDFHandler,
+                     'txt': WMTextHandler}
 
 spatial_handler = [GribHandler, NetCDFHandler]
-time_series_handler = [NetCDFHandler,]
+time_series_handler = [NetCDFHandler, WMTextHandler]

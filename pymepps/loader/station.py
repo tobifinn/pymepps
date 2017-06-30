@@ -31,6 +31,7 @@ import logging
 # Internal modules
 from .base import BaseLoader
 from pymepps.metfile import NetCDFHandler
+from pymepps.metfile import WMTextHandler
 from pymepps.metdata import TSDataset
 
 
@@ -39,21 +40,23 @@ logger = logging.getLogger(__name__)
 
 class StationLoader(BaseLoader):
     """
-    A simplified way to load weather model data into a SpatialDataset.
+    A simplified way to load station data into a TSDataset.
     Technically this class is a helper and wrapper around the file handlers and
-    SpatialDataset.
+    TSData.
 
     Parameters
     ----------
     data_path: str
         The path to the files. This path could have a glob-conform path pattern.
         Every file found within this pattern will be used to determine the file
-        type and to generate the SpatialDataset.
+        type and to generate the TSDataset.
     file_type: str or None, optional
         The file type determines which file handler will be used to load the
         data. If the file type is None it will be determined automatically based
         on given files. All the files with the majority file type will be used 
-        to generate the SpatialDataset.
+        to generate the TSDataset. The available file_types are:
+            nc: NetCDF files
+            wm: Text files in a specific "Wettermast format"
     lonlat: tuple(float, float), optional
         The lonlat coordinate tuple describes the position of the station in
         degrees. If this is None the position is unknown. Default is None.
@@ -63,6 +66,7 @@ class StationLoader(BaseLoader):
         self.lonlat = lonlat
         self._available_file_type = {
             'nc': NetCDFHandler,
+            'wm': WMTextHandler,
         }
 
     def lon_lat(self):
@@ -72,6 +76,7 @@ class StationLoader(BaseLoader):
         ds = TSDataset(file_handlers, data_origin=self,
                        processes=self.processes)
         return ds
+
 
 def open_station_dataset(data_path, file_type=None, lonlat=None, processes=1):
     loader = StationLoader(data_path, file_type, lonlat, processes)
