@@ -35,6 +35,7 @@ from mpl_toolkits.basemap import interp
 
 # Internal modules
 from pymepps.grid import GridBuilder
+from pymepps.grid.lonlat import LonLatGrid
 
 
 logging.basicConfig(level=logging.DEBUG)
@@ -243,6 +244,71 @@ class TestLatLonGrid(unittest.TestCase):
         target_data = data[..., trg_lat, trg_lon]
         extracted_data = self.grid.get_nearest_point(data, target_point)
         np.testing.assert_array_equal(target_data, extracted_data)
+
+    def test_lonlatbox_returns_array(self):
+        ll_lat, ll_lon = self.grid._calc_lat_lon()
+        data = np.random.normal(size=[5,]+list(ll_lat.shape))
+        target_box = (0, 10, 10, 0)
+        extracted_data, _ = self.grid.lonlatbox(data, target_box)
+        self.assertIsInstance(extracted_data, np.ndarray)
+
+    def test_lonlatbox_raises_error_if_dim_shape_is_not_same(self):
+        ll_lat, ll_lon = self.grid._calc_lat_lon()
+        data = np.random.normal(size=[5, 4, 4])
+        target_box = (0, 10, 10, 0)
+        with self.assertRaises(ValueError):
+            self.grid.lonlatbox(data, target_box)
+
+    def test_lonlatbox_returns_new_grid_as_second(self):
+        ll_lat, ll_lon = self.grid._calc_lat_lon()
+        data = np.random.normal(size=[5,]+list(ll_lat.shape))
+        target_box = (0, 10, 10, 0)
+        _, new_grid = self.grid.lonlatbox(data, target_box)
+        self.assertIsInstance(new_grid, LonLatGrid)
+        self.assertNotEqual(id(self.grid), id(new_grid))
+
+    def test_lonlatbox_raises_error_if_target_box_has_wrong_size(self):
+        ll_lat, ll_lon = self.grid._calc_lat_lon()
+        data = np.random.normal(size=[5,]+list(ll_lat.shape))
+        with self.assertRaises(ValueError):
+            self.grid.lonlatbox(data, (0, 10, 10))
+            self.grid.lonlatbox(data, (0, 10, 10, 0, 0))
+
+    def test_lonlatbox_slices_lon_lat_from_data(self):
+        calc_lat, calc_lon = self.grid._construct_dim()
+        ll_lat, ll_lon = self.grid._calc_lat_lon()
+        data = np.random.normal(size=[5,]+list(ll_lat.shape))
+        target_box = (0, 10, 10, 0)
+        lat_bound = np.logical_and(calc_lat >= target_box[3],
+                                   calc_lat <= target_box[1])
+        lon_bound = np.logical_and(calc_lon >= target_box[0],
+                                   calc_lon <= target_box[2])
+        extracted_data, _ = self.grid.lonlatbox(data, target_box)
+        target_data = data[..., lat_bound, lon_bound]
+        np.testing.assert_array_equal(extracted_data, target_data)
+
+    def test_lonlatbox_returns_new_grid_with_right_values(self):
+        calc_lat, calc_lon = self.grid._construct_dim()
+        ll_lat, ll_lon = self.grid._calc_lat_lon()
+        data = np.random.normal(size=[5,]+list(ll_lat.shape))
+        target_box = (0, 10, 10, 0)
+        _, new_grid = self.grid.lonlatbox(data, target_box)
+        lat_bound = np.logical_and(calc_lat >= target_box[3],
+                                   calc_lat <= target_box[1])
+        lon_bound = np.logical_and(calc_lon >= target_box[0],
+                                   calc_lon <= target_box[2])
+        new_lat = calc_lat[lat_bound]
+        new_lon = calc_lon[lon_bound]
+        self.assertEqual(new_grid._grid_dict['ysize'], len(new_lat))
+        self.assertEqual(new_grid._grid_dict['xsize'], len(new_lon))
+        np.testing.assert_array_equal(
+            new_grid._grid_dict['yvals'], new_lat
+        )
+        np.testing.assert_array_equal(
+            new_grid._grid_dict['xvals'], new_lon
+        )
+        self.assertNotIn('xfirst', new_grid._grid_dict)
+        self.assertNotIn('yfirst', new_grid._grid_dict)
 
 
 if __name__ == '__main__':

@@ -75,3 +75,29 @@ class UnstructuredGrid(Grid):
 
     def _calc_lat_lon(self):
         return self._grid_dict['yvals'], self._grid_dict['xvals']
+
+    def lonlatbox(self, data, ll_box):
+        """
+        The data is sliced with given lonlat box to a unstructured grid.
+
+        Parameters
+        ----------
+        data : numpy.ndarray
+            The data which should be sliced. The shape of the dimension should
+            be the same as the grid dimension.
+        ll_box : tuple(float)
+            The longitude and latitude box with four entries as degree. The
+            entries are handled in the following way:
+                (left/west, top/north, right/east, bottom/south)
+
+        Returns
+        -------
+        sliced_data : numpy.ndarray
+            The sliced data. The last dimension is sliced.
+        grid : UnstructuredGrid
+            A new instance of UnstructuredGrid with the sliced coordinates as
+            values.
+        """
+        sliced_data, new_grid_dict = self._unstructured_box(data, ll_box)
+        grid = self.__class__(new_grid_dict)
+        return sliced_data, grid

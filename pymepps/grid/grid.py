@@ -26,6 +26,7 @@
 # System modules
 import logging
 import abc
+from copy import deepcopy
 
 # External modules
 import numpy as np
@@ -53,6 +54,9 @@ class Grid(object):
         self._lat_lon = None
         self._grid_dict = None
         self.__nr_coords = 2
+
+    def copy(self):
+        return deepcopy(self)
 
     @property
     def len_coords(self):
@@ -361,25 +365,82 @@ class Grid(object):
             nearest_data = data[..., nearest_ind[0], nearest_ind[1]]
         return np.atleast_1d(nearest_data)
 
+    @abc.abstractmethod
     def lonlatbox(self, data, ll_box):
-        """
-        The data is sliced with given lonlat box.
-        Parameters
-        ----------
-        data : numpy.ndarray
-            The data which should be sliced. The shape of the last two
-            dimensions should be the same as the  grid dimensions. The other
-            dimensions are used to iterate.
-        ll_box : tuple(float)
-            The longitude and latitude box with four entries as degree. The
-            entries are handled in the following way:
-                (left/west, top/north, right/east, bottom/south)
-        Returns
-        -------
-        sliced_data : numpy.ndarray
-            The sliced data.
-        """
         pass
+
+    def _structured_box(self, data, ll_box):
+        calc_lat, calc_lon = self._construct_dim()
+        if data.shape[-self.len_coords:] != \
+                (self._grid_dict['ysize'], self._grid_dict['xsize']):
+            raise ValueError(
+                'The last two dimension of the data needs the same shape as '
+                'the coordinates of this grid!')
+        if not len(ll_box) == 4:
+            raise ValueError(
+                'The latitude-longitude box doesn\'t have a length of 4, '
+                'instead the length is: {0:d}'.format(len(ll_box)))
+        lon_box = (ll_box[0], ll_box[2])
+        lat_box = (ll_box[1], ll_box[3])
+        lat_bound = np.logical_and(
+            calc_lat >= np.min(lat_box), calc_lat <= np.max(lat_box)
+        )
+        lon_bound = np.logical_and(
+            calc_lon >= np.min(lon_box), calc_lon <= np.max(lon_box)
+        )
+        sliced_data = data[..., lat_bound, lon_bound]
+
+        lat_vals = calc_lat[lat_bound]
+        lon_vals = calc_lon[lon_bound]
+
+        new_grid_dict = self._grid_dict
+        new_grid_dict['ysize'] = len(lat_vals)
+        new_grid_dict['xsize'] = len(lon_vals)
+        new_grid_dict['yvals'] = list(lat_vals)
+        new_grid_dict['xvals'] = list(lon_vals)
+        keys_to_del = ['yfirst', 'yinc', 'xfirst', 'xinc']
+        [new_grid_dict.pop(k, None) for k in keys_to_del]
+        return sliced_data, new_grid_dict
+
+    def _unstructured_box(self, data, ll_box):
+        calc_lat, calc_lon = self._calc_lat_lon()
+        if data.shape[-self.len_coords:] != calc_lat.shape:
+            raise ValueError(
+                'The last dimension(s) of the data needs the same shape as '
+                'the coordinates of this grid!')
+        if not len(ll_box) == 4:
+            raise ValueError(
+                'The latitude-longitude box doesn\'t have a length of 4, '
+                'instead the length is: {0:d}'.format(len(ll_box)))
+        lon_box = (ll_box[0], ll_box[2])
+        lat_box = (ll_box[1], ll_box[3])
+        bound = np.all((
+            calc_lat >= np.min(lat_box),
+            calc_lat <= np.max(lat_box),
+            calc_lon >= np.min(lon_box),
+            calc_lon <= np.max(lon_box)
+        ), axis=0)
+        if np.sum(bound) == 0:
+            raise ValueError('Only an empty array remains, please choose '
+                             'another longitude-latitude box!')
+        sliced_data = data[..., bound]
+
+        lat_vals = calc_lat[bound]
+        lon_vals = calc_lon[bound]
+
+        # Construct a unstructured grid
+        new_grid_dict = dict(
+            gridtype='unstructured',
+            xlongname='longitude',
+            xname='lon',
+            xunits='degrees',
+            ylongname='latitude',
+            yname='lat',
+            yunits='degrees',)
+        new_grid_dict['gridsize'] = len(lat_vals)
+        new_grid_dict['yvals'] = list(lat_vals)
+        new_grid_dict['xvals'] = list(lon_vals)
+        return sliced_data, new_grid_dict
 
     @staticmethod
     def convert_to_deg(field, unit):

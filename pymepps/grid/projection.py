@@ -33,6 +33,7 @@ import pyproj
 
 # Internal modules
 from .lonlat import LonLatGrid
+from .unstructured import UnstructuredGrid
 
 
 logger = logging.getLogger(__name__)
@@ -245,3 +246,29 @@ class RotPoleProj(BaseProj):
         x, y, z = self._derotate_coords(rot_x, rot_y, rot_z, theta, phi)
         lat, lon = self._post_rotation(x, y, z)
         return lon, lat
+
+    def lonlatbox(self, data, ll_box):
+        """
+        The data is sliced with given lonlat box to a unstructured grid.
+
+        Parameters
+        ----------
+        data : numpy.ndarray
+            The data which should be sliced. The shape of the last two
+            dimensions should be the same as the  grid dimensions.
+        ll_box : tuple(float)
+            The longitude and latitude box with four entries as degree. The
+            entries are handled in the following way:
+                (left/west, top/north, right/east, bottom/south)
+
+        Returns
+        -------
+        sliced_data : numpy.ndarray
+            The sliced data. The last two dimensions are flattened and sliced.
+        grid : UnstructuredGrid
+            A new instance of UnstructuredGrid with the sliced coordinates as
+            values.
+        """
+        sliced_data, new_grid_dict = self._unstructured_box(data, ll_box)
+        grid = UnstructuredGrid(new_grid_dict)
+        return sliced_data, grid

@@ -81,3 +81,28 @@ class LonLatGrid(Grid):
         dim_lon = self.convert_to_deg(dim_lon, self._grid_dict['xunits'])
         lat, lon = np.meshgrid(dim_lat, dim_lon)
         return lat.transpose(), lon.transpose()
+
+    def lonlatbox(self, data, ll_box):
+        """
+        The data is sliced with given lonlat box.
+
+        Parameters
+        ----------
+        data : numpy.ndarray
+            The data which should be sliced. The shape of the last two
+            dimensions should be the same as the  grid dimensions.
+        ll_box : tuple(float)
+            The longitude and latitude box with four entries as degree. The
+            entries are handled in the following way:
+                (left/west, top/north, right/east, bottom/south)
+
+        Returns
+        -------
+        sliced_data : numpy.ndarray
+            The sliced data. The last two dimensions are sliced.
+        grid : Grid
+            A new child instance of Grid with the sliced coordinates as values.
+        """
+        sliced_data, new_grid_dict = self._structured_box(data, ll_box)
+        grid = self.__class__(new_grid_dict)
+        return sliced_data, grid

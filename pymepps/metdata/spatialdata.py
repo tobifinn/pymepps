@@ -171,19 +171,23 @@ class SpatialData(MetData):
             same last dimension as the new grid. If this is None, the data
             values of this instance are used. Default is None.
         """
+        logger.info(grid.get_coord_names())
         if grid is None:
             grid = self.grid
         if data is None:
             data = self.data.values
         new_coords = grid.get_coords()
-        for dim in self.data.dims[:-grid.len_coords]:
+        for dim in self.data.dims[:-self.grid.len_coords]:
             new_coords[dim] = self.data[dim]
+        new_dims = list(self.data.dims[:-self.grid.len_coords]) + \
+                 list(grid.get_coord_names())
+        logger.info(new_coords)
+        logger.info(new_dims)
         new_darray = xr.DataArray(
             data,
             name=self.data.name,
             coords=new_coords,
-            dims=list(self.data.dims[:-grid.len_coords]) + \
-                 list(grid.get_coord_names()),
+            dims=new_dims,
             attrs=self.data.attrs
         )
         self.data = new_darray
@@ -304,7 +308,7 @@ class SpatialData(MetData):
             spdata = self
         else:
             spdata = self.copy()
-        new_data = spdata.grid.remapnn(spdata.data.values, new_grid)
+        new_data = spdata.grid.remapnn(new_grid, spdata.data.values)
         spdata.set_grid_coordinates(new_data, new_grid)
         return spdata
 
@@ -330,8 +334,38 @@ class SpatialData(MetData):
             spdata = self
         else:
             spdata = self.copy()
-        new_data = spdata.grid.remapbil(spdata.data.values, new_grid)
+        new_data = spdata.grid.remapbil(new_grid, spdata.data.values)
         spdata.set_grid_coordinates(new_data, new_grid)
+        return spdata
+
+    def sellonlatbox(self, lonlatbox, inplace=False):
+        """
+        The data is sliced with the given lonlatbox. A new grid is created based
+        on the sliced coordinates.
+
+        Parameters
+        ----------
+        lonlatbox : tuple(float)
+            The longitude and latitude box with four entries as degree. The
+            entries are handled in the following way:
+                (left/west, top/north, right/east, bottom/south)
+
+        inplace: bool, optional
+            If the new data should be replacing the data of this SpatialData
+            instance or if the instance should be copied. Default is False.
+
+        Returns
+        -------
+        spdata: SpatialData
+            The sliced SpatialData instance with the replaced grid.
+        """
+        if inplace:
+            spdata = self
+        else:
+            spdata = self.copy()
+        new_data, new_grid = spdata.grid.lonlatbox(spdata.data.values,
+                                                   lonlatbox)
+        spdata.set_grid_coordinates(new_grid, new_data)
         return spdata
 
     def plot(self, method='contourf'):
