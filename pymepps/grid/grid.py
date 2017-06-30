@@ -82,11 +82,17 @@ class Grid(object):
             their own name, indicating that the they are self-describing, and
             the coordinate values as numpy array.
         """
-        dy, dx = self._construct_dim()
-        coords = {
-            self._grid_dict['yname']: ((self._grid_dict['yname'],), dy),
-            self._grid_dict['xname']: ((self._grid_dict['xname'],), dx),
-        }
+        dim_vals = self._construct_dim()
+        dim_names = self.get_coord_names()
+        if isinstance(dim_vals, tuple):
+            coords = {name: ((name,), dim_vals[k])
+                      for k, name in enumerate(dim_names)}
+        elif isinstance(dim_vals, np.ndarray):
+            coords = {name: ((name,), dim_vals)
+                      for k, name in enumerate(dim_names)}
+        else:
+            TypeError('The return value of construct dim has to be a tuple or '
+                      'numpy array!')
         return coords
 
     @abc.abstractmethod
