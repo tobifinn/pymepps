@@ -75,6 +75,10 @@ class TSData(MetData):
         super().__init__(data, data_origin)
         self.lonlat = lonlat
 
+    def __repr__(self):
+        return "{0:s}({1:s})".format(
+            str(self.__class__.__name__), str(self.lonlat))
+
     def __str__(self):
         name = self.__class__.__name__
         return '{0:s}\n{1:s}\n{2:s}\nlonlat:{3:s}'.format(

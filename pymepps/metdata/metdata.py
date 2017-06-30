@@ -46,9 +46,7 @@ class MetData(object):
         self.data = data
 
     def __repr__(self):
-        return "{0:s}\n\tdata:\n\t{1:s}".format(
-            str(self.__class__.__name__),
-            repr(self.data))
+        return "{0:s}".format(str(self.__class__.__name__))
 
     def __len__(self):
         return len(self.data)

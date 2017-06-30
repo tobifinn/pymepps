@@ -67,6 +67,11 @@ class SpatialData(MetData):
         self._grid = None
         self.grid = grid
 
+    def __repr__(self):
+        return "{0:s}({1:s}, Dimensions: {2:s})".format(
+            str(self.__class__.__name__), repr(self.data.name),
+            str(self.data.dims))
+
     def __str__(self):
         dims = str(self.data.dims)
         coords = str(self.data.coords)
