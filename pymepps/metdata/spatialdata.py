@@ -72,8 +72,8 @@ class SpatialData(MetData):
         coords = str(self.data.coords)
         grid = str(self.grid)
         name = "{0:s}({1:s})".format(self.__class__.__name__, self.data.name)
-        return "{0:s}\n{1:s}\ndims: {2:s}\ncoords:{3:s}\n" \
-               "grid:{4:s}".format(name, '-'*len(name), dims, coords, grid)
+        return "{0:s}\n{1:s}\nDimensions: {2:s}\n{3:s}\n" \
+               "Grid: {4:s}".format(name, '-'*len(name), dims, coords, grid)
 
     def update(self, *items):
         """
@@ -171,7 +171,6 @@ class SpatialData(MetData):
             same last dimension as the new grid. If this is None, the data
             values of this instance are used. Default is None.
         """
-        logger.info(grid.get_coord_names())
         if grid is None:
             grid = self.grid
         if data is None:
@@ -181,8 +180,6 @@ class SpatialData(MetData):
             new_coords[dim] = self.data[dim]
         new_dims = list(self.data.dims[:-self.grid.len_coords]) + \
                  list(grid.get_coord_names())
-        logger.info(new_coords)
-        logger.info(new_dims)
         new_darray = xr.DataArray(
             data,
             name=self.data.name,
@@ -425,7 +422,9 @@ class SpatialData(MetData):
             The path where the netcdf file should be saved.
         """
         save_array = self.data.copy()
-        save_array.attrs.update(self.grid._grid_dict)
+        grid_attr = {'grid_{0:s}'.format(k): self.grid._grid_dict[k]
+                     for k in self.grid._grid_dict}
+        save_array.attrs.update(grid_attr)
         save_array.to_netcdf(path)
 
     @staticmethod

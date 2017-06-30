@@ -122,7 +122,10 @@ class SpatialDataset(MetDataset):
     @staticmethod
     def _get_grid_from_dataarray(data_array):
         try:
-            grid_builder = GridBuilder(data_array.attrs)
+            grid_attrs = {attr[5:]: data_array.attrs[attr]
+                          for attr in data_array.attrs
+                          if attr[:5] == 'grid_'}
+            grid_builder = GridBuilder(grid_attrs)
             grid = grid_builder.build_grid()
             logger.info('Got the grid from the data array')
         except (KeyError, ValueError, AttributeError):
@@ -195,6 +198,9 @@ class SpatialDataset(MetDataset):
         spdata = SpatialData(data[0], grid=grid, data_origin=self)
         if len(data)>1:
             spdata.update(*data[1:])
+        loaded_attrs = {attr: spdata.data.attrs[attr]
+                        for attr in spdata.data.attrs
+                        if not attr.startswith('grid_')}
         history_message = \
             "{0:s}, {1:s}, Python:pymepps:SpatialDataset:select" \
             "('{2:s}')".format(
@@ -202,9 +208,10 @@ class SpatialDataset(MetDataset):
                     getpass.getuser(),
                     var_name)
         if 'history' in spdata.data.attrs:
-            spdata.data.attrs['history'] += '\n{0:s}'.format(history_message)
+            loaded_attrs['history'] += '\n{0:s}'.format(history_message)
         else:
-            spdata.data.attrs['history'] = history_message
-        spdata.data.attrs['name'] = spdata.data._name = var_name
+            loaded_attrs['history'] = history_message
+        loaded_attrs['name'] = spdata.data._name = var_name
+        spdata.data.attrs = loaded_attrs
         spdata.set_grid_coordinates()
         return spdata
