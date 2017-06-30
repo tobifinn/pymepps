@@ -160,8 +160,10 @@ class SpatialDataset(MetDataset):
 
     def _get_file_data(self, file, var_name):
         file.open()
-        data = file.get_messages(var_name)
-        file.close()
+        try:
+            data = file.get_messages(var_name)
+        finally:
+            file.close()
         return data
 
     def _multi_select_var(self, data, var_name):
