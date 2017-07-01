@@ -80,6 +80,50 @@ class SpatialData(MetData):
         return "{0:s}\n{1:s}\nDimensions: {2:s}\n{3:s}\n" \
                "Grid: {4:s}".format(name, '-'*len(name), dims, coords, grid)
 
+    def merge(self, *items, **kwargs):
+        """
+        The merge routine could be used to merge this SpatialData instance with
+        other instances. The merge creates a new merge dimension, name after the
+        variable names. The grid of this instance is used as merged grid.
+
+        Parameters
+        ----------
+        items : xarray.DataArray or SpatialData
+            The items are merged with this SpatialData instance. The grid of the
+            items have to be same as this SpatialData instance.
+        inplace: bool, optional
+            If the new data should be replacing the data of this SpatialData
+            instance or if the instance should be copied. Default is False.
+
+        Returns
+        -------
+        spdata : SpatialData
+            The SpatialData instance with the merged data. If inplace is True,
+            this instance is returned.
+        """
+        update_data = [self.data, ]
+        for item in items:
+            self._test_item_da_sd(item)
+            if isinstance(item, SpatialData):
+                update_data.append(item.data)
+            elif isinstance(item, xr.DataArray):
+                update_data.append(item)
+            else:
+                warnings.warn('The given item {0:d} isn\'t a valid SpatialData '
+                              'or a xr.DataArray instance and is skipped',
+                              ResourceWarning)
+
+        update_data = [
+            item.to_dataset('variable') if 'variable' in item.coords else item
+            for item in update_data]
+        merged_data = xr.merge(update_data).to_array(name='merged_array')
+        if 'inplace' in kwargs.keys() and kwargs['inplace']:
+            spdata = self
+        else:
+            spdata = self.copy()
+        spdata.data = merged_data
+        return spdata
+
     def update(self, *items):
         """
         The update routine could be used to update the data of this SpatialData,
@@ -95,7 +139,7 @@ class SpatialData(MetData):
         ----------
         items: xarray.DataArray or SpatialData
             The items are used to update the data of this SpatialData instance.
-            The grid has to be same as this SpatialData instance.
+            The grid has to be the same as this SpatialData instance.
         """
         update_data = [self.data, ]
         for item in items:
