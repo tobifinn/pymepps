@@ -27,6 +27,7 @@
 import logging
 
 # External modules
+import numpy as np
 
 # Internal modules
 from .lonlat import LonLatGrid
@@ -58,7 +59,10 @@ class CurvilinearGrid(LonLatGrid):
         self._grid_dict.update(grid_dict)
 
     def _calc_lat_lon(self):
-        return self._grid_dict['yvals'], self._grid_dict['xvals']
+        y, x = self._construct_dim()
+        lat = np.array(self._grid_dict['yvals']).reshape(y.size, x.size)
+        lon = np.array(self._grid_dict['xvals']).reshape(y.size, x.size)
+        return lat, lon
 
     def lonlatbox(self, data, ll_box):
         """
