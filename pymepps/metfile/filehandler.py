@@ -63,11 +63,11 @@ class FileHandler(object):
         return self._var_names
 
     @abc.abstractmethod
-    def get_messages(self, var_name):
+    def get_messages(self, var_name, **kwargs):
         pass
 
     @abc.abstractmethod
-    def get_timeseries(self, var_name):
+    def get_timeseries(self, var_name, **kwargs):
         pass
 
     @abc.abstractmethod
@@ -89,28 +89,20 @@ class FileHandler(object):
                 in_list = True
         return in_list
 
-    def _get_missing_coordinates(self, cube):
-        logger.debug('The cube coordinates are {0}'.format(cube.coords))
-        additional_coords = collections.OrderedDict()
-        if not self._check_list_in_list(
-                ['ana', 'runtime', 'referencetime'], list(cube.dims[:-2])):
+    def _get_runtime(self, **kwargs):
+        if 'runtime' in kwargs:
+            ana = kwargs['runtime']
+        else:
             try:
                 ana = self._get_dates_from_path(self.file)[0]
             except IndexError:
                 ana = None
-            additional_coords['runtime'] = ana
-            logger.debug(
-                'No analysis date within the cube found set the analysis date '
-                'to {0}'.format(ana))
-        if not self._check_list_in_list(
-                ['ens', 'mem'], list(cube.dims[:-2])):
-            ens = self._get_ensemble_from_path(self.file)
-            additional_coords['ensemble'] = ens
-            logger.debug(
-                'No ensemble member within the cube found set the ensemble '
-                'to {0}'.format(ens))
-        if not self._check_list_in_list(
-                ['time', 'validtime'], list(cube.dims[:-2])):
+        return ana
+
+    def _get_validtime(self, additional_coords, **kwargs):
+        if 'validtime' in kwargs:
+            time = kwargs['validtime']
+        else:
             try:
                 if 'runtime' in additional_coords:
                     time = self._get_dates_from_path(self.file)[1]
@@ -118,10 +110,38 @@ class FileHandler(object):
                     time = self._get_dates_from_path(self.file)[0]
             except IndexError:
                 time = None
-            additional_coords['validtime'] = time
+        return time
+
+    def _get_ensemble(self, **kwargs):
+        if 'ensemble' in kwargs:
+            ens = kwargs['ensemble']
+        else:
+            ens = self._get_ensemble_from_path(self.file)
+        return ens
+
+    def _get_missing_coordinates(self, cube, grid_len=2, **kwargs):
+        logger.debug('The cube coordinates are {0}'.format(cube.coords))
+        additional_coords = collections.OrderedDict()
+        if not self._check_list_in_list(
+                ['ana', 'runtime', 'referencetime'],
+                list(cube.dims[:-grid_len])):
+            additional_coords['runtime'] = self._get_runtime(**kwargs)
+            logger.debug(
+                'No analysis date within the cube found set the analysis date '
+                'to {0}'.format(additional_coords['runtime']))
+        if not self._check_list_in_list(
+                ['ens', 'mem'], list(cube.dims[:-grid_len])):
+            additional_coords['ensemble'] = self._get_ensemble(**kwargs)
+            logger.debug(
+                'No ensemble member within the cube found set the ensemble '
+                'to {0}'.format(additional_coords['ensemble']))
+        if not self._check_list_in_list(
+                ['time', 'validtime'], list(cube.dims[:-2])):
+            additional_coords['validtime'] = self._get_validtime(
+                additional_coords, **kwargs)
             logger.debug(
                 'No valid time within the cube found set the time to '
-                '{0}'.format(time))
+                '{0}'.format(additional_coords['validtime']))
         ds_coords = xr.Dataset(coords=additional_coords)
         logger.debug(ds_coords)
         logger.debug(cube.coords)

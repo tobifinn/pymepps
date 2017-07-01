@@ -88,10 +88,10 @@ class TSDataset(MetDataset):
                              'due to {0:s}'.format(str(e)))
                 return None
 
-    def _get_file_data(self, file, var_name):
+    def _get_file_data(self, file, var_name, **kwargs):
         file.open()
         try:
-            ts_data = file.get_timeseries(var_name)
+            ts_data = file.get_timeseries(var_name, **kwargs)
         finally:
             file.close()
         return ts_data

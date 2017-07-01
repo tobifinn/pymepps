@@ -136,7 +136,7 @@ class MetDataset(object):
         """
         return sorted(self.variables.keys())
 
-    def select_by_pattern(self, pattern, return_list=True):
+    def select_by_pattern(self, pattern, return_list=True, **kwargs):
         """
         Method to select variables from this dataset by keywords. This method
         uses list comprehension to extract the variable names where the var_name
@@ -149,6 +149,8 @@ class MetDataset(object):
             The pattern for which should be searched.
         return_list : bool
             If the return value should be a list or a dictionary.
+        kwargs : dict
+            Additional parameters that are passed to the file handlers.
 
         Returns
         -------
@@ -174,14 +176,14 @@ class MetDataset(object):
                 'Started to extract variables from file handlers with pattern '
                 '{0:s}'.format(pattern))
             for var in found_variables:
-                data = self.select(var)
+                data = self.select(var, **kwargs)
                 if return_list:
                     data_list.append(data)
                 else:
                     data_list[var] = data
             return data_list
 
-    def select(self, var_name):
+    def select(self, var_name, **kwargs):
         """
         Method to select a variable from this dataset. If the variable is find
         in more than one file or message, the method tries to find similarities
@@ -194,6 +196,8 @@ class MetDataset(object):
         var_name : str
             The variable which should be extracted. If the variable is not
             found within the dataset there would be a value error exception.
+        kwargs : dict
+            Additional parameters that are passed to the file handlers.
 
         Returns
         -------
@@ -210,14 +214,14 @@ class MetDataset(object):
         num_file_handlers = len(self.variables[var_name])
         logger.info('Started select {0:s} from {1:d} files'.format(
             var_name, num_file_handlers))
-        single_func = partial(self._get_file_data, var_name=var_name)
+        single_func = partial(self._get_file_data, var_name=var_name, **kwargs)
         data = self._multiproc.map(single_func, self.variables[var_name],
                                    flatten=True)
         logger.info('Extracted the data, now merge the data!')
         extracted_data = self.data_merge(data, var_name)
         return extracted_data
 
-    def select_ds(self, include=None, exclude=None):
+    def select_ds(self, include=None, exclude=None, **kwargs):
         """
         Extract the dataset data into a MetData instance. The include list is
         handled superior to the exclude list. If both lists are None all
@@ -237,6 +241,8 @@ class MetDataset(object):
             list is used. If this iterable is also None, all available data
             variables are used to construct the MetData instance. Default is
             None.
+        kwargs : dict
+            Additional parameters that are passed to the file handlers.
 
         Returns
         -------
@@ -273,7 +279,8 @@ class MetDataset(object):
             num_file_handlers = len(self.variables[var_name])
             logger.info('Started select {0:s} from {1:d} files'.format(
                 var_name, num_file_handlers))
-            single_func = partial(self._get_file_data, var_name=var_name)
+            single_func = partial(self._get_file_data, var_name=var_name,
+                                  **kwargs)
             data = self._multiproc.map(single_func, self.variables[var_name],
                                        flatten=True)
             raw_data.extend(self._multi_select_var(data, var_name))
@@ -287,7 +294,7 @@ class MetDataset(object):
         pass
 
     @abc.abstractmethod
-    def _get_file_data(self, file, var_name):
+    def _get_file_data(self, file, var_name, **kwargs):
         pass
 
     @abc.abstractmethod

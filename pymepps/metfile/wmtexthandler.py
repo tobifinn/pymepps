@@ -84,7 +84,7 @@ class WMTextHandler(FileHandler):
                   for key, val in header.items()}
         return header, data
 
-    def get_timeseries(self, var_name):
+    def get_timeseries(self, var_name, **kwargs):
         """
         Method to get the time series from a WettermastTextFile.
 

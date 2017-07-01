@@ -158,10 +158,10 @@ class SpatialDataset(MetDataset):
             grid = None
         return grid
 
-    def _get_file_data(self, file, var_name):
+    def _get_file_data(self, file, var_name, **kwargs):
         file.open()
         try:
-            data = file.get_messages(var_name)
+            data = file.get_messages(var_name, **kwargs)
         finally:
             file.close()
         return data

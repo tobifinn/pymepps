@@ -71,7 +71,7 @@ class GribHandler(FileHandler):
             var_names.append(msg['cfVarNameECMF'])
         return set(var_names)
 
-    def get_messages(self, var_name):
+    def get_messages(self, var_name, **kwargs):
         """
         Method to get message-wise the data for a given variable as
         xr.DataArray.

@@ -121,7 +121,7 @@ class NetCDFHandler(FileHandler):
         logger.debug(variable)
         return variable
 
-    def get_timeseries(self, var_name):
+    def get_timeseries(self, var_name, **kwargs):
         """
         Method to get the time series from a NetCDF file. This is designed for
         measurement site data in netcdf format. At the moment this method is
@@ -144,7 +144,7 @@ class NetCDFHandler(FileHandler):
         logger.debug(data)
         return data
 
-    def get_messages(self, var_name):
+    def get_messages(self, var_name, **kwargs):
         """
         Method to imitate the message-like behaviour of grib files.
 
@@ -164,7 +164,7 @@ class NetCDFHandler(FileHandler):
         logger.debug('Loaded the cube')
         cube.attrs.update(self.ds.attrs)
         logger.debug('Updated the attributes')
-        cube = self._get_missing_coordinates(cube)
+        cube = self._get_missing_coordinates(cube, **kwargs)
         time_dim = cube.dims[2]
         if np.issubdtype(cube[time_dim].values.dtype, np.datetime64) and \
                 np.issubdtype(cube[cube.dims[0]].values.dtype, np.datetime64):
