@@ -144,6 +144,24 @@ class NetCDFHandler(FileHandler):
         logger.debug(data)
         return data
 
+    def _normalize_coordinates(self, cube):
+        """
+        Normalize the coordinates of a given cube. The non-grid coordinates are
+        renamed to a common name. If there is a valid runtime coordinate, then
+        the validtime coordinate is converted to timedelta.
+        """
+        rename_dim = ['runtime', 'ensemble', 'validtime', 'height']
+        cube_dims = cube.dims
+        if cube_dims[0] == 'variable':
+            cube_dims = cube_dims[1:]
+        rename_coords = {cube_dims[k]: rename
+                      for k, rename in enumerate(rename_dim)}
+        cube = cube.rename(rename_coords)
+        if np.issubdtype(cube['validtime'].values.dtype, np.datetime64) and \
+                np.issubdtype(cube['runtime'].values.dtype, np.datetime64):
+            cube['validtime'] = cube['validtime']-cube['runtime'].values
+        return cube
+
     def get_messages(self, var_name, **kwargs):
         """
         Method to imitate the message-like behaviour of grib files.
@@ -165,9 +183,6 @@ class NetCDFHandler(FileHandler):
         cube.attrs.update(self.ds.attrs)
         logger.debug('Updated the attributes')
         cube = self._get_missing_coordinates(cube, **kwargs)
-        time_dim = cube.dims[2]
-        if np.issubdtype(cube[time_dim].values.dtype, np.datetime64) and \
-                np.issubdtype(cube[cube.dims[0]].values.dtype, np.datetime64):
-            cube[time_dim] = cube[time_dim]-cube[cube.dims[0]].values
+        cube = self._normalize_coordines(cube)
         cube = cube.load()
         return cube

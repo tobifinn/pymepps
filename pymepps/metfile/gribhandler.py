@@ -137,8 +137,8 @@ class GribHandler(FileHandler):
                     'runtime': anal_date,
                     'ensemble': ens,
                     'validtime': valid_date,
-                    'level': level}
-            dims = ['runtime', 'ensemble', 'validtime', 'level']
+                    'height': level}
+            dims = ['runtime', 'ensemble', 'validtime', 'height']
             if len(array_data.shape)==5:
                 logger.debug('Found unstructured grid')
                 grid_coords = {
