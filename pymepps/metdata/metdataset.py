@@ -64,12 +64,13 @@ class MetDataset(object):
     """
     def __init__(self, file_handlers, data_origin=None, processes=1):
         self._file_handlers = None
-        self._variables = {}
         self._multiproc = None
         self._processes = 1
         self.data_origin = data_origin
         self.file_handlers = file_handlers
         self.processes = processes
+        self.__variables = self._initialize_variables()
+
 
     def __str__(self):
         file_handlers = len(self.file_handlers)
@@ -94,26 +95,26 @@ class MetDataset(object):
         file_handler.close()
         return var_names
 
+    def _initialize_variables(self):
+        new_variables = {}
+        logger.info('Started generating variable dict')
+        mt = MultiThread(processes=self.processes)
+        var_names_list = mt.map(self._get_variables, self._file_handlers,
+                                flatten=False)
+        logger.info('Got the variable name list, now converting to dict')
+        for key, var_names in enumerate(var_names_list):
+            for var_name in var_names:
+                try:
+                    new_variables[var_name].append(self._file_handlers[key])
+                except KeyError:
+                    new_variables[var_name] = [self._file_handlers[key], ]
+        return new_variables
     @property
     def variables(self):
         """
         Return the variable names and the corresponding file handlers.
         """
-        if not any(self._variables):
-            new_variables = {}
-            logger.info('Started generating variable dict')
-            mt = MultiThread(processes=self.processes)
-            var_names_list = mt.map(self._get_variables, self._file_handlers,
-                                    flatten=False)
-            logger.info('Got the variable name list, now converting to dict')
-            for key, var_names in enumerate(var_names_list):
-                for var_name in var_names:
-                    try:
-                        new_variables[var_name].append(self._file_handlers[key])
-                    except KeyError:
-                        new_variables[var_name] = [self._file_handlers[key], ]
-            self._variables = new_variables
-        return self._variables
+        return self.__variables
 
     @property
     def file_handlers(self):

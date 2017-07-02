@@ -183,6 +183,6 @@ class NetCDFHandler(FileHandler):
         cube.attrs.update(self.ds.attrs)
         logger.debug('Updated the attributes')
         cube = self._get_missing_coordinates(cube, **kwargs)
-        cube = self._normalize_coordines(cube)
+        cube = self._normalize_coordinates(cube)
         cube = cube.load()
         return cube
