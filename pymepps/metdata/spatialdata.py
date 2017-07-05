@@ -41,7 +41,8 @@ import pymepps.loader
 logger = logging.getLogger(__name__)
 
 
-class SpatialData(MetData):
+@xr.register_dataarray_accessor('pp')
+class SpatialAccessor(MetData):
     """
     SpatialData contains spatial based data structures. This class is the
     standard data type for file types like netCDF or grib. It's prepared
@@ -58,12 +59,9 @@ class SpatialData(MetData):
         point to a given longitude/latitude pair. The grid is also used to 
         get a basemap instance to determine the grid boundaries for plotting
         purpose.
-    data_origin : object of pymepps or None, optional
-        The origin of this data. This could be a model run, a station, a
-        database or something else. Default is None.
     """
-    def __init__(self, data, grid=None, data_origin=None):
-        super().__init__(data, data_origin)
+    def __init__(self, data, grid=None):
+        super().__init__(data)
         self._grid = None
         self.grid = grid
 
@@ -73,14 +71,41 @@ class SpatialData(MetData):
             str(self.data.dims))
 
     def __str__(self):
-        dims = str(self.data.dims)
-        coords = str(self.data.coords)
         grid = str(self.grid)
         name = "{0:s}({1:s})".format(self.__class__.__name__, self.data.name)
-        return "{0:s}\n{1:s}\nDimensions: {2:s}\n{3:s}\n" \
-               "Grid: {4:s}".format(name, '-'*len(name), dims, coords, grid)
+        return "{0:s}\n{1:s}\nGrid: {1:s}".format(name, '-'*len(name), grid)
 
-    def merge(self, *items, **kwargs):
+    def _check_data_coordinates(self, item):
+        """
+        Check if items grid coordinates are the same as those of the grid.
+
+        Parameters
+        ----------
+        item: xarray.DataArray
+            Instance to test for type and grid dimension length.
+
+        Returns
+        -------
+        item: xarray.DataArray
+            The checked item.
+
+        Raises
+        ------
+        ValueError:
+            The given item has not the same grid dimensions as the Data of this
+            SpatialData instance.
+        """
+        len_grid_coordinates = self.grid.len_coords
+        item_grid_length = item.values.shape[-len_grid_coordinates:]
+        data_grid_length = np.array(self.grid._construct_dim).shape
+        grid_lengths_equal = all(
+            (i==g for i, g in zip(item_grid_length, data_grid_length)))
+        if not grid_lengths_equal:
+            raise ValueError('The item {0:s} has not the right last dimensions.'
+                             'They need to be the same as the grid!')
+        return item
+
+    def merge(self, *items):
         """
         The merge routine could be used to merge this SpatialData instance with
         other instances. The merge creates a new merge dimension, name after the
@@ -88,41 +113,22 @@ class SpatialData(MetData):
 
         Parameters
         ----------
-        items : xarray.DataArray or SpatialData
-            The items are merged with this SpatialData instance. The grid of the
-            items have to be same as this SpatialData instance.
-        inplace: bool, optional
-            If the new data should be replacing the data of this SpatialData
-            instance or if the instance should be copied. Default is False.
+        items : xarray.DataArray
+            The items are merged with this xarray.DataArray instance. The grid
+            dimensions have to be same as the grid.
 
         Returns
         -------
-        spdata : SpatialData
-            The SpatialData instance with the merged data. If inplace is True,
-            this instance is returned.
+        merged_array : xarray.DataArray
+            The DataArray instance with the merged data.
         """
-        update_data = [self.data, ]
-        for item in items:
-            self._test_item_da_sd(item)
-            if isinstance(item, SpatialData):
-                update_data.append(item.data)
-            elif isinstance(item, xr.DataArray):
-                update_data.append(item)
-            else:
-                warnings.warn('The given item {0:d} isn\'t a valid SpatialData '
-                              'or a xr.DataArray instance and is skipped',
-                              ResourceWarning)
-
-        update_data = [
+        update_data = [self._check_data_coordinates(self.data), ]
+        update_data += [self._check_data_coordinates(item) for item in items]
+        dataset_data = [
             item.to_dataset('variable') if 'variable' in item.coords else item
             for item in update_data]
-        merged_data = xr.merge(update_data).to_array(name='merged_array')
-        if 'inplace' in kwargs.keys() and kwargs['inplace']:
-            spdata = self
-        else:
-            spdata = self.copy()
-        spdata.data = merged_data
-        return spdata
+        merged_data = xr.merge(dataset_data).to_array(name='merged_array')
+        return merged_data
 
     def update(self, *items):
         """
@@ -169,41 +175,6 @@ class SpatialData(MetData):
         else:
             self.data = update_data[0]
         logger.info('Updated the data')
-
-    def _test_item_da_sd(self, item):
-        """
-        Test if the given item is either a xarray.DataArray or a SpatialData 
-        instance and test if the grid of the given instance has the same
-        dimension lengths as the grid of this instance, assuming that the same 
-        grid dimension lengths are belonging to the same grid.
-
-        Parameters
-        ----------
-        item: xarray.DataArray or SpatialData
-            Instance to test for type and grid dimension length.
-
-        Raises
-        ------
-        TypeError:
-            The given item is not either a xarray.DataArray or a SpatialData 
-            instance.
-        ValueError:
-            The given item has not the same grid dimensions as the Data of this
-            SpatialData instance.
-        """
-        if not isinstance(item, (xr.DataArray, SpatialData)):
-            logger.info(type(item))
-            raise TypeError('The given item needs to be either a'
-                            'xarray.DataArray or a SpatialData instance!')
-        len_grid_coordinates = self.grid.len_coords
-        item_grid_length = item.values.shape[-len_grid_coordinates:]
-        data_grid_length = np.array(self.grid._construct_dim).shape
-        grid_lengths_equal = all(
-            (i==g for i, g in zip(item_grid_length, data_grid_length)))
-        if not grid_lengths_equal:
-            raise ValueError( 'The grid of the given item has not the same grid'
-                              'dimension length as the original grid of this'
-                              'SpatialData instance!')
 
     def set_grid_coordinates(self, grid=None, data=None):
         """
