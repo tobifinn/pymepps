@@ -234,83 +234,46 @@ class SpatialAccessor(MetData):
         merged_data = stacked_data.transpose(*dims_to_transpose)
         return merged_data
 
-        #
-    # def set_grid_coordinates(self, grid=None, data=None):
-    #     """
-    #     Set the coordinates of the data to the coordinates of the given grid.
-    #
-    #     Parameters
-    #     ----------
-    #     grid : Child instance of Grid or None, optional
-    #         The grid of this instance is set to this grid. If this is None
-    #         instance's grid is used. The last dimensions of instance's data
-    #         is set according to to the grid. Default is None.
-    #     data : np.ndarray or None, optional
-    #         The data is set to this data values. The data values should have the
-    #         same last dimension as the new grid. If this is None, the data
-    #         values of this instance are used. Default is None.
-    #     """
-    #     if grid is None:
-    #         grid = self.grid
-    #     if data is None:
-    #         data = self.data.values
-    #     new_coords = grid.get_coords()
-    #     for dim in self.data.dims[:-self.grid.len_coords]:
-    #         new_coords[dim] = self.data[dim]
-    #     new_dims = list(self.data.dims[:-self.grid.len_coords]) + \
-    #              list(grid.get_coord_names())
-    #     new_darray = xr.DataArray(
-    #         data,
-    #         name=self.data.name,
-    #         coords=new_coords,
-    #         dims=new_dims,
-    #         attrs=self.data.attrs
-    #     )
-    #     self.data = new_darray
-    #     self.grid = grid
-    #
-    # def to_tsdata(self, lonlat=None):
-    #     """
-    #     Transform the SpatialData to a TSData based on given coordinates. If
-    #     coordinates are given this method selects the nearest neighbour grid
-    #     point to this coordinates. The data is flatten to a 2d-Array with the
-    #     time as row axis.
-    #
-    #     Parameters
-    #     ----------
-    #     lonlat : tuple(float, float) or None
-    #         The nearest grid point to this coordinates (longitude, latitude) is
-    #         used to generate the time series data. If lonlat is None no
-    #         coordinates will be selected and the data is flatten. If the
-    #         horizontal grid coordiantes are not a single point it is recommended
-    #         to set lonlat.
-    #
-    #     Returns
-    #     -------
-    #     extracted_data : TSData
-    #         The extracted TSData instance. The data is based on either a pandas
-    #         Series or Dataframe depending on the dimensions of this SpatialData.
-    #     """
-    #     if isinstance(lonlat, tuple) and len(lonlat)==2:
-    #         extracted_data = self.grid.get_nearest_point(
-    #             data=self.data.values, coord=reversed(lonlat))
-    #         logger.debug(extracted_data)
-    #         dims_wo_grid = [dim for dim in self.data.dims
-    #                         if dim not in self.grid.get_coord_names()]
-    #         logger.debug(dims_wo_grid)
-    #         coords = {dim: self.data.coords[dim] for dim in dims_wo_grid}
-    #         logger.debug(coords)
-    #         cube = xr.DataArray(
-    #             extracted_data,
-    #             coords=coords,
-    #             dims=dims_wo_grid,
-    #         )
-    #     else:
-    #         cube = self.data
-    #     series_data = cube_to_series(cube.squeeze(), self.data.name)
-    #     ts_ds = TSDataset(None, data_origin=self, lonlat=lonlat)
-    #     extracted_data = ts_ds.data_merge(series_data, self.data.name)
-    #     return extracted_data
+    def to_pandas(self, lonlat=None):
+        """
+        Transform the DataArray to Pandas based on given coordinates. If
+        coordinates are given this method selects the nearest neighbour grid
+        point to this coordinates. The data is flatten to a 2d-DataFrame with
+        the time as row axis.
+
+        Parameters
+        ----------
+        lonlat : tuple(float, float) or None
+            The nearest grid point to this coordinates (longitude, latitude) is
+            used to generate the pandas data. If lonlat is None no
+            coordinates will be selected and the data is flatten. If the
+            horizontal grid coordinates are not a single point it is recommended
+            to set lonlat.
+
+        Returns
+        -------
+        extracted_data : pandas.Series or pandas.DataFrame
+            The extracted pandas data. The data is based on either a
+            Series (1 Column) or Dataframe (multiple column) depending on the
+            dimensions.
+        """
+        if isinstance(lonlat, tuple) and len(lonlat) == 2:
+            extracted_data = self.grid.get_nearest_point(data=self.data,
+                                                         coord=reversed(lonlat))
+            dims_wo_grid = [dim for dim in self.data.dims
+                            if dim not in self.grid.get_coord_names()]
+            coords = {dim: self.data.coords[dim] for dim in dims_wo_grid}
+            cube = xr.DataArray(
+                extracted_data,
+                coords=coords,
+                dims=dims_wo_grid,
+            )
+        else:
+            cube = self.data
+        series_data = cube_to_series(cube.squeeze(), self.data.name)
+        ts_ds = TSDataset(None, data_origin=self, lonlat=lonlat)
+        extracted_data = ts_ds.data_merge(series_data, self.data.name)
+        return extracted_data
     #
     # def remapnn(self, new_grid, inplace=False):
     #     """
