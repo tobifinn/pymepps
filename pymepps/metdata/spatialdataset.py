@@ -168,9 +168,9 @@ class SpatialDataset(MetDataset):
 
     def _multi_select_var(self, data, var_name):
         for d in data:
-            add_coordinate = d.expand_dims('parameter')
+            add_coordinate = d.expand_dims('variable')
             add_coordinate = add_coordinate.assign_coords(
-                parameter=[var_name, ])
+                variable=[var_name, ])
             yield add_coordinate
 
     def data_merge(self, data, var_name):

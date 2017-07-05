@@ -118,7 +118,6 @@ class NetCDFHandler(FileHandler):
             variable.values[variable.values == variable.missing_value] = np.nan
         else:
             variable.values[variable.values==9.96921e+36] = np.nan
-        logger.debug(variable)
         return variable
 
     def get_timeseries(self, var_name, **kwargs):
@@ -170,6 +169,18 @@ class NetCDFHandler(FileHandler):
         ----------
         var_name : str
             The variable name, which should be extracted.
+        runtime : np.datetime64, optional
+            If the dataset has no runtime this runtime is used. If the runtime
+            is not set, the  runtime will be inferred from file name.
+        ensemble : int or str, optional
+            If the dataset has no ensemble information this ensemble is used. If
+            the ensemble is not set, the ensemble will be inferred from file
+            name.
+        sliced_coords : tuple(slice), optional
+            If the cube should be sliced before it is loaded. This is helpful
+            by large opendap requests. These slice will be used from the behind.
+            So (slice(1,2,1), slice(3,5,1)) means [..., 1:2, 3:5]. If it is not
+            set all data is used. T
 
         Returns
         -------
@@ -179,6 +190,8 @@ class NetCDFHandler(FileHandler):
             The shape of DataArray are normally (1,1,1,1,y_size,x_size).
         """
         cube = self.load_cube(var_name)
+        if 'sliced_coords' in kwargs:
+            cube = cube[(...,)+kwargs['sliced_coords']]
         logger.debug('Loaded the cube')
         cube.attrs.update(self.ds.attrs)
         logger.debug('Updated the attributes')
