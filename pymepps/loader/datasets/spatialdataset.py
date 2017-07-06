@@ -192,28 +192,16 @@ class SpatialDataset(MetDataset):
             The SpatialData instance with the extracted data and the extracted
             grid.
         """
-        logger.debug('Input length of data_merge: {0:d}'.format(len(data)))
-        logger.debug('Data coordinates {0}'.format(data[0].coords))
-        logger.debug('Data dimensions {0}'.format(data[0].dims))
         logger.debug('Trying to get the grid')
         grid = self.get_grid(var_name, data[0])
-        spdata = SpatialData(data[0], grid=grid, data_origin=self)
+        merged_array = data[0]
         if len(data)>1:
-            spdata.update(*data[1:])
-        loaded_attrs = {attr: spdata.data.attrs[attr]
-                        for attr in spdata.data.attrs
+            merged_array.pp.update(*data[1:])
+        logger.debug(merged_array)
+        loaded_attrs = {attr: merged_array.attrs[attr]
+                        for attr in merged_array.attrs
                         if not attr.startswith('grid_')}
-        history_message = \
-            "{0:s}, {1:s}, Python:pymepps:SpatialDataset:select" \
-            "('{2:s}')".format(
-                    dt.datetime.utcnow().strftime("%Y%m%d %H:%Mz"),
-                    getpass.getuser(),
-                    var_name)
-        if 'history' in spdata.data.attrs:
-            loaded_attrs['history'] += '\n{0:s}'.format(history_message)
-        else:
-            loaded_attrs['history'] = history_message
-        loaded_attrs['name'] = spdata.data._name = var_name
-        spdata.data.attrs = loaded_attrs
-        spdata.set_grid_coordinates()
-        return spdata
+        loaded_attrs['name'] = merged_array._name = var_name
+        merged_array.attrs = loaded_attrs
+        merged_array.pp.grid = grid
+        return merged_array

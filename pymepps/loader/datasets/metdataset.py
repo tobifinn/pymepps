@@ -97,11 +97,9 @@ class MetDataset(object):
 
     def _initialize_variables(self):
         new_variables = {}
-        logger.info('Started generating variable dict')
         mt = MultiThread(processes=self.processes)
         var_names_list = mt.map(self._get_variables, self._file_handlers,
                                 flatten=False)
-        logger.info('Got the variable name list, now converting to dict')
         for key, var_names in enumerate(var_names_list):
             for var_name in var_names:
                 try:
@@ -109,6 +107,7 @@ class MetDataset(object):
                 except KeyError:
                     new_variables[var_name] = [self._file_handlers[key], ]
         return new_variables
+
     @property
     def variables(self):
         """
