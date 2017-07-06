@@ -32,108 +32,65 @@ import pandas as pd
 
 # Internal modules
 from .base import MetData
+from .pandas_accessor import register_series_accessor
+from .pandas_accessor import register_dataframe_accessor
 
 
 logger = logging.getLogger(__name__)
 
 
-class TSData(MetData):
+@register_dataframe_accessor('pp')
+@register_series_accessor('pp')
+class SeriesAccessor(MetData):
     """
-    TSData is a data structure for time series based data. This
-    class is for meteorological measurement station observations and
-    forecasts. Its instances are based on pandas.dataframe. So it's
-    possible to use every operation on this structure specified in the
-    documentation of pandas [1]. This structure has usually only one
-    dimension. This data type has only one flexible dimension and
-    the other dimensions are fixed in comparison to ArrayBasedData.
-
-    [1] (http://pandas.pydata.org/pandas-docs/stable/)
+    This accessor is an extension for pandas data structures. The intention for
+    this accessor is the use of pandas data structures for processing of
+    meteorological station data, .e.g. station observations or forecasts.
 
     Attributes
     ----------
-    data : pandas.dataframe
+    data : pandas.DataFrame or pandas.Series
         The data of this time series based data structure.
-    data_origin : object of pymepps
-        The origin of this data.This could be a model run, a station, a
-        database or something else.
     lonlat : tuple(float, float) or None, optional
         The data of this instance is valid for this coordinates
-        (longitude, latitude). If this is None the coordiantes are not set
+        (longitude, latitude). If this is None the coordinates are not set
         and not all features could be used. Default is None.
 
     Parameters
     ----------
-    data : pandas.dataframe
+    data : pandas.DataFrame or pandas.Series
         The data of this time series based data structure.
-    data_origin : object of pymepps
-        The origin of this data.This could be a model run, a station, a
-        database or something else.
     lonlat: tuple(float, float) or None
         The data is valid for these coordinates.
     """
-    def __init__(self, data, data_origin=None, lonlat=None):
-        super().__init__(data, data_origin)
+    def __init__(self, data, lonlat=None):
+        super().__init__(data)
         self.lonlat = lonlat
 
     def __repr__(self):
-        return "{0:s}({1:s})".format(
-            str(self.__class__.__name__), str(self.lonlat))
-
-    def __str__(self):
-        name = self.__class__.__name__
-        return '{0:s}\n{1:s}\n{2:s}\nlonlat:{3:s}'.format(
-            name, '-'*len(name), str(self.data.describe()), str(self.lonlat)
-        )
-
-    def copy(self):
-        copied_self = super().copy()
-        copied_self.lonlat = self.lonlat
-        return copied_self
+        return '{0:s}(lonlat: {1:s})'.format(
+            self.data.__class__.__name__, str(self.lonlat))
 
     def update(self, *items):
         update_data = [self.data.copy(), ]
         for item in items:
-            if isinstance(item, TSData):
-                update_data.append(item.data)
-            elif isinstance(item, (pd.Series, pd.DataFrame)):
+            if isinstance(item, (pd.Series, pd.DataFrame)):
                 update_data.append(item)
             else:
                 raise TypeError(
-                    'The given item {0} need to be in an either TSData or '
-                    'pandas conform data type!'.format(item))
-        concated_data = pd.concat(update_data, axis=1)
-        dup_cols = concated_data.columns.duplicated(keep='last')
-        columned_data = concated_data.loc[:, ~dup_cols].sort_index(axis=1)
-        for name, val in concated_data.loc[:, dup_cols][::-1].iteritems():
+                    'The given item {0} need to be in a pandas conform data '
+                    'type!'.format(item))
+        concatenated_data = pd.concat(update_data, axis=1)
+        dup_cols = concatenated_data.columns.duplicated(keep='last')
+        columned_data = concatenated_data.loc[:, ~dup_cols].sort_index(axis=1)
+        for name, val in concatenated_data.loc[:, dup_cols][::-1].iteritems():
             columned_data[name] = columned_data[name].fillna(val)
         columned_data = columned_data.squeeze()
         dup_rows = columned_data.index.duplicated(keep='last')
-        merged_data = columned_data.loc[~dup_rows].sort_index(axis=0)
-        for ind, val in concated_data.loc[dup_rows][::-1].T.iteritems():
-            merged_data.loc[ind] = merged_data.loc[ind].fillna(val)
-        self.data = merged_data
-        logger.info('Updated the data')
-
-    def slice_index(self, start='', end='', inplace=False):
-        """
-        inplace: bool, optional
-            If the new data should be replacing the data of this TSData
-            instance or if the instance should be copied. Default is None.
-
-        Returns
-        -------
-        tsdata: TSData
-            The TSData instance with the sliced index.
-        """
-        if inplace:
-            tsdata = self
-        else:
-            tsdata = self.copy()
-        tsdata.data = tsdata.data.loc[start:end]
-        return tsdata
-
-    def plot(self, variable, type, color):
-        pass
+        updated_array = columned_data.loc[~dup_rows].sort_index(axis=0)
+        for ind, val in concatenated_data.loc[dup_rows][::-1].T.iteritems():
+            updated_array.loc[ind] = updated_array.loc[ind].fillna(val)
+        return updated_array
 
     def save(self, path):
         """
