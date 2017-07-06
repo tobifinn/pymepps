@@ -70,7 +70,7 @@ class Grid(object):
         """
         return self.__nr_coords
 
-    def get_coords(self):
+    def get_coords(self, ):
         """
         Get the coordinates in a xarray-compatible way.
 
@@ -112,6 +112,10 @@ class Grid(object):
             either a tuple of arrays or a single array.
         """
         return self._construct_dim()
+
+    @property
+    def shape(self):
+        return [len(dim) for dim in self._construct_dim()]
 
     @property
     def lat_lon(self):

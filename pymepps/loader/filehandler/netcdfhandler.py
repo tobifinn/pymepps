@@ -138,9 +138,7 @@ class NetCDFHandler(FileHandler):
             values.
         """
         cube = self.load_cube(var_name).load()
-        logger.debug(cube)
         data = cube_to_series(cube, var_name)
-        logger.debug(data)
         return data
 
     def _normalize_coordinates(self, cube):
