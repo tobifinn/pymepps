@@ -25,9 +25,9 @@
 # System modules
 import logging
 
-import numpy as np
 # External modules
 import xarray as xr
+import numpy as np
 
 # Internal modules
 from .base import MetData
@@ -62,20 +62,18 @@ class SpatialAccessor(MetData):
         self._grid = None
         self.grid = grid
 
-    def __repr__(self):
-        return "{0:s}({1:s}, Dimensions: {2:s})".format(
-            str(self.__class__.__name__), repr(self.data.name),
-            str(self.data.dims))
-
     def __str__(self):
-        grid = str(self.grid)
+        try:
+            grid = str(self.grid)
+        except TypeError:
+            grid = str(None)
         name = "{0:s}({1:s})".format(self.__class__.__name__, self.data.name)
         return "{0:s}\n{1:s}\nGrid: {1:s}".format(name, '-'*len(name), grid)
 
     @property
     def grid(self):
         if self._grid is None:
-            raise ValueError('This spatial data has no grid defined!')
+            raise TypeError('This DataArray has no grid defined!')
         else:
             return self._grid
 
@@ -101,16 +99,16 @@ class SpatialAccessor(MetData):
 
         Raises
         ------
+        TypeError:
+            The grid is not set.
         ValueError:
-            The given item has not the same grid dimensions as the Data of this
-            SpatialData instance.
+            The given item has not the same last coordinates as the grid.
         """
-        len_grid_coordinates = self.grid.len_coords
-        item_grid_length = item.values.shape[-len_grid_coordinates:]
-        data_grid_length = np.array(self.grid._construct_dim).shape
-        grid_lengths_equal = all(
-            (i == g for i, g in zip(item_grid_length, data_grid_length)))
-        if not grid_lengths_equal:
+        item_grid_dims = [item[dim] for dim in item.dims[-self.grid.len_coords:]]
+        grid_coords = self.grid._construct_dim()
+        coords_equal = all([np.array_equal(item_grid_dims[k], grid_coords[k])
+                            for k in range(self.grid.len_coords)])
+        if not coords_equal:
             raise ValueError('The item {0:s} has not the right last dimensions.'
                              'They need to be the same as the grid!')
         return item
@@ -138,6 +136,7 @@ class SpatialAccessor(MetData):
             item.to_dataset('variable') if 'variable' in item.coords else item
             for item in update_data]
         merged_data = xr.merge(dataset_data).to_array(name='merged_array')
+        merged_data.pp.grid = self.grid
         return merged_data
 
     def update(self, *items):
@@ -163,22 +162,20 @@ class SpatialAccessor(MetData):
         """
         update_data = [self._check_data_coordinates(self.data), ]
         update_data += [self._check_data_coordinates(item) for item in items]
-        if len(update_data) > 1:
-            stack_dims = [dim for dim in self.data.dims
-                          if dim not in self.grid.get_coord_names()]
-            stacked_data = [d.stack(merge=stack_dims) for d in update_data]
-            try:
-                concated_array = xr.concat(stacked_data, dim='merge')
-            except ValueError:
-                raise ValueError('The given items have not the same dimension '
-                                 'variables as the original data!')
-            resolving_indexes = ~concated_array.indexes['merge'].duplicated(
-                keep='last')
-            resolved_array = concated_array[..., resolving_indexes]
-            unstacked_array = resolved_array.unstack('merge')
-            updated_array = unstacked_array.transpose(*self.data.dims)
-        else:
-            updated_array = update_data[0]
+        stack_dims = [dim for dim in self.data.dims
+                      if dim not in self.grid.get_coord_names()]
+        stacked_data = [d.stack(merge=stack_dims) for d in update_data]
+        try:
+            concated_array = xr.concat(stacked_data, dim='merge')
+        except (ValueError, TypeError) as e:
+            raise e.__class__('The concatenation doesn\'t working, for '
+                              'plase see above for the reasons!')
+        resolving_indexes = ~concated_array.indexes['merge'].duplicated(
+            keep='last')
+        resolved_array = concated_array[..., resolving_indexes]
+        unstacked_array = resolved_array.unstack('merge')
+        updated_array = unstacked_array.transpose(*self.data.dims)
+        updated_array.pp.grid = self.grid
         return updated_array
 
     def set_grid_coordinates(self):

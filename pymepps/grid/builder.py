@@ -94,7 +94,6 @@ class GridBuilder(object):
         else:
             raise TypeError('The given grid description has to be a string, a '
                             'dict or None!')
-        logger.debug('Decoded griddes, now set _latlon_decoder')
         self._set_grid_handler(grid_dict)
         self._grid_dict = grid_dict
 
@@ -110,8 +109,6 @@ class GridBuilder(object):
                                  'decoder yet, please use one of the available '
                                  'gridtypes!'.format(grid_dict['gridtype']))
             self._grid_handler = available_grids[grid_dict['gridtype']]
-        logger.debug('Set _latlon_decoder to {0:s}'.format(
-            self._grid_handler.__name__))
 
     @staticmethod
     def open_string(path_str):
@@ -205,7 +202,6 @@ class GridBuilder(object):
                 pass
             if len(grid_dict[k])==1:
                 grid_dict[k] = grid_dict[k][0]
-        logger.debug(grid_dict)
         return grid_dict
 
     def build_grid(self):
@@ -218,6 +214,5 @@ class GridBuilder(object):
             The built grid. The class of the grid is defined by the gridtype.
             The values of the grid are calculated with griddes.
         """
-        logger.debug(self._grid_handler)
         grid = self._grid_handler(self._grid_dict)
         return grid
