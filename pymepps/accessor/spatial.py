@@ -85,7 +85,7 @@ class SpatialAccessor(MetData):
 
     def _check_data_coordinates(self, item):
         """
-        Check if items grid coordinates are the same as those of the grid.
+        Check if items grid coordinates shape is the same as those of the grid.
 
         Parameters
         ----------
@@ -104,10 +104,10 @@ class SpatialAccessor(MetData):
         ValueError:
             The given item has not the same last coordinates as the grid.
         """
-        item_grid_dims = [item[dim] for dim in item.dims[-self.grid.len_coords:]]
-        grid_coords = self.grid._construct_dim()
-        coords_equal = all([np.array_equal(item_grid_dims[k], grid_coords[k])
-                            for k in range(self.grid.len_coords)])
+        item_grid_shape = item.shape[-self.grid.len_coords:]
+        coords_equal = all(
+            [np.equal(item, grid) for item, grid
+             in zip(item_grid_shape, self.grid.shape)])
         if not coords_equal:
             raise ValueError('The item {0:s} has not the right last dimensions.'
                              'They need to be the same as the grid!')
@@ -168,8 +168,8 @@ class SpatialAccessor(MetData):
         try:
             concated_array = xr.concat(stacked_data, dim='merge')
         except (ValueError, TypeError) as e:
-            raise e.__class__('The concatenation doesn\'t working, for '
-                              'plase see above for the reasons!')
+            raise e.__class__("The concatenation doesn't working, for "
+                              'please see above for the reasons!')
         resolving_indexes = ~concated_array.indexes['merge'].duplicated(
             keep='last')
         resolved_array = concated_array[..., resolving_indexes]
@@ -188,15 +188,14 @@ class SpatialAccessor(MetData):
             The DataArray with the grid coordinates.
         """
         data = self._check_data_coordinates(self.data)
+        coord_names = self.grid.get_coord_names()
         new_coordinates = self.grid.get_coords()
-        data_grid_dims = data.dims[-self.grid.len_coords:]
-        dims_to_swap = {
-            old: new for old, new in zip(data_grid_dims,
-                                         self.grid.get_coord_names())}
-        added_coords_array = data.assign_coords(new_coordinates)
-        gridded_array = added_coords_array.swap_dims(dims_to_swap)
-        for dim in data_grid_dims:
-            del gridded_array[dim]
+        rename_dict = {new: old for new, old in zip(
+            data.dims[-self.grid.len_coords:], coord_names,)}
+        gridded_array = data.rename(rename_dict)
+        for coord in coord_names:
+            gridded_array[coord] = new_coordinates[coord]
+        gridded_array.pp.grid = self.grid
         return gridded_array
 
     def merge_analysis_timedelta(self, analysis_axis='runtime',

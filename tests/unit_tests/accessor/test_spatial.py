@@ -158,6 +158,35 @@ class TestSpatial(unittest.TestCase):
         self.assertIsNotNone(updated_array.pp.grid)
         self.assertEqual(id(self.grid), id(updated_array.pp.grid))
 
+    def test_set_grid_cooordinates_returns_grid_array(self):
+        self.array.pp._grid = self.grid
+        returned_array = self.array.pp.set_grid_coordinates()
+        self.assertEqual(id(returned_array.pp.grid), id(self.grid))
+
+    def test_set_grid_coordinates_sets_names(self):
+        self.array = self.array.rename({'lat': 'y', 'lon': 'x'})
+        old_dim_names = np.array(self.array.dims)
+        true_dim_names = list(old_dim_names[:-2]) + ['lat', 'lon']
+        self.array.pp._grid = self.grid
+        np.testing.assert_equal(np.array(self.array.dims), old_dim_names)
+        gridded_array = self.array.pp.set_grid_coordinates()
+        np.testing.assert_equal(np.array(gridded_array.dims), true_dim_names)
+
+    def test_set_grid_coordinates_sets_values(self):
+        coord_values = self.grid.raw_dim
+        self.array['lat'] = np.arange(self.array['lat'].size)
+        self.array['lon'] = np.arange(self.array['lon'].size)
+        self.assertFalse(any([
+            np.all(np.equal(self.array[dim].values, coord_values[num]))
+            for num, dim in enumerate(self.array.dims[-2:])])
+        )
+        self.array.pp._grid = self.grid
+        self.array = self.array.pp.set_grid_coordinates()
+        self.assertTrue(all([
+            np.all(np.equal(self.array[dim].values, coord_values[num]))
+            for num, dim in enumerate(self.array.dims[-2:])])
+        )
+
 
 if __name__ == '__main__':
     unittest.main()
