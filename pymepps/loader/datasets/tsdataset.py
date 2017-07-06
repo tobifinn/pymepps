@@ -30,7 +30,7 @@ import pandas as pd
 
 # Internal modules
 from .metdataset import MetDataset
-from .tsdata import TSData
+from accessor.series import TSData
 
 
 logger = logging.getLogger(__name__)

@@ -26,13 +26,13 @@
 # System modules
 import logging
 
-# External modules
-
+from loader.filehandler.opendaphandler import OpendapHandler
+from pymepps.accessor import SpatialDataset
+from pymepps.metfile import NetCDFHandler, GribHandler
 # Internal modules
 from .base import BaseLoader
-from pymepps.metdata import SpatialDataset
-from pymepps.metfile import NetCDFHandler, GribHandler
-from pymepps.metfile.opendaphandler import OpendapHandler
+
+# External modules
 
 
 logger = logging.getLogger(__name__)
