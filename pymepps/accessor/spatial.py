@@ -24,19 +24,15 @@
 # """
 # System modules
 import logging
-import warnings
 
+import numpy as np
 # External modules
 import xarray as xr
-import numpy as np
 
+from loader.datasets.tsdataset import TSDataset
+from loader.filehandler.netcdfhandler import cube_to_series
 # Internal modules
-from .metdata import MetData
-from .tsdataset import TSDataset
-from pymepps.metfile.netcdfhandler import cube_to_series
-import pymepps.plot
-import pymepps.loader
-
+from .base import MetData
 
 logger = logging.getLogger(__name__)
 

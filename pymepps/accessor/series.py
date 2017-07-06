@@ -31,7 +31,7 @@ import json
 import pandas as pd
 
 # Internal modules
-from .metdata import MetData
+from .base import MetData
 
 
 logger = logging.getLogger(__name__)

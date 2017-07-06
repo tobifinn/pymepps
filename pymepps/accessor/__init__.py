@@ -27,9 +27,7 @@
 # External modules
 
 # Internal modules
-from .spatialdata import *
-from .spatialdataset import *
-from .tsdata import *
-from .tsdataset import *
+from .spatial import *
+from .series import *
 
 __all__ = ['SpatialDataset', 'SpatialData', 'TSDataset', 'TSData']

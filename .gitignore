@@ -215,3 +215,6 @@ cwallet.sso.lck
 #/pymepps_old/
 /examples/
 /*_old/
+
+# To remove non-public test files
+/cosmo-hh/
