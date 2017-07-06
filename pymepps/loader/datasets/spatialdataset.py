@@ -32,7 +32,7 @@ import datetime as dt
 from pymepps.grid import GridBuilder
 import pymepps.utilities.cdo_funcs as cdo
 from .metdataset import MetDataset
-from accessor.spatial import SpatialData
+import pymepps.accessor.spatial
 
 
 logger = logging.getLogger(__name__)

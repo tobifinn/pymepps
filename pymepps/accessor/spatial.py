@@ -29,10 +29,11 @@ import numpy as np
 # External modules
 import xarray as xr
 
-from loader.datasets.tsdataset import TSDataset
-from loader.filehandler.netcdfhandler import cube_to_series
 # Internal modules
 from .base import MetData
+from pymepps.loader.datasets.tsdataset import TSDataset
+from pymepps.loader.filehandler.netcdfhandler import cube_to_series
+
 
 logger = logging.getLogger(__name__)
 

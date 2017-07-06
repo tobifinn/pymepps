@@ -26,13 +26,13 @@
 # System modules
 import logging
 
-from metfile import NetCDFHandler
-from metfile import WMTextHandler
-from pymepps.accessor import TSDataset
+# External modules
+
 # Internal modules
 from .base import BaseLoader
-
-# External modules
+from .filehandler.netcdfhandler import NetCDFHandler
+from .filehandler.wmtexthandler import WMTextHandler
+from .datasets.tsdataset import TSDataset
 
 
 logger = logging.getLogger(__name__)

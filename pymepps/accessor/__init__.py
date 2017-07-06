@@ -27,7 +27,3 @@
 # External modules
 
 # Internal modules
-from .spatial import *
-from .series import *
-
-__all__ = ['SpatialDataset', 'SpatialData', 'TSDataset', 'TSData']

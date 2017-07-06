@@ -28,7 +28,8 @@
 # Internal modules
 from pymepps.grid import GridBuilder
 from pymepps.loader import open_model_dataset, open_station_dataset
-from pymepps.accessor import SpatialAccessor, TSData
+from pymepps.accessor.spatial import SpatialAccessor
+from pymepps.accessor.series import TSData
 
 
 __all__ = ['open_model_dataset', 'open_station_dataset', 'GridBuilder',
