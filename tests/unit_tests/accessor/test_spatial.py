@@ -187,6 +187,22 @@ class TestSpatial(unittest.TestCase):
             for num, dim in enumerate(self.array.dims[-2:])])
         )
 
+    def test_merge_analysis_timedelta_merges_times(self):
+        test_array = self.array.copy()
+        test_array = test_array.expand_dims('runtime')
+        test_array.coords['runtime'] = [datetime.datetime.now(), ]
+        test_array = test_array.rename({'time': 'validtime'})
+        test_array['validtime'] = test_array['validtime'].values - \
+                                  test_array['runtime'].values
+        merged_array = test_array.pp.merge_analysis_timedelta()
+        np.testing.assert_equal(merged_array.dims, self.array.dims)
+        np.testing.assert_equal(merged_array.values, self.array.values)
+
+    def test_to_pandas_no_lonlat_given_returns_dataframe(self):
+        stacked_array = self.array.stack(stack=self.array.dims[1:])
+        df = stacked_array.to_pandas()
+        returned_df = self.array.pp.to_pandas()
+        logging.debug(returned_df)
 
 if __name__ == '__main__':
     unittest.main()
