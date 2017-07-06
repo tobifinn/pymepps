@@ -28,8 +28,10 @@ import unittest
 import logging
 
 # External modules
+import xarray as xr
 
 # Internal modules
+import pymepps.accessor
 
 
 BASE_DIR = os.path.dirname(os.path.dirname(__file__))
@@ -37,9 +39,17 @@ BASE_DIR = os.path.dirname(os.path.dirname(__file__))
 logging.basicConfig(level=logging.DEBUG)
 
 
-class TestClass(unittest.TestCase):
-    pass
+class TestSpatial(unittest.TestCase):
+    def setUp(self):
+        file = os.path.join(os.path.dirname(BASE_DIR), 'data', 'spatial',
+                            'saved', 't2m.nc')
+        self.array = xr.open_dataarray(file)
 
+    def test_array_has_accessor(self):
+        self.assertTrue(hasattr(self.array, 'pp'))
+
+    def test_accessor_has_array_as_data(self):
+        self.assertEqual(id(self.array.pp.data), id(self.array))
 
 if __name__ == '__main__':
     unittest.main()
