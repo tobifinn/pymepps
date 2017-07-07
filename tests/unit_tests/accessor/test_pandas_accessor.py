@@ -32,8 +32,8 @@ import pandas as pd
 import pandas.util.testing
 
 # Internal modules
-from pymepps.accessor.pandas_accessor import register_dataframe_accessor
-from pymepps.accessor.pandas_accessor import register_series_accessor
+from pymepps.accessor.utilities import register_dataframe_accessor
+from pymepps.accessor.utilities import register_series_accessor
 
 
 logging.basicConfig(level=logging.DEBUG)
