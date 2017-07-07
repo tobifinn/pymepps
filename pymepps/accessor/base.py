@@ -47,10 +47,6 @@ class MetData(object):
     def __repr__(self):
         return "{0:s}".format(str(self.__class__.__name__))
 
-    @abc.abstractmethod
-    def update(self, *items):
-        pass
-
     @property
     def data(self):
         return self._data
@@ -63,3 +59,16 @@ class MetData(object):
             raise ValueError(
                 '{0:s} needs data!'.format(self.__class__.__name__))
         self._data = data
+
+    @abc.abstractmethod
+    def update(self, *items):
+        pass
+
+    @abc.abstractmethod
+    def save(self, save_path):
+        pass
+
+    @staticmethod
+    @abc.abstractmethod
+    def load(load_path):
+        pass
