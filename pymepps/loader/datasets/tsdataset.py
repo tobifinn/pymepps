@@ -29,8 +29,8 @@ import logging
 import pandas as pd
 
 # Internal modules
+import pymepps
 from .metdataset import MetDataset
-from pymepps.accessor.pandas import PandasAccessor
 
 
 logger = logging.getLogger(__name__)

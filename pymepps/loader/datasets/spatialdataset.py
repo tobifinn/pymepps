@@ -29,10 +29,10 @@ import getpass
 import datetime as dt
 
 # Internal modules
+import pymepps
 from pymepps.grid import GridBuilder
 import pymepps.utilities.cdo_funcs as cdo
 from .metdataset import MetDataset
-import pymepps.accessor.spatial
 
 
 logger = logging.getLogger(__name__)
@@ -192,12 +192,10 @@ class SpatialDataset(MetDataset):
             The SpatialData instance with the extracted data and the extracted
             grid.
         """
-        logger.debug('Trying to get the grid')
         grid = self.get_grid(var_name, data[0])
         merged_array = data[0]
         if len(data)>1:
             merged_array.pp.update(*data[1:])
-        logger.debug(merged_array)
         loaded_attrs = {attr: merged_array.attrs[attr]
                         for attr in merged_array.attrs
                         if not attr.startswith('grid_')}

@@ -188,9 +188,7 @@ class NetCDFHandler(FileHandler):
         cube = self.load_cube(var_name)
         if 'sliced_coords' in kwargs:
             cube = cube[(...,)+kwargs['sliced_coords']]
-        logger.debug('Loaded the cube')
         cube.attrs.update(self.ds.attrs)
-        logger.debug('Updated the attributes')
         cube = self._get_missing_coordinates(cube, **kwargs)
         cube = self._normalize_coordinates(cube)
         cube = cube.load()
