@@ -42,6 +42,16 @@ BASE_PATH = os.path.dirname(os.path.realpath(__file__))
 
 
 class TestPandasAccessor(unittest.TestCase):
+    def setUp(self):
+        try:
+            del pd.DataFrame.pp
+        except AttributeError:
+            pass
+        try:
+            del pd.Series.pp
+        except AttributeError:
+            pass
+
     def tearDown(self):
         try:
             del pd.DataFrame.pp
