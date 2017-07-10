@@ -33,7 +33,6 @@ from pandas.core.datetools import is_timedelta64_dtype
 
 # Internal modules
 from .metric import Metric
-from pymepps.metdata import TSData, SpatialData
 
 
 logger = logging.getLogger(__name__)
@@ -45,15 +44,13 @@ class ErrorMetric(Metric):
         self.iterate_axis = iterate_axis
 
     def _calc_error(self):
-        truth_ts = self.state['truth'].data
+        truth_ts = self.state['truth']
         error = []
         for iteration in self.state['prediction'].coords[self.iterate_axis]:
-            logger.debug(iteration.values)
-            temp_spdata = self.state['prediction'].copy()
-            temp_spdata.data = self.state['prediction'].loc[
+            temp_data = self.state['prediction'].loc[
                 {self.iterate_axis: iteration}]
-            pred_tsdata = temp_spdata.to_tsdata(self.state['truth'].lonlat)
-            pred_ts = pred_tsdata.data
+            temp_data.pp.grid = self.state['prediction'].pp.grid
+            pred_ts = temp_data.pp.to_tsdata(self.state['truth'].lonlat)
             if is_timedelta64_dtype(pred_ts.index.dtype):
                 pred_ts.index = pred_ts.index + iteration.values
                 error_ts = pred_ts.subtract(truth_ts, axis=0).dropna()
@@ -63,7 +60,7 @@ class ErrorMetric(Metric):
                 error_ts = pred_ts.subtract(truth_ts, axis=0).dropna()
             error_xr = error_ts.to_xarray()
             if isinstance(error_xr, xr.DataArray):
-                error_xr = error_xr.to_dataset(name=temp_spdata.name)
+                error_xr = error_xr.to_dataset(name=temp_data.name)
             error_xr[self.iterate_axis] = iteration
             error_xr = error_xr.set_coords(self.iterate_axis).expand_dims(
                 self.iterate_axis)
@@ -72,16 +69,7 @@ class ErrorMetric(Metric):
         return error
 
     def predict(self, X=None, y=None):
-        calculated_metric = self._calc_metric(X, y)
-        if self._truth_is_ts():
-            calculated_metric = calculated_metric.to_dataframe()
-            metric = TSData(calculated_metric, self,
-                            lonlat=self.state['truth'].lonlat)
-        else:
-            metric = SpatialData(calculated_metric,
-                                 grid=self.state['truth'].grid,
-                                 data_origin=self)
-        return metric
+        return self._calc_metric(X, y)
 
     def _truth_is_ts(self):
         return isinstance(self.state['truth'], TSData)

@@ -35,7 +35,7 @@ import xarray as xr
 logger = logging.getLogger(__name__)
 
 
-def median_run(spdata, ens_dim='ensemble', iterate_dim='runtime'):
+def median_run(data_array, ens_dim='ensemble', iterate_dim='runtime'):
     """
     Calculate the runs with the smallest mean squared deviation to the ensemble
     median. This run could be called median run and could be seen as physically
@@ -43,8 +43,8 @@ def median_run(spdata, ens_dim='ensemble', iterate_dim='runtime'):
 
     Parameters
     ----------
-    spdata: SpatialData
-        This SpatialData instance is used as base for the calculations of the 
+    data_array: xarray.DataArray
+        This DataArray instance is used as base for the calculations of the
         median run.
     ens_dim: str, optional
         Name of the ensemble axis. Default is ensemble.
@@ -55,38 +55,31 @@ def median_run(spdata, ens_dim='ensemble', iterate_dim='runtime'):
 
     Returns
     -------
-    median_run: SpatialData
-        The median run SpatialData instance is based on the spdata instance, 
-        without the ensemble dimension and with new data values.
+    median_run_array: xarray.DataArray
+        The DataArray with the median run data.
     """
-    spdata_data = spdata.data
-    median_run = spdata.copy()
     # Interpolation is set to nearest to get a cluster selecting behaviour
-    spdata_median = spdata_data.quantile(0.5, dim=ens_dim,
-                                         interpolation='nearest')
-
-    dimensions = list(spdata_median.dims)
+    data_median = data_array.quantile(0.5, dim=ens_dim, interpolation='nearest')
+    dimensions = list(data_median.dims)
     if iterate_dim in dimensions:
         dimensions.remove(iterate_dim)
-    median_deviation = spdata.data-spdata_median
+    median_deviation = data_array-data_median
     mean_squared_dev = (median_deviation**2).mean(dim=dimensions).squeeze()
-    if iterate_dim in spdata_median.dims:
+    if iterate_dim in data_median.dims:
         data_arrays = []
         for t in mean_squared_dev.coords[iterate_dim]:
             ensemble_dev = mean_squared_dev.loc[{iterate_dim: t}]
-            logger.debug(ensemble_dev)
             best_iloc = int(ensemble_dev.argmin())
-            logger.debug(best_iloc)
             best_ens_mem = ensemble_dev.coords[ens_dim][best_iloc]
             logger.debug('Selected {0} for {1} as best median member'.format(
                 best_ens_mem.values, t.values))
-            temp_array = spdata.data.loc[{
+            temp_array = data_array.loc[{
                 iterate_dim: t,
                 ens_dim: best_ens_mem}].expand_dims(iterate_dim)
             data_arrays.append(temp_array)
-        median_run.data = xr.concat(data_arrays, dim=iterate_dim)
+        median_run_array = xr.concat(data_arrays, dim=iterate_dim)
     else:
         ensemble_member = mean_squared_dev.argmin()
-        median_run.data = spdata.data.loc[{ens_dim: ensemble_member}]
-    #median_run.data.coords[ens_dim] = ['median_run',]
-    return median_run
+        median_run_array = data_array.loc[{ens_dim: ensemble_member}]
+    median_run_array.pp._grid = data_array.pp._grid
+    return median_run_array
