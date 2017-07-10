@@ -37,12 +37,18 @@ from pymepps.grid import GridBuilder
 
 logging.basicConfig(level=logging.DEBUG)
 
-BASE_PATH = os.path.dirname(os.path.realpath(__file__))
+BASE_PATH = os.path.join(
+    os.path.dirname(
+        os.path.dirname(
+            os.path.dirname(
+                os.path.realpath(__file__)))),
+    'data')
+
 
 
 class TestLonLatSingle(unittest.TestCase):
     def setUp(self):
-        file = os.path.join(BASE_PATH, 'test_grids', 'lon_lat_single')
+        file = os.path.join(BASE_PATH, 'grids', 'lon_lat_single')
         builder = GridBuilder(file)
         self.grid_dict = builder.griddes
         self.grid = builder.build_grid()

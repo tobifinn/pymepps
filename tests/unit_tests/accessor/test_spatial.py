@@ -218,6 +218,11 @@ class TestSpatial(unittest.TestCase):
         target_df = stacked_array.to_pandas()
         pdt.assert_frame_equal(target_df, returned_df, check_dtype=False)
 
+    def test_remapnn_interpolated_with_nearest_neighbour_approach(self):
+        file = os.path.join(BASE_PATH, 'test_grids', 'gaussian_y')
+        builder = GridBuilder(file)
+
+
 
 if __name__ == '__main__':
     unittest.main()

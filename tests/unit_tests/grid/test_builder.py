@@ -40,12 +40,18 @@ from pymepps.grid.curvilinear import CurvilinearGrid
 
 logging.basicConfig(level=logging.DEBUG)
 
-BASE_PATH = os.path.dirname(os.path.realpath(__file__))
+BASE_PATH = os.path.join(
+    os.path.dirname(
+        os.path.dirname(
+            os.path.dirname(
+                os.path.realpath(__file__)))),
+    'data')
+
 
 
 class TestGridBuilder(unittest.TestCase):
     def setUp(self):
-        grids_path = os.path.join(BASE_PATH, 'test_grids', '*')
+        grids_path = os.path.join(BASE_PATH, 'grids', '*')
         self.available_grids = glob.glob(grids_path)
         self.grid = GridBuilder
 

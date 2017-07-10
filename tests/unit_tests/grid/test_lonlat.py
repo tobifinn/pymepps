@@ -40,12 +40,17 @@ from pymepps.grid.lonlat import LonLatGrid
 
 logging.basicConfig(level=logging.DEBUG)
 
-BASE_PATH = os.path.dirname(os.path.realpath(__file__))
+BASE_PATH = os.path.join(
+    os.path.dirname(
+        os.path.dirname(
+            os.path.dirname(
+                os.path.realpath(__file__)))),
+    'data')
 
 
 class TestLatLonGrid(unittest.TestCase):
     def setUp(self):
-        file = os.path.join(BASE_PATH, 'test_grids', 'lon_lat')
+        file = os.path.join(BASE_PATH, 'grids', 'lon_lat')
         builder = GridBuilder(file)
         self.grid_dict = builder.griddes
         self.grid = builder.build_grid()
@@ -196,14 +201,14 @@ class TestLatLonGrid(unittest.TestCase):
         lon = lon[sort_order_lat, sort_order_lon]
         np.testing.assert_array_equal(lon, normalized_output[1])
 
-    def test_remapnn_interpolates_with_nearest_neighbour(self):
+    def test_interpolate_with_nearest_neighbour(self):
         ll_lat, ll_lon = self.grid._calc_lat_lon()
         data = np.arange(ll_lat.size).reshape(ll_lat.shape)
         logging.debug(data.shape)
-        file = os.path.join(BASE_PATH, 'test_grids', 'gaussian_y')
+        file = os.path.join(BASE_PATH, 'grids', 'gaussian_y')
         builder = GridBuilder(file)
         gaussian_grid = builder.build_grid()
-        remapped_values = self.grid.remapnn(data, gaussian_grid)
+        remapped_values = self.grid.interpolate(data, gaussian_grid, 0)
         g_lat, g_lon = gaussian_grid._calc_lat_lon()
         ll_lat, ll_lon, data = self.grid.normalize_lat_lon(ll_lat, ll_lon, data)
         g_lat, g_lon, _ = self.grid.normalize_lat_lon(g_lat, g_lon)
@@ -211,13 +216,13 @@ class TestLatLonGrid(unittest.TestCase):
                                      g_lat, g_lon, order=0)
         np.testing.assert_array_equal(remapped_values, interpolated_values)
 
-    def test_remapbil_interpolates_with_bilinear(self):
+    def test_interpolate_with_bilinear(self):
         ll_lat, ll_lon = self.grid._calc_lat_lon()
         data = np.arange(ll_lat.size).reshape(ll_lat.shape)
-        file = os.path.join(BASE_PATH, 'test_grids', 'gaussian_y')
+        file = os.path.join(BASE_PATH, 'grids', 'gaussian_y')
         builder = GridBuilder(file)
         gaussian_grid = builder.build_grid()
-        remapped_values = self.grid.remapbil(data, gaussian_grid)
+        remapped_values = self.grid.interpolate(data, gaussian_grid, 1)
         g_lat, g_lon = gaussian_grid._calc_lat_lon()
         ll_lat, ll_lon, data = self.grid.normalize_lat_lon(ll_lat, ll_lon, data)
         g_lat, g_lon, _ = self.grid.normalize_lat_lon(g_lat, g_lon)

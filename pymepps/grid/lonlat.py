@@ -68,7 +68,8 @@ class LonLatGrid(Grid):
         except KeyError:
             calculated_dim = np.array(
                 self._grid_dict['{0:s}vals'.format(dim_name)])
-        calculated_dim = calculated_dim[:int(steps)]
+        if calculated_dim.ndim >= 1:
+            calculated_dim = calculated_dim[:int(steps)]
         return calculated_dim
 
     def _construct_dim(self):
