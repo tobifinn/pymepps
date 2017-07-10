@@ -55,6 +55,14 @@ class Grid(object):
         self._grid_dict = None
         self.__nr_coords = 2
 
+    def __eq__(self, other):
+        try:
+            left = np.array(self.raw_lat_lon())
+            right = np.array(other.raw_lat_lon())
+        except AttributeError:
+            return False
+        return np.array_equal(left, right)
+
     def copy(self):
         return deepcopy(self)
 
@@ -389,13 +397,22 @@ class Grid(object):
             data_values = data.values
         else:
             data_values = data
+        src_lat, src_lon = self._calc_lat_lon()
+        logger.debug(src_lat.shape)
+        logger.debug(data_values.shape)
+        if data_values.shape[-self.len_coords:] != src_lat.shape:
+            raise ValueError(
+                'The last two dimension of the data needs the same shape as '
+                'the coordinates of this grid!')
         if unstructured:
+            logger.debug('Selected unstructured box')
             sliced_data, new_grid_dict = self._unstructured_box(data_values,
                                                                 ll_box)
         else:
+            logger.debug('Selected structured box')
             sliced_data, new_grid_dict = self._structured_box(data_values,
                                                               ll_box)
-        sliced_grid = self.__class__(new_grid_dict)
+        sliced_grid = type(self)(new_grid_dict)
         if isinstance(data, xr.DataArray):
             data_dims = [dim for dim in data.dims
                          if dim not in self.get_coord_names()]
@@ -412,11 +429,6 @@ class Grid(object):
 
     def _structured_box(self, data, ll_box):
         calc_lat, calc_lon = self._construct_dim()
-        if data.shape[-self.len_coords:] != \
-                (self._grid_dict['ysize'], self._grid_dict['xsize']):
-            raise ValueError(
-                'The last two dimension of the data needs the same shape as '
-                'the coordinates of this grid!')
         if not len(ll_box) == 4:
             raise ValueError(
                 'The latitude-longitude box doesn\'t have a length of 4, '
@@ -429,7 +441,7 @@ class Grid(object):
         lon_bound = np.logical_and(
             calc_lon >= np.min(lon_box), calc_lon <= np.max(lon_box)
         )
-        sliced_data = data[..., lat_bound, lon_bound]
+        sliced_data = data[..., lat_bound, :][..., lon_bound]
 
         lat_vals = calc_lat[lat_bound]
         lon_vals = calc_lon[lon_bound]
