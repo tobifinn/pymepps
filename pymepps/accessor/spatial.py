@@ -332,23 +332,26 @@ class SpatialAccessor(MetData):
         sliced_array.pp.grid = sliced_grid
         return sliced_array
 
-    #
-    # def save(self, path):
-    #     """
-    #     To save the SpatialData a copy of this instance is created and the
-    #     grid dict of the grid is added to the SpatialData attributes. Then the
-    #     instance is saved as NetCDF file.
-    #
-    #     Parameters
-    #     ----------
-    #     path: str
-    #         The path where the netcdf file should be saved.
-    #     """
-    #     save_array = self.data.copy()
-    #     grid_attr = {'grid_{0:s}'.format(k): self.grid._grid_dict[k]
-    #                  for k in self.grid._grid_dict}
-    #     save_array.attrs.update(grid_attr)
-    #     save_array.to_netcdf(path)
+    def save(self, save_path):
+        """
+        This save methods converts the grid into attributes and saves the
+        DataArray and the Grid together. The grid attributes are used by the
+        load method to recreate the grid, but it is also possible to load the
+        data with the normal xarray load functions.
+
+        Parameters
+        ----------
+        save_path: str
+            The path where the netcdf file should be saved.
+        """
+        save_array = self.data.copy()
+        try:
+            grid_attr = {'grid_{0:s}'.format(k): self.grid._grid_dict[k]
+                         for k in self.grid._grid_dict}
+            save_array.attrs.update(grid_attr)
+        except TypeError:
+            pass
+        save_array.to_netcdf(save_path)
     #
     # @staticmethod
     # def load(path):

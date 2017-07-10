@@ -60,6 +60,12 @@ class TestSpatial(unittest.TestCase):
             'Maximum_temperature_height_above_ground_Mixed_intervals_Maximum',
             data_array=self.array)
 
+    def tearDown(self):
+        try:
+            os.remove('test.nc')
+        except FileNotFoundError:
+            pass
+
     def test_array_has_accessor(self):
         self.assertTrue(hasattr(self.array, 'pp'))
 
@@ -252,6 +258,25 @@ class TestSpatial(unittest.TestCase):
         sliced_array.pp.grid = sliced_grid
         xr.testing.assert_equal(returned_array, sliced_array)
         self.assertEqual(sliced_grid, returned_array.pp.grid)
+
+    def test_save_creates_new_nc_file(self):
+        self.assertFalse(os.path.isfile('test.nc'))
+        self.array.pp.save('test.nc')
+        self.assertTrue(os.path.isfile('test.nc'))
+
+    def test_save_saves_same_data(self):
+        self.array.pp.save('test.nc')
+        opened_array = xr.open_dataarray('test.nc')
+        xr.testing.assert_equal(opened_array, self.array)
+
+    def test_save_saves_also_grid(self):
+        self.array.pp.grid = self.grid
+        self.array.pp.save('test.nc')
+        opened_array = xr.open_dataarray('test.nc')
+        grid_attrs = {attr[5:]: opened_array.attrs[attr]
+                      for attr in opened_array.attrs if attr[:5] == 'grid_'}
+        opened_grid = GridBuilder(grid_attrs).build_grid()
+        self.assertEqual(self.grid, opened_grid)
 
 
 if __name__ == '__main__':
