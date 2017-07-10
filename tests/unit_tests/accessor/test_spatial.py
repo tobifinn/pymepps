@@ -273,10 +273,33 @@ class TestSpatial(unittest.TestCase):
         self.array.pp.grid = self.grid
         self.array.pp.save('test.nc')
         opened_array = xr.open_dataarray('test.nc')
-        grid_attrs = {attr[5:]: opened_array.attrs[attr]
-                      for attr in opened_array.attrs if attr[:5] == 'grid_'}
+        grid_attrs = {attr[7:]: opened_array.attrs[attr]
+                      for attr in opened_array.attrs if attr[:7] == 'ppgrid_'}
         opened_grid = GridBuilder(grid_attrs).build_grid()
         self.assertEqual(self.grid, opened_grid)
+
+    def test_load_load_data_without_grid(self):
+        self.array.to_netcdf('test.nc')
+        opened_array = xr.DataArray.pp.load('test.nc')
+        xr.testing.assert_equal(self.array, opened_array)
+
+    def test_load_load_also_grid(self):
+        self.array.pp.grid = self.grid
+        self.array.pp.save('test.nc')
+        opened_array = xr.DataArray.pp.load('test.nc')
+        self.assertEqual(opened_array.pp.grid, self.grid)
+
+    def test_load_removes_grid_attrs(self):
+        self.array.pp.grid = self.grid
+        self.array.pp.save('test.nc')
+        non_gridded_array = xr.open_dataarray('test.nc')
+        non_gridded_attrs = [attr for attr in non_gridded_array.attrs
+                             if attr[:7] == 'ppgrid_']
+        self.assertTrue(non_gridded_attrs)
+        gridded_array = xr.DataArray.pp.load('test.nc')
+        gridded_attrs = [attr for attr in gridded_array.attrs
+                         if attr[:7] == 'ppgrid_']
+        self.assertFalse(gridded_attrs)
 
 
 if __name__ == '__main__':

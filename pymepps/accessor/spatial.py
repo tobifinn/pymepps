@@ -30,7 +30,9 @@ import xarray as xr
 import numpy as np
 
 # Internal modules
+import pymepps
 from .base import MetData
+from pymepps.grid.builder import GridBuilder
 from pymepps.loader.datasets.tsdataset import TSDataset
 from pymepps.loader.filehandler.netcdfhandler import cube_to_series
 
@@ -334,44 +336,51 @@ class SpatialAccessor(MetData):
 
     def save(self, save_path):
         """
-        This save methods converts the grid into attributes and saves the
-        DataArray and the Grid together. The grid attributes are used by the
-        load method to recreate the grid, but it is also possible to load the
-        data with the normal xarray load functions.
+        Save the DataArray and the grid as attributes together. The grid
+        attributes are used by the load method to recreate the grid, but it is
+        also possible to load the data with the normal xarray load functions.
 
         Parameters
         ----------
-        save_path: str
+        save_path : str
             The path where the netcdf file should be saved.
         """
         save_array = self.data.copy()
         try:
-            grid_attr = {'grid_{0:s}'.format(k): self.grid._grid_dict[k]
+            grid_attr = {'ppgrid_{0:s}'.format(k): self.grid._grid_dict[k]
                          for k in self.grid._grid_dict}
             save_array.attrs.update(grid_attr)
         except TypeError:
             pass
         save_array.to_netcdf(save_path)
-    #
-    # @staticmethod
-    # def load(path):
-    #     """
-    #     Load a SpatialData instance from a given path. The path is loaded as
-    #     SpatialDataset. A correct saved SpatialData instance will have only one
-    #     variable within the NetCDF file. So the first variable will be returned
-    #     as newly constructed SpatialData instance.
-    #
-    #     Parameters
-    #     ----------
-    #     path: str
-    #         The path to the saved SpatialData instance.
-    #
-    #     Returns
-    #     -------
-    #     spdata: SpatialData
-    #         The loaded SpatialData instance.
-    #     """
-    #     spatial_ds = pymepps.loader.open_model_dataset(path, 'nc')
-    #     variable = spatial_ds.var_names[0]
-    #     spdata = spatial_ds.select(variable)
-    #     return spdata
+
+    @staticmethod
+    def load(load_path):
+        """
+        Load a NetCDF-based previously saved xarray.DataArray instance. If the
+        NetCDF file has grid attributes they will be decoded as new grid.
+
+        Parameters
+        ----------
+        load_path : str
+            The path to the saved xarray.DataArray instance.
+
+        Returns
+        -------
+        loaded_array : xarray.DataArray
+            The loaded DataArray instance. If a grid could be created it will be
+            set to the DataArray instance.
+        """
+        loaded_array = xr.open_dataarray(load_path)
+        grid_attrs = [attr for attr in loaded_array.attrs
+                      if attr[:7] == 'ppgrid_']
+        grid_dict = {attr[7:]: loaded_array.attrs[attr] for attr in grid_attrs}
+        try:
+            loaded_grid = GridBuilder(grid_dict).build_grid()
+            loaded_array.pp.grid = loaded_grid
+            for key in grid_attrs:
+                loaded_array.attrs.pop(key, None)
+        except (KeyError, ValueError):
+            pass
+        logger.debug(grid_attrs)
+        return loaded_array
