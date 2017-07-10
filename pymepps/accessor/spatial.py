@@ -284,35 +284,28 @@ class SpatialAccessor(MetData):
             The SpatialData instance with the replaced grid.
         """
         remapped_array = self.grid.interpolate(self.data, new_grid, order=0)
-        remapped_array.grid = new_grid
+        remapped_array.pp.grid = new_grid
         return remapped_array
 
-    # def remapbil(self, new_grid, inplace=False):
-    #     """
-    #     Remap the horizontal grid with a bilinear approach to a given new grid.
-    #
-    #     Parameters
-    #     ----------
-    #     new_grid : Child instance of Grid
-    #         The data is remapped to this grid.
-    #
-    #     inplace: bool, optional
-    #         If the new data should be replacing the data of this SpatialData
-    #         instance or if the instance should be copied. Default is False.
-    #
-    #     Returns
-    #     -------
-    #     spdata: SpatialData
-    #         The SpatialData instance with the replaced grid.
-    #     """
-    #     if inplace:
-    #         spdata = self
-    #     else:
-    #         spdata = self.copy()
-    #     new_data = spdata.grid.remapbil(new_grid, spdata.data.values)
-    #     spdata.set_grid_coordinates(new_data, new_grid)
-    #     return spdata
-    #
+    def remapbil(self, new_grid):
+        """
+        Remap the horizontal grid with a bilinear approach to a given
+        new grid.
+
+        Parameters
+        ----------
+        new_grid : Child instance of Grid
+            The data is remapped to this grid.
+
+        Returns
+        -------
+        remapped_array : SpatialData
+            The SpatialData instance with the replaced grid.
+        """
+        remapped_array = self.grid.interpolate(self.data, new_grid, order=1)
+        remapped_array.pp.grid = new_grid
+        return remapped_array
+
     # def sellonlatbox(self, lonlatbox, inplace=False):
     #     """
     #     The data is sliced with the given lonlatbox. A new grid is created based

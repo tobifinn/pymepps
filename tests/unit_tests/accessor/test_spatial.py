@@ -37,17 +37,23 @@ import pandas.util.testing as pdt
 import pymepps.accessor
 from pymepps.loader.datasets.spatialdataset import SpatialDataset
 from pymepps.loader.filehandler.netcdfhandler import NetCDFHandler
+from pymepps.grid import GridBuilder
 
 
-BASE_DIR = os.path.dirname(os.path.dirname(__file__))
+BASE_PATH = os.path.join(
+    os.path.dirname(
+        os.path.dirname(
+            os.path.dirname(
+                os.path.realpath(__file__)))),
+    'data')
 
 logging.basicConfig(level=logging.DEBUG)
 
 
 class TestSpatial(unittest.TestCase):
     def setUp(self):
-        file = os.path.join(os.path.dirname(BASE_DIR), 'data', 'spatial',
-                            'raw', 'GFS_Global_0p25deg_20161219_0600.nc')
+        file = os.path.join(BASE_PATH, 'spatial', 'raw',
+                            'GFS_Global_0p25deg_20161219_0600.nc')
         ds = SpatialDataset(NetCDFHandler(file),)
         self.array = xr.open_dataarray(file)
         self.grid = ds.get_grid(
@@ -218,10 +224,25 @@ class TestSpatial(unittest.TestCase):
         target_df = stacked_array.to_pandas()
         pdt.assert_frame_equal(target_df, returned_df, check_dtype=False)
 
-    def test_remapnn_interpolated_with_nearest_neighbour_approach(self):
-        file = os.path.join(BASE_PATH, 'test_grids', 'gaussian_y')
+    def test_remapnn_interpolates_with_nearest_neighbour_approach(self):
+        file = os.path.join(BASE_PATH, 'grids', 'gaussian_y')
         builder = GridBuilder(file)
+        gaussian_grid = builder.build_grid()
+        self.array.pp.grid = self.grid
+        returned_array = self.array.pp.remapnn(gaussian_grid)
+        remapped_array = self.grid.interpolate(self.array, gaussian_grid, 0)
+        remapped_array.pp.grid = gaussian_grid
+        xr.testing.assert_equal(returned_array, remapped_array)
 
+    def test_remapbil_interpolates_with_nearest_neighbour_approach(self):
+        file = os.path.join(BASE_PATH, 'grids', 'gaussian_y')
+        builder = GridBuilder(file)
+        gaussian_grid = builder.build_grid()
+        self.array.pp.grid = self.grid
+        returned_array = self.array.pp.remapbil(gaussian_grid)
+        remapped_array = self.grid.interpolate(self.array, gaussian_grid, 1)
+        remapped_array.pp.grid = gaussian_grid
+        xr.testing.assert_equal(returned_array, remapped_array)
 
 
 if __name__ == '__main__':
