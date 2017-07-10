@@ -244,6 +244,15 @@ class TestSpatial(unittest.TestCase):
         remapped_array.pp.grid = gaussian_grid
         xr.testing.assert_equal(returned_array, remapped_array)
 
+    def test_lonlatbox_slices_lonlatbox_from_array(self):
+        lonlatbox = (9, 55, 12, 52)
+        self.array.pp.grid = self.grid.copy()
+        returned_array = self.array.pp.sellonlatbox(lonlatbox)
+        sliced_array, sliced_grid = self.grid.lonlatbox(self.array, lonlatbox)
+        sliced_array.pp.grid = sliced_grid
+        xr.testing.assert_equal(returned_array, sliced_array)
+        self.assertEqual(sliced_grid, returned_array.pp.grid)
+
 
 if __name__ == '__main__':
     unittest.main()

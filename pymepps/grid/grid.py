@@ -398,21 +398,18 @@ class Grid(object):
         else:
             data_values = data
         src_lat, src_lon = self._calc_lat_lon()
-        logger.debug(src_lat.shape)
-        logger.debug(data_values.shape)
+        old_grid = data.pp.grid.copy()
         if data_values.shape[-self.len_coords:] != src_lat.shape:
             raise ValueError(
                 'The last two dimension of the data needs the same shape as '
                 'the coordinates of this grid!')
         if unstructured:
-            logger.debug('Selected unstructured box')
             sliced_data, new_grid_dict = self._unstructured_box(data_values,
                                                                 ll_box)
         else:
-            logger.debug('Selected structured box')
             sliced_data, new_grid_dict = self._structured_box(data_values,
                                                               ll_box)
-        sliced_grid = type(self)(new_grid_dict)
+        sliced_grid = self.__class__(new_grid_dict)
         if isinstance(data, xr.DataArray):
             data_dims = [dim for dim in data.dims
                          if dim not in self.get_coord_names()]
@@ -446,7 +443,7 @@ class Grid(object):
         lat_vals = calc_lat[lat_bound]
         lon_vals = calc_lon[lon_bound]
 
-        new_grid_dict = self._grid_dict
+        new_grid_dict = deepcopy(self._grid_dict)
         new_grid_dict['ysize'] = len(lat_vals)
         new_grid_dict['xsize'] = len(lon_vals)
         new_grid_dict['yvals'] = list(lat_vals)

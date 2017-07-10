@@ -306,35 +306,32 @@ class SpatialAccessor(MetData):
         remapped_array.pp.grid = new_grid
         return remapped_array
 
-    # def sellonlatbox(self, lonlatbox, inplace=False):
-    #     """
-    #     The data is sliced with the given lonlatbox. A new grid is created based
-    #     on the sliced coordinates.
-    #
-    #     Parameters
-    #     ----------
-    #     lonlatbox : tuple(float)
-    #         The longitude and latitude box with four entries as degree. The
-    #         entries are handled in the following way:
-    #             (left/west, top/north, right/east, bottom/south)
-    #
-    #     inplace: bool, optional
-    #         If the new data should be replacing the data of this SpatialData
-    #         instance or if the instance should be copied. Default is False.
-    #
-    #     Returns
-    #     -------
-    #     spdata: SpatialData
-    #         The sliced SpatialData instance with the replaced grid.
-    #     """
-    #     if inplace:
-    #         spdata = self
-    #     else:
-    #         spdata = self.copy()
-    #     new_data, new_grid = spdata.grid.lonlatbox(spdata.data.values,
-    #                                                lonlatbox)
-    #     spdata.set_grid_coordinates(new_grid, new_data)
-    #     return spdata
+    def sellonlatbox(self, lonlatbox):
+        """
+        This DataArray instance is sliced by given lonlatbox. A new grid is
+        created and set based on the sliced coordinates.
+
+        Parameters
+        ----------
+        lonlatbox : tuple(float)
+            The longitude and latitude box with four entries as degree. The
+            entries are handled in the following way:
+                (left/west, top/north, right/east, bottom/south)
+
+        Returns
+        -------
+        sliced_array : xarray.DataArray
+            The sliced data array with the new grid.
+
+        Notes:
+        ------
+        For some grids the new grid is based on an UnstructuredGrid, due to
+        technical limitations.
+        """
+        sliced_array, sliced_grid = self.grid.lonlatbox(self.data, lonlatbox)
+        sliced_array.pp.grid = sliced_grid
+        return sliced_array
+
     #
     # def save(self, path):
     #     """
