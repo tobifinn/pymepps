@@ -99,6 +99,8 @@ class MetDataset(object):
         return var_names
 
     def _initialize_variables(self):
+        if self._file_handlers is None:
+            return {}
         new_variables = {}
         mt = MultiThread(processes=self.processes)
         var_names_list = mt.map(self._get_variables, self._file_handlers,

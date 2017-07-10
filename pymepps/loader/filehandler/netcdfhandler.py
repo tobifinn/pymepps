@@ -38,7 +38,6 @@ logger = logging.getLogger(__name__)
 
 def cube_to_series(cube, var_name):
     cleaned_dims = list(cube.dims)
-    logger.debug(cleaned_dims)
     if 'index' in cleaned_dims:
         cleaned_dims.remove('index')
     elif 'time' in cleaned_dims:
@@ -48,7 +47,6 @@ def cube_to_series(cube, var_name):
     if cleaned_dims:
         stacked = cube.stack(col=cleaned_dims)
         data = stacked.to_pandas()
-        #data = [pd_stacked.ix[:,col] for col in pd_stacked.columns]
     else:
         data = cube.to_series()
         data.name = var_name

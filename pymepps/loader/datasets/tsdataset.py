@@ -109,8 +109,10 @@ class TSDataset(MetDataset):
             [pd.DataFrame(l.data) for l in return_list], pattern)
 
     def data_merge(self, data, var_name):
-        merged_data = data[0]
         if isinstance(data, (list, tuple)):
+            merged_data = data[0]
             merged_data = merged_data.pp.update(*data[1:])
+        elif isinstance(data, (pd.Series, pd.DataFrame)):
+            merged_data = data
         merged_data.name = var_name
         return merged_data

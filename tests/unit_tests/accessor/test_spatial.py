@@ -31,6 +31,7 @@ import datetime
 # External modules
 import xarray as xr
 import numpy as np
+import pandas.util.testing as pdt
 
 # Internal modules
 import pymepps.accessor
@@ -74,6 +75,10 @@ class TestSpatial(unittest.TestCase):
         self.assertEqual(self.array.pp._grid, None)
         self.array.pp.grid = self.grid
         self.assertEqual(self.array.pp._grid, self.grid)
+
+    def test_grid_set_raises_type_error_if_wrong_type(self):
+        with self.assertRaises(TypeError):
+            self.array.pp.grid = self.array
 
     def test_check_data_coords_raises_typeerror_if_no_grid(self):
         with self.assertRaises(TypeError):
@@ -148,9 +153,9 @@ class TestSpatial(unittest.TestCase):
         del test_array['time']
         self.array.pp.grid = self.grid
         with self.assertRaises(TypeError):
-            updated_array = self.array.pp.update(test_array)
+            _ = self.array.pp.update(test_array)
 
-    def test_merge_merged_array_has_same_grid(self):
+    def test_update_updated_array_has_same_grid(self):
         test_array = self.array.copy()
         test_array[:] = 5
         self.array.pp.grid = self.grid
@@ -198,11 +203,21 @@ class TestSpatial(unittest.TestCase):
         np.testing.assert_equal(merged_array.dims, self.array.dims)
         np.testing.assert_equal(merged_array.values, self.array.values)
 
-    def test_to_pandas_no_lonlat_given_returns_dataframe(self):
-        stacked_array = self.array.stack(stack=self.array.dims[1:])
-        df = stacked_array.to_pandas()
+    def test_to_pandas_no_lonlat_given_returns_stacked_dataframe(self):
+        stacked_array = self.array.stack(col=self.array.dims[1:])
+        target_df = stacked_array.to_pandas()
         returned_df = self.array.pp.to_pandas()
-        logging.debug(returned_df)
+        # Trick to speed up the whole thing
+        pdt.assert_frame_equal(target_df.T, returned_df.T, check_dtype=False)
+
+    def test_to_pandas_lonlat_given_returns_point_dataframe(self):
+        self.array.pp.grid = self.grid
+        returned_df = self.array.pp.to_pandas((10, 53.5))
+        self.array = self.array.sel(lat=53.5).sel(lon=10)
+        stacked_array = self.array.stack(col=self.array.dims[1:])
+        target_df = stacked_array.to_pandas()
+        pdt.assert_frame_equal(target_df, returned_df, check_dtype=False)
+
 
 if __name__ == '__main__':
     unittest.main()

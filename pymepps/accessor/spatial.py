@@ -263,7 +263,7 @@ class SpatialAccessor(MetData):
             )
         else:
             cube = self.data
-        series_data = cube_to_series(cube.squeeze(), self.data.name)
+        series_data = cube_to_series(cube, self.data.name)
         ts_ds = TSDataset(None, data_origin=self, lonlat=lonlat)
         extracted_data = ts_ds.data_merge(series_data, self.data.name)
         return extracted_data

@@ -28,14 +28,13 @@
 # Internal modules
 from pymepps.grid import GridBuilder
 from pymepps.loader import open_model_dataset, open_station_dataset
-from pymepps.accessor.frame import FrameAccessor
-from pymepps.accessor.series import SeriesAccessor
+from pymepps.accessor.pandas import PandasAccessor
 from pymepps.accessor.spatial import SpatialAccessor
 from pymepps.accessor.utilities import register_dataframe_accessor
 from pymepps.accessor.utilities import register_series_accessor
 
 __all__ = ['open_model_dataset', 'open_station_dataset', 'GridBuilder',
-           'FrameAccessor', 'SeriesAccessor', 'SpatialAccessor',
-           'register_dataframe_accessor', 'register_series_accessorDR']
+           'PandasAccessor', 'SpatialAccessor', 'register_dataframe_accessor',
+           'register_series_accessor']
 
 __version__ = '0.3.0'

@@ -48,6 +48,7 @@ class PandasAccessor(MetData):
     """
     def __init__(self, data):
         super().__init__(data)
+        self.lonlat = None
 
     def update(self, *items):
         update_data = [self.data.copy(), ]
@@ -68,6 +69,7 @@ class PandasAccessor(MetData):
         updated_array = columned_data.loc[~dup_rows].sort_index(axis=0)
         for ind, val in concatenated_data.loc[dup_rows][::-1].T.iteritems():
             updated_array.loc[ind] = updated_array.loc[ind].fillna(val)
+        updated_array.pp.lonlat = self.lonlat
         return updated_array
 
     def save(self, save_path):

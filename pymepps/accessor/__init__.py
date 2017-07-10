@@ -27,3 +27,7 @@
 # External modules
 
 # Internal modules
+from .pandas import PandasAccessor
+from .spatial import SpatialAccessor
+
+__all__ = ['PandasAccessor', 'SpatialAccessor']
