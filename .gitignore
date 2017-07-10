@@ -214,7 +214,7 @@ cwallet.sso.lck
 # Created by .ignore support plugin (hsz.mobi)
 #/pymepps_old/
 /examples/
-/*_old/
+/*old*/
 
 # To remove non-public test files
 /cosmo-hh/
