@@ -26,13 +26,14 @@
 import os
 import unittest
 import logging
+import json
 
 # External modules
 import pandas as pd
 import numpy as np
 
 # Internal modules
-from pymepps.accessor.series import SeriesAccessor
+from pymepps.accessor.pandas import PandasAccessor
 
 
 BASE_DIR = os.path.dirname(os.path.dirname(__file__))
@@ -51,6 +52,10 @@ class TestSeries(unittest.TestCase):
         self.frame = pd.DataFrame(data=frame_data, index=time_range,
                                   columns=['test', 'bla'])
 
+    def tearDown(self):
+        if os.path.isfile('test.json'):
+            os.remove('test.json')
+
     def test_data_is_data(self):
         self.assertEqual(id(self.series), id(self.series.pp.data))
         self.assertEqual(id(self.frame), id(self.frame.pp.data))
@@ -68,45 +73,31 @@ class TestSeries(unittest.TestCase):
                                           str(lonlat)),
             repr(self.frame.pp))
 
-    def test_update_data_updates_unnamed_series(self):
-        test_series = self.series.copy()
-        test_series[:] = 0
-        self.series = self.series.pp.update(test_series)
-        self.assertTrue(np.all(np.equal(self.series.values, 0)))
+    def test_save_saves_creates_path(self):
+        self.assertFalse(os.path.isfile('test.json'))
+        self.series.pp.save('test.json')
+        self.assertTrue(os.path.isfile('test.json'))
 
-    def test_update_updates_same_names_series(self):
-        test_series = self.series.copy()
-        test_series[:] = 0
-        test_series.name = 'test_series'
-        self.series.name = 'test_series'
-        self.series = self.series.pp.update(test_series)
-        self.assertTrue(np.all(np.equal(self.series.values, 0)))
+    def test_save_creates_valid_json(self):
+        self.series.pp.save('test.json')
+        with open('test.json', 'r') as fh:
+            json_str = fh.read()
+        decoded_dict = json.loads(json_str)
+        self.assertIsInstance(decoded_dict, dict)
 
-    def test_update_updates_unnamed_named_series(self):
-        test_series = self.series.copy()
-        test_series[:] = 0
-        test_series.name = 'test_series'
-        returned_series = self.series.pp.update(test_series)
-        self.assertTrue(np.all(np.equal(self.series.values, 0)))
-        self.assertTrue(self.series.name, test_series.name)
+    def test_save_saves_data_and_lonlat(self):
+        self.series.pp.save('test.json')
+        with open('test.json', 'r') as fh:
+            json_str = fh.read()
+        decoded_dict = json.loads(json_str)
+        self.assertIn('lonlat', decoded_dict.keys())
+        self.assertIn('data', decoded_dict.keys())
 
-    def test_update_updates_named_unnamed_series(self):
-        test_series = self.series.copy()
-        test_series[:] = 0
-        self.series.name = 'test_series'
-        self.series = self.series.pp.update(test_series)
-        self.assertTrue(np.all(np.equal(self.series.values, 0)))
-
-    def test_update_transforms_different_named_series_to_frame(self):
-        test_series = self.series.copy()
-        test_series[:] = 0
-        test_series.name = 'test_series'
-        self.series.name = 'test_series2'
-        self.series = self.series.pp.update(test_series)
-        self.assertTrue(np.all(np.equal(self.series.values, 0)))
-
-
-
+    def test_save_saves_lonlat_as_tuple(self):
+        self.series.pp.save('test.json')
+        with open('test.json', 'r') as fh:
+            json_str = fh.read()
+        decoded_dict = json.loads(json_str)
 
 if __name__ == '__main__':
     unittest.main()

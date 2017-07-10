@@ -30,7 +30,7 @@ import pandas as pd
 
 # Internal modules
 from .metdataset import MetDataset
-from pymepps.accessor.series import TSData
+from pymepps.accessor.pandas import PandasAccessor
 
 
 logger = logging.getLogger(__name__)
@@ -65,7 +65,8 @@ class TSDataset(MetDataset):
     select
         Method to select a variable.
     """
-    def __init__(self, file_handlers, data_origin=None, lonlat=None, processes=1):
+    def __init__(self, file_handlers, data_origin=None, lonlat=None,
+                 processes=1):
         super().__init__(file_handlers, data_origin, processes)
         self.lon_lat = lonlat
 
@@ -102,19 +103,14 @@ class TSDataset(MetDataset):
             df.columns = ["{0:s}".format(var_name), ]
             yield df
 
-    def select_by_pattern(self, pattern, return_list=False):
+    def select_by_pattern(self, pattern, return_list=False, **kwargs):
         return_list = super().select_by_pattern(pattern, return_list=True)
         return self.data_merge(
             [pd.DataFrame(l.data) for l in return_list], pattern)
 
     def data_merge(self, data, var_name):
-        logger.debug('The data before data_merge is: {0}'.format(data))
-        if self.lon_lat is None:
-            self.lon_lat = self._get_lon_lat()
+        merged_data = data[0]
         if isinstance(data, (list, tuple)):
-            tsdata = TSData(data[0], self, lonlat=self.lon_lat)
-            if len(data) > 1:
-                tsdata.update(*data[1:])
-        else:
-            tsdata = TSData(data, self, lonlat=self.lon_lat)
-        return tsdata
+            merged_data = merged_data.pp.update(*data[1:])
+        merged_data.name = var_name
+        return merged_data

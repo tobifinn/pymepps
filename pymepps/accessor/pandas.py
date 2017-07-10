@@ -33,24 +33,42 @@ import pandas as pd
 
 # Internal modules
 from .base import MetData
-import pymepps
+from .utilities import register_dataframe_accessor, register_series_accessor
 
 
 logger = logging.getLogger(__name__)
 
 
+@register_series_accessor('pp')
+@register_dataframe_accessor('pp')
 class PandasAccessor(MetData):
     """
     An accessor as extension to pandas data structures. This accessor is a base
     for a SeriesAccessor and FrameAccessor.
     """
-    def __init__(self, data, lonlat=None):
+    def __init__(self, data):
         super().__init__(data)
-        self.lonlat = lonlat
 
-    @abc.abstractmethod
     def update(self, *items):
-        pass
+        update_data = [self.data.copy(), ]
+        for item in items:
+            if isinstance(item, (pd.Series, pd.DataFrame)):
+                update_data.append(item)
+            else:
+                raise TypeError(
+                    'The given item {0} need to be in a pandas conform data '
+                    'type!'.format(item))
+        concatenated_data = pd.concat(update_data, axis=1)
+        dup_cols = concatenated_data.columns.duplicated(keep='last')
+        columned_data = concatenated_data.loc[:, ~dup_cols].sort_index(axis=1)
+        for name, val in concatenated_data.loc[:, dup_cols][::-1].iteritems():
+            columned_data[name] = columned_data[name].fillna(val)
+        columned_data = columned_data.squeeze()
+        dup_rows = columned_data.index.duplicated(keep='last')
+        updated_array = columned_data.loc[~dup_rows].sort_index(axis=0)
+        for ind, val in concatenated_data.loc[dup_rows][::-1].T.iteritems():
+            updated_array.loc[ind] = updated_array.loc[ind].fillna(val)
+        return updated_array
 
     def save(self, save_path):
         """
@@ -65,7 +83,7 @@ class PandasAccessor(MetData):
             Path where the json file should be saved.
         """
         # self.data.to_json(path, orient='split')
-        save_dict = dict(pd_data=self.data.to_json(orient='split'),
+        save_dict = dict(data=self.data.to_json(orient='split'),
                          lonlat=self.lonlat)
         with open(save_path, mode='w+') as fp:
             json.dump(save_dict, fp)
@@ -106,7 +124,7 @@ class PandasAccessor(MetData):
             lonlat = tuple(saved_json_instance['lonlat'])
         else:
             lonlat = None
-        if 'pd_data' in list(saved_json_instance.keys()):
+        if 'data' in list(saved_json_instance.keys()):
             pd_data_json = saved_json_instance['pd_data']
 
         else:

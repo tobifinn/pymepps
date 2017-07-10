@@ -71,6 +71,9 @@ class MetDataset(object):
         self.processes = processes
         self.__variables = self._initialize_variables()
 
+    def __repr__(self):
+        file_handlers = len(self.file_handlers)
+        return '{0:s}({1:d})'.format(self.__class__.__name__, file_handlers)
 
     def __str__(self):
         file_handlers = len(self.file_handlers)
