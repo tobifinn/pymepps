@@ -360,6 +360,56 @@ class Grid(object):
         """
         pass
 
+    def _lonlatbox(self, data, ll_box, unstructured=False):
+        """
+        The data is sliced as grid with given lonlat box.
+
+        Parameters
+        ----------
+        data : numpy.ndarray or xarray.DataArray
+            The data which should be sliced. The shape of the last two
+            dimensions should be the same as the grid dimensions.
+        ll_box : tuple(float)
+            The longitude and latitude box with four entries as degree. The
+            entries are handled in the following way:
+                (left/west, top/north, right/east, bottom/south)
+        unstructured : bool, optional
+            If the output grid should be unstructured.
+
+        Returns
+        -------
+        sliced_data : numpy.ndarray or xarray.DataArray
+            The sliced data with the same type as the input data. If the input
+            data is a xarray.DataArray the output data will use the same
+            attributes and non-grid dimensions as the input data.
+        sliced_grid : Grid
+            A new child instance of Grid with the sliced coordinates as values.
+        """
+        if isinstance(data, xr.DataArray):
+            data_values = data.values
+        else:
+            data_values = data
+        if unstructured:
+            sliced_data, new_grid_dict = self._unstructured_box(data_values,
+                                                                ll_box)
+        else:
+            sliced_data, new_grid_dict = self._structured_box(data_values,
+                                                              ll_box)
+        sliced_grid = self.__class__(new_grid_dict)
+        if isinstance(data, xr.DataArray):
+            data_dims = [dim for dim in data.dims
+                         if dim not in self.get_coord_names()]
+            data_coords = {dim: data.coords[dim] for dim in data_dims}
+            data_coords.update(sliced_grid.get_coords())
+            data_dims.extend(sliced_grid.get_coord_names())
+            sliced_data = xr.DataArray(
+                sliced_data,
+                coords=data_coords,
+                dims=data_dims,
+                attrs=data.attrs
+            )
+        return sliced_data, sliced_grid
+
     def _structured_box(self, data, ll_box):
         calc_lat, calc_lon = self._construct_dim()
         if data.shape[-self.len_coords:] != \
