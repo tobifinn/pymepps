@@ -37,4 +37,4 @@ __all__ = ['open_model_dataset', 'open_station_dataset', 'GridBuilder',
            'PandasAccessor', 'SpatialAccessor', 'register_dataframe_accessor',
            'register_series_accessor']
 
-__version__ = '0.3.0'
+__version__ = '0.4.0'

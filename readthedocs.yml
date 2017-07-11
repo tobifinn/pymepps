@@ -1,7 +1,5 @@
 conda:
     file: docs/environment.yml
-dependencies:
-  - conda-forge::ipython
 python:
    version: 3
    setup_py_install: true

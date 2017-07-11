@@ -1,4 +1,4 @@
-name: pymepps
+name: pymepps-rtd
 channels: !!python/tuple
   - conda-forge
   - defaults
