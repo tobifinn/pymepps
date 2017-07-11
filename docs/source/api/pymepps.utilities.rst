@@ -1,6 +1,22 @@
 Utilities package
 =================
 
+Cdo functions
+-------------
+
+.. automodule:: pymepps.utilities.cdo_funcs
+    :members:
+    :undoc-members:
+    :show-inheritance:
+
+Multiprocessing utility
+-----------------------
+
+.. automodule:: pymepps.utilities.multiproc_util
+    :members:
+    :undoc-members:
+    :show-inheritance:
+
 Path encoder
 ------------
 
@@ -15,12 +31,3 @@ TestCase
 .. automodule:: pymepps.utilities.testcase
     :members:
     :undoc-members:
-    :show-inheritance:
-
-File
-----
-
-.. automodule:: pymepps.utilities.file.File
-    :members:
-    :undoc-members:
-    :show-inheritance:

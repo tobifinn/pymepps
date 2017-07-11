@@ -55,36 +55,34 @@ A spatial dataset is used to combine the file handlers, which are capable to
 read in spatial data. The spatial dataset interacts on the same level as the
 climate data operators (cdo). So it is possible to process the data of a spatial
 dataset with some of the cdos. A method for the general support of the cdos is
-planned.The spatial dataset also creates the grid for the spatial data. The grid
-could be either predefined or is read in with the griddes function from the cdo.
+planned. The spatial dataset also creates the grid for the spatial data. The
+grid could be either predefined or is read in with the griddes function from the
+cdo.
 
 
 Time series dataset
 ^^^^^^^^^^^^^^^^^^^
-A time series dataset is ised to combine the times series file handlers. A time
+A time series dataset is used to combine the times series file handlers. A time
 series dataset is valid for a given coordinates, so it is possible to defined
 a coordinate tuple. If no coordinate tuple is set the time series dataset tries
-to get the coordinates from the data origin.
+to infer the coordinates from the data origin.
 
 
 Data
 ----
-Two different data types are defined within this package – spatial data and
-time series data. The data types are used to process and plot the data. The
-data types are working at variable level. Both data types are like a wrapper
-around powerful packages – pandas and xarray.
+The main data types are based on xarray and pandas. Within this package these
+data structures are extended by accessors. The accessor could be accessed with a
+property named pp. With the use of accessors the namespace of the base data
+structures remains clean.
 
 Spatial data
 ^^^^^^^^^^^^
-The spatial data is represented within the SpatialData data type. The data type
-is based on xarray.DataArray and could be seen as NetCDF like cube. So it is
-easy to save the data as NetCDF file. The spatial data contains a grid, defining
-the horizontal grid coordinates of the data. With this grid it is further
-possible to remap the data and to transform the data to time series data. These
-features are used to process the data in statistical models.
+Spatial data is loaded as xarray.DataArray. The SpatialAccessor extends the
+DataArray structure by grid capabilities. With the grid it is possible to remap
+and slice the data based on coordinates and other grids.
 
 Time series data
 ^^^^^^^^^^^^^^^^
-The time series data is represented within the TSData data type. The data type
-is based on pandas.Series and pandas.DataFrame and could be seen as table like
-data.
+Time series data is loaded as pandas.Series or pandas.DataFrame. The
+PandasAccessor extends the pandas structure by some station specific
+capabilities. It is planned to expand the accessor in the future.

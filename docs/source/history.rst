@@ -6,7 +6,7 @@ Let's talk a little about the history and the formation process of this package.
 There are so many python packages why a new one?
 ------------------------------------------------
 Python is a rapidly developing programming language. In the last few years has
-won more fans, especially in the geoscientific community. There are so many
+got more fans, especially in the geoscientific community. There are so many
 different packages for different purposes, but no package matched my
 requirements.
 

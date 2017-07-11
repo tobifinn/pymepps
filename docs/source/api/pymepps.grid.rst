@@ -7,7 +7,6 @@ grid transformations and functions.
 
 Grid builder
 ------------
-
 .. automodule:: pymepps.grid.builder
     :members:
     :undoc-members:
