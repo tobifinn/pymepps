@@ -9,7 +9,7 @@ dependencies:
   - conda-forge::pygrib
   - conda-forge::numpy
   - conda-forge::pandas
-  - conda-forge::python=3.5
+  - conda-forge::python=3.6
   - conda-forge::python-cdo
   - conda-forge::scipy
   - conda-forge::tqdm

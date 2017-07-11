@@ -26,7 +26,7 @@ The following packages are only recommended to use all features.
 * `cdo <https://code.zmaw.de/projects/cdo/>`_
 * `cdo bindings <https://github.com/Try2Code/cdo-bindings>`_
 
-In the future some requirements will be added for example
+In the future some requirements will be added, e.g.
 `scikit-learn <http://scikit-learn.org>`_.
 
 Installation

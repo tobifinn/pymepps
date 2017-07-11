@@ -86,3 +86,54 @@ Time series data
 Time series data is loaded as pandas.Series or pandas.DataFrame. The
 PandasAccessor extends the pandas structure by some station specific
 capabilities. It is planned to expand the accessor in the future.
+
+
+Grid
+----
+There are several different grids defined for processing of spatial data. The
+grids are inspired by the grid description of the cdo. So it is possible to read
+the grid from meteorological files with the cdos. The grids are defined to
+process xarray.DataArray and numpy.ndarray instances.
+
+LatLonGrid
+^^^^^^^^^^
+The LatLonGrid is defined for equal spaced latitude and longitude grids. The
+grid has two coordinate values for one grid point and could be described by a
+start, end and step value for both coordinates. If the grid is sliced it will
+become a new LatLonGrid.
+
+GaussianGrid
+^^^^^^^^^^^^
+The GaussianGrid is almost like a LatLonGrid the single difference is that one
+of two coordinates are unequal spaced. So for this coordinate the coordinate
+values have to be given. If the grid is sliced it will become a new
+GaussianGrid.
+
+ProjectionGrid
+^^^^^^^^^^^^^^
+The ProjectionGrid could be described by two evenly-distributed coordinates. The
+coordinates could be translated with a given projection to longitude and
+latitude coordinates. An example for a ProjectionGrid is a grid with rotated
+poles. If the grid is sliced it will become an UnstructuredGrid, due to the
+nature of the grid type.
+
+CurvilinearGrid
+^^^^^^^^^^^^^^^
+The CurvilinearGrid could be described as a grid where four vertices are given
+for every grid point. The CurvilinearGrid has two coordinates in their own
+system and at the moment the latitude and longitude values have to be predefined
+for every grid point. If the grid is sliced it will become an UnstructuredGrid,
+due to the nature of the grid type.
+
+UnstructuredGrid
+^^^^^^^^^^^^^^^^
+The UnstructuredGrid could be described as a grid with n-vertices for every
+grid point. So internally the UnstructuredGrid has only the number of cells as
+coordinate. For cell center a latitude and longitude value have to be defined.
+An example for an UnstructuredGrid is the icosahedral grid of the
+Icosahedral Nonhydrostatic (ICON) model. If the grid is sliced it will be a new
+UnstructuredGrid.
+
+GridBuilder
+^^^^^^^^^^^
+The grid builder is used to encode cdo-conform grid information into a grid.

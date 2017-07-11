@@ -10,6 +10,7 @@ arbitrary grid and generate a DataArray based on this grid.
 
 .. ipython:: python
 
+    import os
     import datetime
     import numpy as np
     import xarray as xr
@@ -21,6 +22,7 @@ arbitrary grid and generate a DataArray based on this grid.
 
     # Load the grid file into the grid builder
     grid_path = "source/ipy_examples/data/lon_lat"
+    print(os.path.realpath(grid_path))
     builder = pymepps.GridBuilder(grid_path)
 
     # Build the grid
