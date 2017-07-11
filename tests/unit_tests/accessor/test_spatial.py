@@ -94,18 +94,18 @@ class TestSpatial(unittest.TestCase):
 
     def test_check_data_coords_raises_typeerror_if_no_grid(self):
         with self.assertRaises(TypeError):
-            self.array.pp._check_data_coordinates(self.array)
+            self.array.pp.check_data_coordinates(self.array)
 
     def test_check_data_coords_returns_item(self):
         self.array.pp.grid = self.grid
-        return_item = self.array.pp._check_data_coordinates(self.array)
+        return_item = self.array.pp.check_data_coordinates(self.array)
         xr.testing.assert_identical(return_item, self.array)
 
     def test_check_data_coords_raises_valueerror_if_wrong_coords(self):
         self.array.pp.grid = self.grid
         test_array = self.array[:, :, :5, :5]
         with self.assertRaises(ValueError):
-            self.array.pp._check_data_coordinates(test_array)
+            self.array.pp.check_data_coordinates(test_array)
 
     def test_merge_checks_input(self):
         test_array = self.array[:, :, :5, :5]
@@ -176,20 +176,18 @@ class TestSpatial(unittest.TestCase):
         self.assertEqual(id(self.grid), id(updated_array.pp.grid))
 
     def test_set_grid_cooordinates_returns_grid_array(self):
-        self.array.pp._grid = self.grid
-        returned_array = self.array.pp.set_grid_coordinates()
+        returned_array = self.array.pp.set_grid(self.grid)
         self.assertEqual(id(returned_array.pp.grid), id(self.grid))
 
     def test_set_grid_coordinates_sets_names(self):
         self.array = self.array.rename({'lat': 'y', 'lon': 'x'})
         old_dim_names = np.array(self.array.dims)
         true_dim_names = list(old_dim_names[:-2]) + ['lat', 'lon']
-        self.array.pp._grid = self.grid
         np.testing.assert_equal(np.array(self.array.dims), old_dim_names)
-        gridded_array = self.array.pp.set_grid_coordinates()
+        gridded_array = self.array.pp.set_grid(self.grid)
         np.testing.assert_equal(np.array(gridded_array.dims), true_dim_names)
 
-    def test_set_grid_coordinates_sets_values(self):
+    def test_set_grid_sets_values(self):
         coord_values = self.grid.raw_dim
         self.array['lat'] = np.arange(self.array['lat'].size)
         self.array['lon'] = np.arange(self.array['lon'].size)
@@ -197,8 +195,7 @@ class TestSpatial(unittest.TestCase):
             np.all(np.equal(self.array[dim].values, coord_values[num]))
             for num, dim in enumerate(self.array.dims[-2:])])
         )
-        self.array.pp._grid = self.grid
-        self.array = self.array.pp.set_grid_coordinates()
+        self.array = self.array.pp.set_grid(self.grid)
         self.assertTrue(all([
             np.all(np.equal(self.array[dim].values, coord_values[num]))
             for num, dim in enumerate(self.array.dims[-2:])])

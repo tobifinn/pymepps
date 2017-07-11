@@ -78,7 +78,7 @@ class Grid(object):
         """
         return self.__nr_coords
 
-    def get_coords(self, ):
+    def get_coords(self):
         """
         Get the coordinates in a xarray-compatible way.
 

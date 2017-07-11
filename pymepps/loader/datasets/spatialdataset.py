@@ -175,9 +175,8 @@ class SpatialDataset(MetDataset):
 
     def data_merge(self, data, var_name):
         """
-        Method to merge instances of xarray.DataArray into a SpatialData
-        instance. Also the grid is read and inserted into the SpatialData
-        instance.
+        Method to merge instances of xarray.DataArray into a single
+        xarray.DataArray. Also the grid is read and set to the xarray.DataArray.
 
         Parameters
         ----------
@@ -188,9 +187,10 @@ class SpatialDataset(MetDataset):
 
         Returns
         -------
-        SpatialData
-            The SpatialData instance with the extracted data and the extracted
-            grid.
+        merged_array : xarray.DataArray
+            The merged DataArray with the grid coordinates and the extracted
+            grid. If the grid could not extracted the grid is None and a
+            DataArray without set grid is returned.
         """
         grid = self.get_grid(var_name, data[0])
         merged_array = data[0]
@@ -201,5 +201,10 @@ class SpatialDataset(MetDataset):
                         if not attr.startswith('grid_')}
         loaded_attrs['name'] = merged_array._name = var_name
         merged_array.attrs = loaded_attrs
-        merged_array.pp.grid = grid
+        merged_array = merged_array.pp.set_grid(grid)
+
+        # try:
+        #     merged_array = merged_array.pp.set_grid(grid)
+        # except ValueError:
+        #     pass
         return merged_array

@@ -78,7 +78,44 @@ class SpatialAccessor(MetData):
             raise TypeError('The given grid is not a valid defined grid type!')
         self._grid = grid
 
-    def _check_data_coordinates(self, item):
+    def set_grid(self, grid=None):
+        """
+        Set the grid to the given grid and set the grid coordinates.
+
+        Parameters
+        ----------
+        grid : Grid or None, optional
+            This grid is used to set the grid and the grid coordinates of the
+            returned array. If this is None, the grid of this DataArray instance
+            is used. Default is None.
+
+        Returns
+        -------
+        gridded_array : xarray.DataArray
+            The DataArray with the grid coordinates and the grid.
+
+        Raises
+        ------
+        ValueError
+            A ValueError is raised if the grid of this instance is used and not
+            set set.
+        """
+        if grid is None and self._grid is not None:
+            grid = self.grid
+        elif grid is None:
+            raise ValueError('The grid of this DataArray is used and not set!')
+        coord_names = grid.get_coord_names()
+        rename_dict = {new: old for new, old in zip(
+            self.data.dims[-grid.len_coords:], coord_names,)}
+        gridded_array = self.data.rename(rename_dict)
+        gridded_array.pp.grid = grid
+        gridded_array = gridded_array.pp.check_data_coordinates(gridded_array)
+        new_coordinates = grid.get_coords()
+        for coord in coord_names:
+            gridded_array[coord] = new_coordinates[coord]
+        return gridded_array
+
+    def check_data_coordinates(self, item):
         """
         Check if items grid coordinates shape is the same as those of the grid.
 
@@ -125,8 +162,8 @@ class SpatialAccessor(MetData):
         merged_array : xarray.DataArray
             The DataArray instance with the merged data.
         """
-        update_data = [self._check_data_coordinates(self.data), ]
-        update_data += [self._check_data_coordinates(item) for item in items]
+        update_data = [self.check_data_coordinates(self.data), ]
+        update_data += [self.check_data_coordinates(item) for item in items]
         dataset_data = [
             item.to_dataset('variable') if 'variable' in item.coords else item
             for item in update_data]
@@ -155,8 +192,8 @@ class SpatialAccessor(MetData):
         merged_array : xarray.DataArray
             The DataArray instance with the updated data.
         """
-        update_data = [self._check_data_coordinates(self.data), ]
-        update_data += [self._check_data_coordinates(item) for item in items]
+        update_data = [self.check_data_coordinates(self.data), ]
+        update_data += [self.check_data_coordinates(item) for item in items]
         stack_dims = [dim for dim in self.data.dims
                       if dim not in self.grid.get_coord_names()]
         stacked_data = [d.stack(merge=stack_dims) for d in update_data]
@@ -172,26 +209,6 @@ class SpatialAccessor(MetData):
         updated_array = unstacked_array.transpose(*self.data.dims)
         updated_array.pp.grid = self.grid
         return updated_array
-
-    def set_grid_coordinates(self):
-        """
-        Set the coordinates of the grid to the DataArray.
-
-        Returns
-        -------
-        gridded_array : xarray.DataArray
-            The DataArray with the grid coordinates.
-        """
-        data = self._check_data_coordinates(self.data)
-        coord_names = self.grid.get_coord_names()
-        new_coordinates = self.grid.get_coords()
-        rename_dict = {new: old for new, old in zip(
-            data.dims[-self.grid.len_coords:], coord_names,)}
-        gridded_array = data.rename(rename_dict)
-        for coord in coord_names:
-            gridded_array[coord] = new_coordinates[coord]
-        gridded_array.pp.grid = self.grid
-        return gridded_array
 
     def merge_analysis_timedelta(self, analysis_axis='runtime',
                                  timedelta_axis='validtime'):
