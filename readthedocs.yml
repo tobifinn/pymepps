@@ -1,5 +1,5 @@
 conda:
-    file: environment.yml
+    file: docs/environment.yml
 dependencies:
   - conda-forge::ipython
 python:

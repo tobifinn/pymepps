@@ -245,7 +245,7 @@ class SpatialAccessor(MetData):
             Series (1 Column) or Dataframe (multiple column) depending on the
             dimensions.
         """
-        if isinstance(lonlat, tuple) and len(lonlat) == 2:
+        if isinstance(lonlat, (list, tuple)) and len(lonlat) == 2:
             extracted_data = self.grid.get_nearest_point(data=self.data,
                                                          coord=reversed(lonlat))
             dims_wo_grid = [dim for dim in self.data.dims

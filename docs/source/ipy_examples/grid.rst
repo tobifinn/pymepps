@@ -81,7 +81,7 @@ used for the multiindex.
 
 .. ipython:: python
 
-    extracted_point = sliced_array.pp.to_pandas([10, 53.5])
+    extracted_point = sliced_array.pp.to_pandas((10, 53.5))
     print(extracted_point)
 
     flatten_grid = sliced_array.pp.to_pandas()

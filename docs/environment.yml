@@ -4,10 +4,11 @@ channels: !!python/tuple
   - defaults
 dependencies:
   - conda-forge::basemap
+  - conda-forge::ipython
   - conda-forge::matplotlib
+  - conda-forge::numpy
   - conda-forge::openblas
   - conda-forge::pygrib
-  - conda-forge::numpy
   - conda-forge::pandas
   - conda-forge::python=3.5
   - conda-forge::python-cdo
