@@ -22,7 +22,11 @@ import re
 import sys
 sys.path.insert(0, os.path.abspath('../../'))
 import pymepps
-
+try:
+    import IPython
+    print("ipython: %s, %s" % (IPython.__version__, IPython.__file__))
+except ImportError:
+    print("no ipython")
 
 # -- General configuration ------------------------------------------------
 
@@ -41,6 +45,8 @@ extensions = [
     'sphinx.ext.ifconfig',
     'sphinx.ext.napoleon',
     'sphinx.ext.viewcode',
+    'IPython.sphinxext.ipython_directive',
+    'IPython.sphinxext.ipython_console_highlighting',
 ]
 
 # Add any paths that contain templates here, relative to this directory.
@@ -183,4 +189,10 @@ texinfo_documents = [
 
 
 # Example configuration for intersphinx: refer to the Python standard library.
-intersphinx_mapping = {'https://docs.python.org/': None}
+intersphinx_mapping = {
+    'python': ('https://docs.python.org/3.6/', None),
+    'pandas': ('http://pandas.pydata.org/pandas-docs/stable/', None),
+    'numpy': ('https://docs.scipy.org/doc/numpy/', None),
+    'matplotlib': ('http://matplotlib.org/', None),
+    'sphinx': ('http://www.sphinx-doc.org/en/stable/', None),
+    'xarray': ('http://xarray.pydata.org/en/stable/', None),}

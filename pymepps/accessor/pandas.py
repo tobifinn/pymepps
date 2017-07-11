@@ -52,6 +52,9 @@ class PandasAccessor(MetData):
         self.lonlat = None
 
     def update(self, *items):
+        """
+        Update the data.
+        """
         update_data = [self.data.copy(), ]
         for item in items:
             if isinstance(item, (pd.Series, pd.DataFrame)):

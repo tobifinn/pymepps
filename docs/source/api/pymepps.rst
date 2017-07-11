@@ -3,8 +3,7 @@ API
 
 .. toctree::
 
-    pymepps.metfile
-    pymepps.metdata
+    pymepps.accessor
     pymepps.grid
     pymepps.loader
     pymepps.utilities
@@ -13,12 +12,7 @@ API
 Submodule contents
 ------------------
 
-.. automodule:: pymepps.metfile
-    :members:
-    :undoc-members:
-    :show-inheritance:
-
-.. automodule:: pymepps.metdata
+.. automodule:: pymepps.accessor
     :members:
     :undoc-members:
     :show-inheritance:

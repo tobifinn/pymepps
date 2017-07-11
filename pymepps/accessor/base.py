@@ -49,6 +49,9 @@ class MetData(object):
 
     @property
     def data(self):
+        """
+        Access the parent object.
+        """
         return self._data
 
     @data.setter
@@ -62,9 +65,15 @@ class MetData(object):
 
     @abc.abstractmethod
     def save(self, save_path):
+        """
+        Save this instance.
+        """
         pass
 
     @staticmethod
     @abc.abstractmethod
     def load(load_path):
+        """
+        Load a new instance.
+        """
         pass

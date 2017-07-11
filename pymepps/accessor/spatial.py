@@ -43,21 +43,9 @@ logger = logging.getLogger(__name__)
 @xr.register_dataarray_accessor('pp')
 class SpatialAccessor(MetData):
     """
-    SpatialData contains spatial based data structures. This class is the
-    standard data type for file types like netCDF or grib. It's prepared
-    for the output of numerical and statistical weather models.
-    Array based data is always saved to netcdf via xarray.
-
-    Attributes
-    ----------
-    data : xarray.DataArray or None
-        The data of this grid based data structure.
-    grid : Child instance of Grid or None
-        The corresponding grid of this SpatialData instance. This grid is 
-        used to interpolate/remap the data and to select the nearest grid
-        point to a given longitude/latitude pair. The grid is also used to 
-        get a basemap instance to determine the grid boundaries for plotting
-        purpose.
+    The SpatialAccessor extends a xarray.DataArray for post-processing of
+    meteorological numerical weather model data. The SpatialAccessor works
+    mostly with grid and gridded data.
     """
     def __init__(self, data, grid=None):
         super().__init__(data)
@@ -74,6 +62,11 @@ class SpatialAccessor(MetData):
 
     @property
     def grid(self):
+        """
+        The corresponding grid of this xarray.DataArray instance. This grid is
+        used to interpolate/remap the data and to select the nearest grid
+        point to a given longitude/latitude pair.
+        """
         if self._grid is None:
             raise TypeError('This DataArray has no grid defined!')
         else:
@@ -282,8 +275,8 @@ class SpatialAccessor(MetData):
 
         Returns
         -------
-        remapped_array : SpatialData
-            The SpatialData instance with the replaced grid.
+        remapped_array : xarray.DataArray
+            The xarray.DataArray with the replaced grid.
         """
         remapped_array = self.grid.interpolate(self.data, new_grid, order=0)
         remapped_array.pp.grid = new_grid
@@ -301,8 +294,8 @@ class SpatialAccessor(MetData):
 
         Returns
         -------
-        remapped_array : SpatialData
-            The SpatialData instance with the replaced grid.
+        remapped_array : xarray.DataArray
+            The xarray.DataArray with the replaced grid.
         """
         remapped_array = self.grid.interpolate(self.data, new_grid, order=1)
         remapped_array.pp.grid = new_grid
@@ -325,8 +318,8 @@ class SpatialAccessor(MetData):
         sliced_array : xarray.DataArray
             The sliced data array with the new grid.
 
-        Notes:
-        ------
+        Notes
+        -----
         For some grids the new grid is based on an UnstructuredGrid, due to
         technical limitations.
         """

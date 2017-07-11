@@ -20,4 +20,5 @@ plot the data are planned.
    install
    history
    data_structures
+   examples
    api/pymepps
