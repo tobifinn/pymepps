@@ -19,5 +19,4 @@ process meteorological spatial and time series data.
    install
    history
    data_structures
-   examples
    api/pymepps

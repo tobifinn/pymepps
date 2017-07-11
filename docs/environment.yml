@@ -16,7 +16,9 @@ dependencies:
   - conda-forge::xarray
   - conda-forge::pip
   - conda-forge::pycairo
+  - conda-forge::nbsphinx
   - pip:
     - netcdf4
     - cdo
+    - sphinx-nbexamples
 #    - git+https://github.com/maestrotf/pymepps.git

@@ -20,7 +20,8 @@
 import os
 import re
 import sys
-sys.path.insert(0, os.path.abspath('../../'))
+import sphinx_nbexamples
+sys.path.insert(0, os.path.abspath('../'))
 import pymepps
 try:
     import IPython
@@ -47,6 +48,7 @@ extensions = [
     'sphinx.ext.viewcode',
     'IPython.sphinxext.ipython_directive',
     'IPython.sphinxext.ipython_console_highlighting',
+    'sphinx_nbexamples',
 ]
 
 # Add any paths that contain templates here, relative to this directory.
@@ -54,6 +56,14 @@ templates_path = ['_templates']
 
 # From read the docs page.
 on_rtd = os.environ.get('READTHEDOCS', None) == 'True'
+
+BASEPATH = os.path.realpath('./')
+
+example_gallery_config = dict(
+    dont_preprocess=on_rtd,
+    gallery_dirs='./examples/',
+    urls='../../examples/',
+)
 
 # The suffix(es) of source filenames.
 # You can specify multiple suffix as a list of string:
