@@ -1,0 +1,26 @@
+#
+# gridID 1
+# Source: http://thredds.met.no/thredds/dodsC/meps25files/
+#         meps_det_extracted_2_5km_20170409T12Z.nc
+#
+gridtype  = projection
+gridsize  = 667951
+xsize     = 719
+ysize     = 929
+xname     = x
+xlongname = "x-coordinate in Cartesian system"
+xunits    = "m"
+yname     = y
+ylongname = "y-coordinate in Cartesian system"
+yunits    = "m"
+xfirst    = -897442.2
+xinc      = 2500
+yfirst    = -1104322
+yinc      = 2500
+grid_mapping = projection_lambert
+grid_mapping_name = lambert_conformal_conic
+standard_parallel = 63. 63.
+longitude_of_central_meridian = 15.
+latitude_of_projection_origin = 63.
+earth_radius = 6371000.
+proj4 = "+proj=lcc +lat_0=63 +lon_0=15 +lat_1=63 +lat_2=63 +no_defs +R=6.371e+06"

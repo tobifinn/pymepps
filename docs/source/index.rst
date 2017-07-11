@@ -6,7 +6,7 @@
 Python meteorological post-processing system
 ============================================
 
-The python meteorological post-processing system could be used to post-process
+The PYthon Meteorological Post-Processing System could be used to post-process
 meteorological data. The main purpose of this project is the post-processing of
 numerical weather forecast data. This package has some modules to load and
 process meteorological spatial and time series data.

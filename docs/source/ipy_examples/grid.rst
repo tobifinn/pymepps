@@ -21,8 +21,7 @@ arbitrary grid and generate a DataArray based on this grid.
     random_state = np.random.RandomState(42)
 
     # Load the grid file into the grid builder
-    grid_path = "source/ipy_examples/data/lon_lat"
-    print(os.path.realpath(grid_path))
+    grid_path = "ipy_examples/data/lon_lat"
     builder = pymepps.GridBuilder(grid_path)
 
     # Build the grid
