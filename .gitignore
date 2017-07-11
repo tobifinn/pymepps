@@ -213,7 +213,6 @@ javadoc/
 cwallet.sso.lck
 # Created by .ignore support plugin (hsz.mobi)
 #/pymepps_old/
-/examples/
 /*old*/
 
 # To remove non-public test files
