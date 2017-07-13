@@ -1,1 +1,1 @@
-*.nc filter=lfs diff=lfs merge=lfs -text
+*.py diff=python
