@@ -12,6 +12,7 @@ dependencies:
   - conda-forge::pandas
   - conda-forge::python=3.6
   - conda-forge::scipy
+  - conda-forge::sphinx-gallery
   - conda-forge::tqdm
   - conda-forge::xarray
   - conda-forge::pip
@@ -20,5 +21,4 @@ dependencies:
   - pip:
     - netcdf4
     - cdo
-    - sphinx-nbexamples
 #    - git+https://github.com/maestrotf/pymepps.git

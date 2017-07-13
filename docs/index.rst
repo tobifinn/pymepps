@@ -19,4 +19,6 @@ process meteorological spatial and time series data.
    install
    history
    data_structures
+   examples/index
    api/pymepps
+   internals
