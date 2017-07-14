@@ -88,7 +88,8 @@ class PandasAccessor(MetData):
         save_path: str
             Path where the json file should be saved.
         """
-        save_dict = dict(data=self.data.to_json(orient='split'),
+        save_dict = dict(data=self.data.to_json(orient='split',
+                                                date_format='iso'),
                          lonlat=self.lonlat)
         with open(save_path, mode='w+') as fp:
             json.dump(save_dict, fp)
