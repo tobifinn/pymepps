@@ -212,6 +212,28 @@ class TestSpatial(unittest.TestCase):
         np.testing.assert_equal(merged_array.dims, self.array.dims)
         np.testing.assert_equal(merged_array.values, self.array.values)
 
+    def test_merge_analysis_timedelta_returns_grid_if_grid(self):
+        test_array = self.array.copy()
+        test_array = test_array.expand_dims('runtime')
+        test_array.coords['runtime'] = [datetime.datetime.now(), ]
+        test_array = test_array.rename({'time': 'validtime'})
+        test_array['validtime'] = test_array['validtime'].values - \
+                                  test_array['runtime'].values
+        test_array.pp.grid = self.grid
+        merged_array = test_array.pp.merge_analysis_timedelta()
+        self.assertEqual(merged_array.pp.grid, test_array.pp.grid)
+
+    def test_merge_analysis_timedelta_returns_no_grid_if_no_grid(self):
+        test_array = self.array.copy()
+        test_array = test_array.expand_dims('runtime')
+        test_array.coords['runtime'] = [datetime.datetime.now(), ]
+        test_array = test_array.rename({'time': 'validtime'})
+        test_array['validtime'] = test_array['validtime'].values - \
+                                  test_array['runtime'].values
+        merged_array = test_array.pp.merge_analysis_timedelta()
+        with self.assertRaises(TypeError):
+            merged_array.pp.grid
+
     def test_to_pandas_no_lonlat_given_returns_stacked_dataframe(self):
         stacked_array = self.array.stack(col=self.array.dims[1:])
         target_df = stacked_array.to_pandas()

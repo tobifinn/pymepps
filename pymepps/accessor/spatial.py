@@ -237,6 +237,10 @@ class SpatialAccessor(MetData):
             val[0]+val[1] for val in stacked_data.time.values]
         dims_to_transpose = ['time', ] + list(stacked_data.dims[:-1])
         merged_data = stacked_data.transpose(*dims_to_transpose)
+        try:
+            merged_data.pp.grid = self.grid
+        except TypeError:
+            pass
         return merged_data
 
     def to_pandas(self, lonlat=None):
