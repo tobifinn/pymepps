@@ -35,6 +35,7 @@ from mpl_toolkits.basemap import interp
 from scipy.interpolate import griddata
 
 # Internal modules
+import pymepps
 
 
 logger = logging.getLogger(__name__)
@@ -54,6 +55,16 @@ class Grid(object):
         self._lat_lon = None
         self._grid_dict = None
         self.__nr_coords = 2
+
+    def __str__(self):
+        name = self.__class__.__name__
+        grid_dict = '\n'.join(
+            '{0:s} = {1:s}'.format(
+                k, str(self._grid_dict[k]))
+            for k in self._grid_dict if 'vals' not in k)
+        return_str = '{0:s}\n{1:s}\n{2:s}'.format(
+            name, '-'*len(name), grid_dict)
+        return return_str
 
     def __eq__(self, other):
         try:
@@ -398,7 +409,6 @@ class Grid(object):
         else:
             data_values = data
         src_lat, src_lon = self._calc_lat_lon()
-        old_grid = data.pp.grid.copy()
         if data_values.shape[-self.len_coords:] != src_lat.shape:
             raise ValueError(
                 'The last two dimension of the data needs the same shape as '
@@ -409,7 +419,7 @@ class Grid(object):
         else:
             sliced_data, new_grid_dict = self._structured_box(data_values,
                                                               ll_box)
-        sliced_grid = self.__class__(new_grid_dict)
+        sliced_grid = pymepps.GridBuilder(new_grid_dict).build_grid()
         if isinstance(data, xr.DataArray):
             data_dims = [dim for dim in data.dims
                          if dim not in self.get_coord_names()]
