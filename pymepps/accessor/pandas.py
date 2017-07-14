@@ -140,5 +140,7 @@ class PandasAccessor(MetData):
         except ValueError:
             load_data = pd.read_json(pd_data_json, orient='split',
                                      typ='series')
+        if isinstance(load_data.index, pd.DatetimeIndex):
+            load_data.index = load_data.index.tz_localize('UTC')
         load_data.pp.lonlat = lonlat
         return load_data
