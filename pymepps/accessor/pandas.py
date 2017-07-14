@@ -130,7 +130,7 @@ class PandasAccessor(MetData):
         else:
             lonlat = None
         if 'data' in list(saved_json_instance.keys()):
-            pd_data_json = saved_json_instance['pd_data']
+            pd_data_json = saved_json_instance['data']
 
         else:
             pd_data_json = saved_json_instance
