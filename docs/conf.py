@@ -63,7 +63,8 @@ sphinx_gallery_conf = {
     'examples_dirs': '../examples',
     # path where to save gallery generated examples
     'gallery_dirs': 'examples',
-    'filename_pattern': '/example_plot_'
+    'filename_pattern': '/example_plot_',
+    'backreferences_dir': False
 }
 
 # The suffix(es) of source filenames.
