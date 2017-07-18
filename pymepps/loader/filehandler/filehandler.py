@@ -74,10 +74,6 @@ class FileHandler(object):
     def _get_varnames(self):
         pass
 
-    @abc.abstractmethod
-    def load_file(self):
-        pass
-
     def _get_metadata(self):
         pass
 
@@ -104,10 +100,7 @@ class FileHandler(object):
             time = kwargs['validtime']
         else:
             try:
-                if 'runtime' in additional_coords:
-                    time = self._get_dates_from_path(self.file)[1]
-                else:
-                    time = self._get_dates_from_path(self.file)[0]
+                time = self._get_dates_from_path(self.file)[1]
             except IndexError:
                 time = None
         return time

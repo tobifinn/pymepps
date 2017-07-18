@@ -139,24 +139,6 @@ class NetCDFHandler(FileHandler):
         data = cube_to_series(cube, var_name)
         return data
 
-    def _normalize_coordinates(self, cube):
-        """
-        Normalize the coordinates of a given cube. The non-grid coordinates are
-        renamed to a common name. If there is a valid runtime coordinate, then
-        the validtime coordinate is converted to timedelta.
-        """
-        rename_dim = ['runtime', 'ensemble', 'validtime', 'height']
-        cube_dims = cube.dims
-        if cube_dims[0] == 'variable':
-            cube_dims = cube_dims[1:]
-        rename_coords = {cube_dims[k]: rename
-                      for k, rename in enumerate(rename_dim)}
-        cube = cube.rename(rename_coords)
-        if np.issubdtype(cube['validtime'].values.dtype, np.datetime64) and \
-                np.issubdtype(cube['runtime'].values.dtype, np.datetime64):
-            cube['validtime'] = cube['validtime']-cube['runtime'].values
-        return cube
-
     def get_messages(self, var_name, **kwargs):
         """
         Method to imitate the message-like behaviour of grib files.
@@ -189,7 +171,10 @@ class NetCDFHandler(FileHandler):
         if 'sliced_coords' in kwargs:
             cube = cube[(...,)+kwargs['sliced_coords']]
         cube.attrs.update(self.ds.attrs)
-        cube = self._get_missing_coordinates(cube, **kwargs)
-        cube = self._normalize_coordinates(cube)
         cube = cube.load()
+        cube = cube.pp.normalize_coordinates(
+            runtime=self._get_runtime(**kwargs),
+            ensemble=self._get_ensemble(**kwargs),
+            validtime=self._get_validtime(**kwargs)
+        )
         return cube
