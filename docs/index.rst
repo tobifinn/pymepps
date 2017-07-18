@@ -11,6 +11,11 @@ meteorological data. The main purpose of this project is the post-processing of
 numerical weather forecast data. This package has some modules to load and
 process meteorological spatial and time series data.
 
+.. note::
+
+   The data structure was changed from composition to accessor structure with
+   version 0.4.0.
+
 
 .. toctree::
    :maxdepth: 2
