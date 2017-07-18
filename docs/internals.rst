@@ -10,12 +10,24 @@ The following explanation is for the station data folder.
 wettermast.nc
 ^^^^^^^^^^^^^
 The wettermast.nc is extracted from original
-`Wettermast Hamburg <https://wettermast.uni-hamburg.de>`_ data. We get the permission of
-Ingo Lange to use the data in a sliced manner.
+`Wettermast Hamburg <https://wettermast.uni-hamburg.de>`_ data. We get the
+permission of Ingo Lange to use the data in a sliced manner.
 
 We extracted the data from the original NetCDF-file and sliced a time period of
 5 days and used only the 2 metre temperature.
 
+Model data
+----------
+The model data explanation is for the model data folder.
+
+GFS_Global_0p25deg_20161219_0600.nc
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+The NetCDF file is a transformed subset of the GFS global weather model from the
+19th december 2016. The GFS data `is available for free in the public domain
+under provisions of U.S. law
+<https://en.wikipedia.org/wiki/Global_Forecast_System>`_ and was as grib2 file
+from the `NCEP ftp server <ftp.ncep.noaa.gov>`_. Later only one variable was
+extracted and transformed with the climate data operators.
 
 Grid data
 ---------
