@@ -24,6 +24,9 @@
 # """
 # System modules
 import logging
+from collections import OrderedDict
+import re
+import datetime
 
 # External modules
 import xarray as xr
@@ -98,7 +101,7 @@ class SpatialAccessor(MetData):
         ------
         ValueError
             A ValueError is raised if the grid of this instance is used and not
-            set set.
+            grid set.
         """
         if grid is None and self._grid is not None:
             grid = self.grid
@@ -144,6 +147,237 @@ class SpatialAccessor(MetData):
             raise ValueError('The item {0:s} has not the right last dimensions.'
                              'They need to be the same as the grid!')
         return item
+
+    def normalize_coords(self, runtime=None, ensemble='det', validtime=None,
+                         height=None):
+        """
+        Normalize the coordinates of the DataArray. The number, order and names
+        of the coordinates are normalized. The number of coordinates will be
+        four to six, depending if the DataArray is a merged multi-variable
+        DataArray and the number of grid coordinates. The values of the added
+        coordinates is set to the given values or will be None as filling value.
+        The order and name of the DataArray will be:
+
+        - (variable) (Only if the DataArray is a multi-variable DataArray.
+          This is the variable name)
+        - runtime (The analysis time of the model. The model is started at this
+          time. The runtime is np.datetime64 as type)
+        - ensemble (The ensemble member of the model.)
+        - validtime (The lead time of the model. The model is valid for this
+          times. The validtime timedelta to the runtime.)
+        - height (The height information of the model.)
+        - first grid coordinate
+        - (second grid coordinate) (Only if the grid is not an unstructured
+          grid)
+
+        Parameters
+        ----------
+        runtime : datetime.datetime, np.datetime64  or None, optional
+            The runtime of the model. The runtime will be converted to
+            np.datetime64[ns] if it is not already this type. Default is None.
+        ensemble : int or str, optional
+            The ensemble member of the model. An integer is indicating the
+            member number, with zero as control run. Default is 'det'.
+        validtime : datetime.datetime, np.datetiime64, np.timedelta or None,
+                optional
+            The validtime of the model. The validtime is converted to
+            np.timedelta. Default is None.
+        height : int, str or None, optional
+            The height of the model. Default is None.
+
+        Returns
+        -------
+        normalized_array : xr.DataArray
+            The DataArray with normalized coordinates.
+        """
+        arg_dict = locals()
+        coord_dict = OrderedDict(
+            height=dict(
+                approx=['height', 'surf', 'sig', 'lev'],
+                exact=['height', ]
+            ),
+            validtime=dict(
+                approx=['lead', ],
+                exact=['validtime', 'time']
+            ),
+            ensemble=dict(
+                approx=['ens', 'mem', 'num'],
+                exact=['ensemble', ]
+            ),
+            runtime=dict(
+                approx=['ana', 'ref', 'run'],
+                exact=['runtime']
+            )
+        )
+        normalized_array = self.data
+        for key in coord_dict.keys():
+            coord_name = self._get_coord_name(coord_dict[key])
+            if coord_name is None:
+                normalized_array = self._create_coord(coord=key,
+                                                      value=arg_dict[key],
+                                                      data=normalized_array)
+            else:
+                normalized_array = self._rename_coord(orig=coord_name, to=key,
+                                                      data=normalized_array)
+        normalized_array = self._get_normalized_order(normalized_array)
+        normalized_array = self._transform_datetime(normalized_array)
+        normalized_array = self._validtime_to_timedelta(normalized_array)
+        return normalized_array
+
+    def _get_coord_name(self, variants):
+        """
+        Check if the coordinate name variants is any dimensions within the
+        DataArray.
+
+        Parameters
+        ----------
+        variants : dict(str, list(str)) or list(str)
+            These variants are checked within the dimensions of the DataArray.
+            If variants is a dict, it needs exact and approx as key with a
+            sublist of variants. The exact list is used to check the exact
+            dimension name. The approx list is used to check if the variant is
+            within the name of a dimension. If variants is a list of strings
+            the list values are used for exact matching.
+
+        Returns
+        -------
+        str or None
+            The matched dimension is returned. If the return value is None, no
+            matching dimension was found.
+        """
+        if isinstance(variants, (tuple, list)):
+            variants = dict(exact=variants, approx=[])
+        data_dims = [re.sub('[^a-zA-Z]+', '', d) for d in self.data.dims]
+        for k, dim in enumerate(data_dims):
+            for variant in variants['exact']:
+                if variant == dim:
+                    return self.data.dims[k]
+            for variant in variants['approx']:
+                if variant in dim:
+                    return self.data.dims[k]
+        return None
+
+    @staticmethod
+    def _get_normalized_order(data):
+        if 'variable' in data.dims:
+            normalized_order = ['variable']
+        else:
+            normalized_order = []
+        normalized_order.extend(['runtime', 'ensemble', 'validtime', 'height'])
+        normalized_order.extend([
+            dim for dim in data.dims if dim not in normalized_order
+        ])
+        normalized_array = data.transpose(*normalized_order)
+        return normalized_array
+
+    @staticmethod
+    def _transform_datetime(data):
+        """
+        Transform the datetime dimensions of the given data to
+        np.datetime64[ns].
+
+        Parameters
+        ----------
+        data : xr.DataArray
+            The dimensions of this DataArray are used for the transformation.
+
+        Returns
+        -------
+        transformed_data : xr.DataArray
+            The DataArray with the transformed time coordinates.
+        """
+        transformed_data = data.copy()
+        dims_to_transform = [
+            dim for dim in data.dims
+            if isinstance(data[dim].values[0],
+                          (datetime.datetime, np.datetime64))]
+        for dim in dims_to_transform:
+            transformed_data[dim] = transformed_data[dim].astype(
+                'datetime64[ns]')
+        return transformed_data
+
+    @staticmethod
+    def _create_coord(data, coord, value=None,):
+        """
+        Create a coordinate within the given DataArray with given value.
+
+        Parameters
+        ----------
+        data : xr.DataArray
+            The DataArray is used to create and add the coordinate.
+        coord : str
+            The name of the coordinate.
+        value : obj or None, optional
+            The value of the coordinate. None is used as filling value. Default
+            is None.
+
+        Returns
+        -------
+        coordinated_array : xr.DataArray
+            The DataArray with the added coordinate.
+
+        Raises
+        ------
+        ValueError
+            A coordinate with the same name already exists within the
+            coordinates dict or the dimension list of the DataArray.
+        """
+        coordinated_array = data.expand_dims(coord)
+        coordinated_array[coord] = np.array((value,))
+        return coordinated_array
+
+    @staticmethod
+    def _rename_coord(data, orig, to):
+        """
+        Rename a given coordinate to a new name.
+
+        Parameters
+        ----------
+        data : xr.DataArray
+            The DataArray is used to rename the coordinate.
+        orig : str
+            The name of the original coordinate. The coordinate needs to be
+            within the DataArray coordinates.
+        to : str
+            The coordinate is renamed to this name.
+
+        Returns
+        -------
+        renamed_array : xr.DataArray
+            The DataArray with the renamed coordinate.
+        """
+        renamed_array = data.rename({orig: to})
+        return renamed_array
+
+    @staticmethod
+    def _validtime_to_timedelta(data, validtime='validtime', runtime='runtime'):
+        """
+        Transform the validtime coordinate from a np.datetime64 coordinate to a
+        np.timedelta coordinate if also the runtime coordinate is a
+        np.datetime64 coordinate. The timedelta is create with
+        :math:`validtime-runtime`.
+
+        Parameters
+        ----------
+        data : xr.DataArray
+            The DataArray is used to transform the validtime coordinate.
+        validtime : str, optional
+            Name of the validtime coordinate. Default is validtime.
+        runtime : str, optional
+            Name of the runtime coordinate. Default is runtime.
+
+        Returns
+        -------
+        transformed_array : xr.DataArray
+            The DataArray with the transformed validtime coordinate.
+        """
+        transformed_array = data.copy()
+        runtime_values = data[runtime].values
+        validtime_values = data[validtime].values
+        if np.issubdtype(runtime_values.dtype, np.datetime64) and \
+                np.issubdtype(validtime_values.dtype, np.datetime64):
+            transformed_array[validtime] = validtime_values - runtime_values
+        return transformed_array
 
     def merge(self, *items):
         """

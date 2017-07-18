@@ -44,16 +44,18 @@ BASE_PATH = os.path.join(
     os.path.dirname(
         os.path.dirname(
             os.path.dirname(
-                os.path.realpath(__file__)))),
+                os.path.dirname(
+                    os.path.realpath(__file__))))),
     'data')
 
 logging.basicConfig(level=logging.DEBUG)
 
+logging.info(BASE_PATH)
+
 
 class TestSpatial(unittest.TestCase):
     def setUp(self):
-        file = os.path.join(BASE_PATH, 'spatial', 'raw',
-                            'GFS_Global_0p25deg_20161219_0600.nc')
+        file = os.path.join(BASE_PATH, 'model', 'GFS_Global_0p25deg_20161219_0600.nc')
         ds = SpatialDataset(NetCDFHandler(file),)
         self.array = xr.open_dataarray(file)
         self.grid = ds.get_grid(
@@ -201,6 +203,15 @@ class TestSpatial(unittest.TestCase):
             for num, dim in enumerate(self.array.dims[-2:])])
         )
 
+    def test_set_grid_raises_value_error_if_no_grid_given_and_set(self):
+        with self.assertRaises(ValueError):
+            self.array.pp.set_grid()
+
+    def test_set_grid_uses_own_grid_if_no_grid_given(self):
+        self.array.pp._grid = self.grid
+        gridded_array = self.array.pp.set_grid()
+        self.assertEqual(gridded_array.pp._grid, self.array.pp._grid)
+
     def test_merge_analysis_timedelta_merges_times(self):
         test_array = self.array.copy()
         test_array = test_array.expand_dims('runtime')
@@ -261,6 +272,7 @@ class TestSpatial(unittest.TestCase):
 
     def test_remapbil_interpolates_with_nearest_neighbour_approach(self):
         file = os.path.join(BASE_PATH, 'grids', 'gaussian_y')
+        logging.info(file)
         builder = GridBuilder(file)
         gaussian_grid = builder.build_grid()
         self.array.pp.grid = self.grid
@@ -320,6 +332,230 @@ class TestSpatial(unittest.TestCase):
                          if attr[:7] == 'ppgrid_']
         self.assertFalse(gridded_attrs)
 
+    def test_get_coord_name_detects_approx_variants(self):
+        variant = dict(approx=['ti', ], exact=[])
+        returned_coord = self.array.pp._get_coord_name(variant)
+        self.assertEqual(returned_coord, 'time')
+
+    def test_get_coord_name_detects_approx_variants_if_exact(self):
+        variant = dict(approx=['time', ], exact=[])
+        returned_coord = self.array.pp._get_coord_name(variant)
+        self.assertEqual(returned_coord, 'time')
+
+    def test_get_coord_name_detects_exact_variants(self):
+        variant = dict(exact=['time', ], approx=[])
+        returned_coord = self.array.pp._get_coord_name(variant)
+        self.assertEqual(returned_coord, 'time')
+
+    def test_get_coord_name_detects_not_exact_variants_if_approx(self):
+        variant = dict(exact=['ti', ], approx=[])
+        returned_coord = self.array.pp._get_coord_name(variant)
+        self.assertIsNone(returned_coord)
+
+    def test_get_coord_name_returns_none_if_no_coord(self):
+        variant = dict(exact=['run', ], approx=['runtime', ])
+        returned_coord = self.array.pp._get_coord_name(variant)
+        self.assertIsNone(returned_coord)
+
+    def test_get_coord_name_resub_non_alpha(self):
+        variant = dict(exact=['heightaboveground', ], approx=[])
+        returned_coord = self.array.pp._get_coord_name(variant)
+        self.assertEqual(returned_coord, self.array.dims[1])
+
+    def test_get_coord_name_uses_list_as_exact(self):
+        variant = ['heightaboveground', ]
+        returned_coord = self.array.pp._get_coord_name(variant)
+        self.assertEqual(returned_coord, self.array.dims[1])
+
+    def test_create_coord_returns_array(self):
+        returned_array = self.array.pp._create_coord(self.array, 'test_coord')
+        self.assertIsInstance(returned_array, xr.DataArray)
+
+    def test_create_coord_creates_dim_with_name(self):
+        self.assertNotIn('test_coord', self.array.dims)
+        returned_array = self.array.pp._create_coord(self.array, 'test_coord')
+        self.assertIn('test_coord', returned_array.dims)
+
+    def test_create_coord_new_dim_on_first_position(self):
+        self.assertNotEqual('test_coord', self.array.dims[0])
+        returned_array = self.array.pp._create_coord(self.array, 'test_coord')
+        self.assertEqual('test_coord', returned_array.dims[0])
+
+    def test_create_coord_copy_original_array(self):
+        returned_array = self.array.pp._create_coord(self.array, 'test_coord')
+        self.assertNotEqual(id(returned_array), id(self.array))
+
+    def test_create_coord_expand_dims(self):
+        returned_array = self.array.pp._create_coord(self.array, 'test_coord')
+        self.assertEqual(len(returned_array.dims), len(self.array.dims)+1)
+
+    def test_create_coord_creates_coordinate(self):
+        returned_array = self.array.pp._create_coord(self.array, 'test_coord')
+        self.assertIn('test_coord', returned_array.coords)
+
+    def test_create_coord_sets_parameter(self):
+        returned_array = self.array.pp._create_coord(self.array, 'test_coord',
+                                                     'bla')
+        np.testing.assert_equal(returned_array.coords['test_coord'].values,
+                                np.array(('bla', )))
+
+    def test_create_coord_raises_valueerror_if_already_exists(self):
+        with self.assertRaises(ValueError):
+            _ = self.array.pp._create_coord(self.array, 'time')
+
+    def test_rename_coord_returns_dataarray(self):
+        renamed_array = self.array.pp._rename_coord(self.array, 'time',
+                                                    'validtime')
+        self.assertIsInstance(renamed_array, xr.DataArray)
+
+    def test_rename_coord_renames_coord(self):
+        self.assertIn('time', self.array.dims)
+        renamed_array = self.array.pp._rename_coord(self.array, 'time',
+                                                    'validtime')
+        self.assertNotIn('time', renamed_array.dims)
+        self.assertIn('validtime', renamed_array.dims)
+
+    def test_rename_coord_renamed_dim_has_same_pos(self):
+        renamed_array = self.array.pp._rename_coord(self.array, 'time',
+                                                    'validtime')
+        self.assertEqual(self.array.dims.index('time'),
+                         renamed_array.dims.index('validtime'))
+
+    def test_rename_coord_renames_also_coord(self):
+        self.assertIn('time', self.array.coords)
+        renamed_array = self.array.pp._rename_coord(self.array, 'time',
+                                                    'validtime')
+        self.assertNotIn('time', renamed_array.coords)
+        self.assertIn('validtime', renamed_array.coords)
+        np.testing.assert_equal(self.array['time'].values,
+                                renamed_array['validtime'].values)
+
+    def test_normalize_order_orders_coordinates(self):
+        self.array = self.array.pp._create_coord(self.array, 'ensemble')
+        self.array = self.array.pp._create_coord(self.array, 'runtime')
+        self.array = self.array.pp._rename_coord(
+            self.array, 'time', 'validtime')
+        self.array = self.array.pp._rename_coord(
+            self.array, 'height_above_ground', 'height')
+        dims = list(self.array.dims)
+        dims.append(dims[0])
+        self.array = self.array.transpose(*dims[1:])
+        normalized_array = self.array.pp._get_normalized_order(self.array)
+        np.testing.assert_equal(
+            np.array(normalized_array.dims),
+            np.array(
+                ['runtime', 'ensemble', 'validtime', 'height', 'lat', 'lon']
+            )
+        )
+
+    def test_normalize_order_takes_variable_as_first(self):
+        self.array = self.array.pp._create_coord(self.array, 'ensemble')
+        self.array = self.array.pp._create_coord(self.array, 'runtime')
+        self.array = self.array.pp._rename_coord(
+            self.array, 'time', 'validtime')
+        self.array = self.array.pp._rename_coord(
+            self.array, 'height_above_ground', 'height')
+        self.array = self.array.pp._create_coord(self.array, 'variable')
+        normalized_array = self.array.pp._get_normalized_order(self.array)
+        self.assertEqual('variable', normalized_array.dims[0])
+
+    def test_transform_datetime_returns_dataarray(self):
+        transformed_array = self.array.pp._transform_datetime(self.array)
+        self.assertIsInstance(transformed_array, xr.DataArray)
+
+    def test_transform_to_datetime_transforms_datetime_to_npdatetime(self):
+        self.array = self.array.pp._create_coord(
+            self.array, 'runtime', datetime.datetime.now())
+        self.assertIsInstance(self.array['runtime'].values[0],
+                              datetime.datetime)
+        transformed_array = self.array.pp._transform_datetime(self.array)
+        self.assertIsInstance(transformed_array['runtime'].values[0],
+                              np.datetime64)
+
+    def test_transform_datetime64_to_nanoseconds(self):
+        now = np.datetime64(datetime.datetime.now(), 'D')
+        self.array = self.array.pp._create_coord(
+            self.array, 'runtime', now)
+        transformed_array = self.array.pp._transform_datetime(self.array)
+        self.assertEqual(transformed_array['runtime'].values.dtype,
+                         now.astype('datetime64[ns]').dtype)
+
+    def test_validtime_to_timedelta_returns_dataarray(self):
+        self.array = self.array.pp._create_coord(
+            self.array, 'runtime', datetime.datetime.utcnow())
+        transformed_array = self.array.pp._validtime_to_timedelta(
+            self.array, validtime='time')
+        self.assertIsInstance(transformed_array, xr.DataArray)
+
+    def test_validtime_to_timedelta_checks_if_both_npdatetime(self):
+        now = datetime.datetime.utcnow()
+        wrong_array = self.array.pp._create_coord(self.array, 'runtime', now)
+        transformed_array = self.array.pp._validtime_to_timedelta(
+            wrong_array, validtime='time')
+        self.assertFalse(
+            np.issubdtype(transformed_array['time'].values.dtype,
+                          np.timedelta64))
+        right_array = wrong_array.pp._transform_datetime(wrong_array)
+        transformed_array = self.array.pp._validtime_to_timedelta(
+            right_array, validtime='time')
+        self.assertTrue(
+            np.issubdtype(transformed_array['time'].values.dtype,
+                          np.timedelta64))
+
+    def test_validtime_to_timedelta_uses_given_runtime_and_validtime(self):
+        self.array = self.array.pp._create_coord(
+            self.array, 'runtime', datetime.datetime.utcnow())
+        self.array = self.array.pp._create_coord(
+            self.array, 'validtime', datetime.datetime.utcnow())
+        self.array = self.array.pp._create_coord(
+            self.array, 'anatime', datetime.datetime.utcnow())
+        self.array = self.array.pp._transform_datetime(self.array)
+        right_coordinate = self.array['time'].values - \
+            self.array['anatime'].values
+        transformed_array = self.array.pp._validtime_to_timedelta(
+            self.array, validtime='time', runtime='anatime'
+        )
+        np.testing.assert_equal(transformed_array['time'].values,
+                                right_coordinate)
+
+    def test_normalize_coords_returns_dataarray(self):
+        normalized_array = self.array.pp.normalize_coords()
+        self.assertIsInstance(normalized_array, xr.DataArray)
+
+    def test_normalize_coords_renames_coordinates_with_given_names(self):
+        self.assertIn('time', self.array.dims)
+        normalized_array = self.array.pp.normalize_coords()
+        self.assertNotIn('time', normalized_array.dims)
+        self.assertIn('validtime', normalized_array.dims)
+
+    def test_normalize_coords_create_coordinate_if_not_exists(self):
+        self.assertNotIn('runtime', self.array.dims)
+        normalized_array = self.array.pp.normalize_coords()
+        self.assertIn('runtime', normalized_array.dims)
+
+    def test_normalize_coords_sets_parameters(self):
+        normalized_array = self.array.pp.normalize_coords(ensemble=100)
+        np.testing.assert_equal(normalized_array['ensemble'].values,
+                                np.array((100, )))
+
+    def test_normalize_coords_orders_coords(self):
+        dims = list(self.array.dims)
+        dims.append(dims[0])
+        self.array = self.array.transpose(*dims[1:])
+        normalized_array = self.array.pp.normalize_coords()
+        np.testing.assert_equal(
+            np.array(normalized_array.dims),
+            np.array(
+                ['runtime', 'ensemble', 'validtime', 'height', 'lat', 'lon']
+            )
+        )
+
+    def test_normalize_coords_creates_timedelta(self):
+        normalized_array = self.array.pp.normalize_coords(
+            runtime=datetime.datetime.utcnow())
+        self.assertTrue(
+            np.issubdtype(normalized_array['validtime'].values.dtype,
+                          np.timedelta64))
 
 if __name__ == '__main__':
     unittest.main()
