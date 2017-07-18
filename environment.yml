@@ -9,7 +9,8 @@ dependencies:
   - conda-forge::pygrib
   - conda-forge::numpy
   - conda-forge::pandas
-  - conda-forge::python=3.5
+  - conda-forge::python=3.6
+  - conda-forge::python-cdo
   - conda-forge::scipy
   - conda-forge::tqdm
   - conda-forge::xarray
@@ -17,5 +18,4 @@ dependencies:
   - conda-forge::pycairo
   - pip:
     - netcdf4
-    - cdo
 #    - git+https://github.com/maestrotf/pymepps.git

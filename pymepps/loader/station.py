@@ -30,9 +30,9 @@ import logging
 
 # Internal modules
 from .base import BaseLoader
-from pymepps.metfile import NetCDFHandler
-from pymepps.metfile import WMTextHandler
-from pymepps.metdata import TSDataset
+from .filehandler.netcdfhandler import NetCDFHandler
+from .filehandler.wmtexthandler import WMTextHandler
+from .datasets.tsdataset import TSDataset
 
 
 logger = logging.getLogger(__name__)

@@ -35,6 +35,7 @@ from mpl_toolkits.basemap import interp
 from scipy.interpolate import griddata
 
 # Internal modules
+import pymepps
 
 
 logger = logging.getLogger(__name__)
@@ -54,6 +55,24 @@ class Grid(object):
         self._lat_lon = None
         self._grid_dict = None
         self.__nr_coords = 2
+
+    def __str__(self):
+        name = self.__class__.__name__
+        grid_dict = '\n'.join(
+            '{0:s} = {1:s}'.format(
+                k, str(self._grid_dict[k]))
+            for k in self._grid_dict if 'vals' not in k)
+        return_str = '{0:s}\n{1:s}\n{2:s}'.format(
+            name, '-'*len(name), grid_dict)
+        return return_str
+
+    def __eq__(self, other):
+        try:
+            left = np.array(self.raw_lat_lon())
+            right = np.array(other.raw_lat_lon())
+        except AttributeError:
+            return False
+        return np.array_equal(left, right)
 
     def copy(self):
         return deepcopy(self)
@@ -114,6 +133,10 @@ class Grid(object):
         return self._construct_dim()
 
     @property
+    def shape(self):
+        return [len(dim) for dim in self._construct_dim()]
+
+    @property
     def lat_lon(self):
         """
         Get latitudes and longitudes for every grid point as xarray.Dataset.
@@ -146,6 +169,9 @@ class Grid(object):
     def _calc_lat_lon(self):
         pass
 
+    def raw_lat_lon(self):
+        return self._calc_lat_lon()
+
     @staticmethod
     def normalize_lat_lon(lat, lon, data=None):
         """
@@ -161,32 +187,32 @@ class Grid(object):
         lon : numpy.ndarray
             The longitude values. They are representing the second data
             dimension.
-        data : numpy.ndarray or None, optional
+        data : numpy.ndarray, xarray.DataArray or None, optional
             The data values. They will be also reordered by lat and lon. If this
             is None, only lat and lon will be reordered and returned. Default is
             None.
 
         Returns
         -------
-        lat : numpy.ndarray
+        ordered_lat : numpy.ndarray
             Ordered latitude values.
-        lon : numpy.ndarray
+        ordered_lon : numpy.ndarray
             Ordered and normalized longitude values.
-        data : numpy.ndarray or None
+        ordered_data : numpy.ndarray, xarray.DataArray or None
             The orderd data based on given latitudes and longitudes. This is
             None if no other data was given as parameter.
         """
-        while np.any(lon>180):
-            lon[lon>180] -= 360
+        while np.any(lon > 180):
+            lon[lon > 180] -= 360
         sort_order_lat = np.argsort(lat, 0)
         sort_order_lon = np.argsort(lon, 1)
         if data is None:
-            return_data = None
+            ordered_data = None
         else:
-            return_data = data[..., sort_order_lat, sort_order_lon]
-        return lat[sort_order_lat, sort_order_lon], \
-               lon[sort_order_lat, sort_order_lon], \
-               return_data
+            ordered_data = data[..., sort_order_lat, sort_order_lon]
+        ordered_lat = lat[sort_order_lat, sort_order_lon]
+        ordered_lon = lon[sort_order_lat, sort_order_lon]
+        return ordered_lat, ordered_lon, ordered_data
 
     def get_coord_names(self):
         """
@@ -206,10 +232,10 @@ class Grid(object):
         """
         The interpolation is done with scipy.interpolate.griddata.
         """
-        if order==1:
-            method='linear'
+        if order == 1:
+            method = 'linear'
         else:
-            method='nearest'
+            method = 'nearest'
         reshaped_data = data.reshape((-1, src_lat.size))
         unravel_shape = data.shape[:-self.len_coords]
         src_lat = src_lat.ravel()
@@ -230,6 +256,9 @@ class Grid(object):
 
     def _interpolate_structured(self, data, src_lat, src_lon,
                                 trg_lat, trg_lon, order=0):
+        """
+        Interpolate structured data with basemap.interp function.
+        """
         reshaped_data = data.reshape((-1, data.shape[-2], data.shape[-1]))
         remapped_data = np.zeros(
             (reshaped_data.shape[0], trg_lat.shape[-2], trg_lat.shape[-1]))
@@ -242,92 +271,64 @@ class Grid(object):
         remapped_data = np.atleast_2d(remapped_data)
         return remapped_data
 
-    def remapnn(self, data, other_grid):
+    def interpolate(self, data, other_grid, order=0):
         """
-        The given data will be remapped via nearest neighbour to the given other
-        grid.
+        Interpolate the given data to the given other grid.
 
         Parameters
         ----------
-        data : numpy.ndarray
-            The data which should be remapped. There have to be at least two 
-            dimensions. If the data has more than two dimensions we suppose that
-            the last two dimensions are the horizontal grid dimensions.
-        other_grid : child instance of Grid
-            The data will be remapped to this grid.
+        data : numpy.ndarray or xarray.DataArray
+            This data is used for the  interpolation. The shape of data's grid
+            axis needs to be the same as this grid.
+        other_grid : Grid instance
+            The other_grid is used as target grid for the interpolation.
+        order : int, optional
+            Specifies the interpolation order, based on basemap.interp order.
+            0. order: nearest neighbour
+            1. order: bilinear interpolation
 
         Returns
         -------
-        remapped_data : numpy.ndarray
-            The remapped data. The shape of the last two dimensions is now the
-            shape of the other_grid coordinates.
-        
-        Notes
-        -----
-        Technically basemap's interp with order=0 is used to interpolate the
-        data.
+        remapped_data : numpy.ndarray or xarray.DataArray
+            The remapped data with the same type as the input data. If the input
+            data is a xarray.DataArray the output data will use the same
+            attributes and non-grid dimensions as the input data.
         """
+        if isinstance(data, xr.DataArray):
+            data_values = data.values
+        else:
+            data_values = data
         src_lat, src_lon = self._calc_lat_lon()
-        if data.shape[-self.len_coords:] != src_lat.shape:
+        if data_values.shape[-self.len_coords:] != src_lat.shape:
             raise ValueError(
                 'The last {0:d} dimensions of the data needs the same shape as '
                 'the coordinates of this grid!'.format())
-        src_lat, src_lon, data = self.normalize_lat_lon(src_lat, src_lon, data)
+        src_lat, src_lon, data_values = self.normalize_lat_lon(
+            src_lat, src_lon, data_values)
         try:
-            trg_lat, trg_lon = other_grid._calc_lat_lon()
+            trg_lat, trg_lon = other_grid.raw_lat_lon()
         except AttributeError:
             raise TypeError('other_grid has to be a child instance of Grid!')
         trg_lat, trg_lon, _ = self.normalize_lat_lon(trg_lat, trg_lon)
-        if min((self.len_coords, other_grid.len_coords))==1:
+        if min((self.len_coords, other_grid.len_coords)) == 1:
             remapped_data = self._interpolate_unstructured(
-                data, src_lat, src_lon, trg_lat, trg_lon, order=0)
+                data_values, src_lat, src_lon, trg_lat, trg_lon, order=order)
         else:
             remapped_data = self._interpolate_structured(
-                data, src_lat[:, 0], src_lon[0, :], trg_lat, trg_lon, order=0)
-        return remapped_data
-
-    def remapbil(self, data, other_grid):
-        """
-        The given data will be remapped via bilinear interpolation to the given
-        other grid.
-
-        Parameters
-        ----------
-        data : numpy.ndarray
-            The data which should be remapped. There have to be at least two 
-            dimensions. If the data has more than two dimensions we suppose that
-            the last two dimensions are the horizontal grid dimensions.
-        other_grid : child instance of Grid
-            The data will be remapped to this grid.
-
-        Returns
-        -------
-        remapped_data : numpy.ndarray
-            The remapped data. The shape of the last two dimensions is now the
-            shape of the other_grid coordinates.
-        
-        Notes
-        -----
-        Technically basemap's interp with order=1 is used to interpolate the
-        data.
-        """
-        src_lat, src_lon = self._calc_lat_lon()
-        if data.shape[-self.len_coords:] != src_lat.shape:
-            raise ValueError(
-                'The last dimensions of the data needs the same shape as '
-                'the coordinates of this grid!')
-        src_lat, src_lon, data = self.normalize_lat_lon(src_lat, src_lon, data)
-        try:
-            trg_lat, trg_lon = other_grid._calc_lat_lon()
-        except AttributeError:
-            raise TypeError('other_grid has to be a child instance of Grid!')
-        trg_lat, trg_lon, _ = self.normalize_lat_lon(trg_lat, trg_lon)
-        if min((self.len_coords, other_grid.len_coords))==1:
-            remapped_data = self._interpolate_unstructured(
-                data, src_lat, src_lon, trg_lat, trg_lon, order=1)
-        else:
-            remapped_data = self._interpolate_structured(
-                data, src_lat[:, 0], src_lon[0, :], trg_lat, trg_lon, order=1)
+                data_values, src_lat[:, 0], src_lon[0, :], trg_lat, trg_lon,
+                order=order)
+        if isinstance(data, xr.DataArray):
+            data_dims = [dim for dim in data.dims
+                         if dim not in self.get_coord_names()]
+            data_coords = {dim: data.coords[dim] for dim in data_dims}
+            data_coords.update(other_grid.get_coords())
+            data_dims.extend(other_grid.get_coord_names())
+            remapped_data = xr.DataArray(
+                remapped_data,
+                coords=data_coords,
+                dims=data_dims,
+                attrs=data.attrs
+            )
         return remapped_data
 
     def get_nearest_point(self, data, coord):
@@ -338,18 +339,18 @@ class Grid(object):
 
         Parameters
         ----------
+        data : numpy.array or xarray.DataArray
+            The return value is extracted from this array. The array should have
+            at least two dimensions. If the array has more than two dimensions
+            the last two dimensions will be used as horizontal grid dimensions.
         coord : tuple(float, float)
             The data of the nearest grid point to this coordinate
             (latitude, longitude) will be returned. The coordinate should be in
             degree.
-        data : numpy.array
-            The return value is extracted from this array. The array should have
-            at least two dimensions. If the array has more than two dimensions 
-            the last two dimensions will be used as horizontal grid dimensions.
 
         Returns
         -------
-        nearest_data : numpy.ndarray
+        nearest_data : numpy.ndarray or xarray.DataArray
             The extracted data for the nearest neighbour grid point. The
             dimensions of this array are the same as the input data array
             without the horizontal coordinate dimensions. There is at least one
@@ -365,7 +366,7 @@ class Grid(object):
             (src_lat.flatten(), src_lon.flatten()))
         nearest_ind = np.unravel_index(calc_distance.argmin(), src_lat.shape)
         logger.info('Selected point {0}'.format(nearest_ind))
-        if self.len_coords==1:
+        if self.len_coords == 1:
             nearest_data = data[..., nearest_ind[0]]
         else:
             nearest_data = data[..., nearest_ind[0], nearest_ind[1]]
@@ -373,15 +374,68 @@ class Grid(object):
 
     @abc.abstractmethod
     def lonlatbox(self, data, ll_box):
+        """
+        Slice a lonlatbox from the given data.
+        """
         pass
 
-    def _structured_box(self, data, ll_box):
-        calc_lat, calc_lon = self._construct_dim()
-        if data.shape[-self.len_coords:] != \
-                (self._grid_dict['ysize'], self._grid_dict['xsize']):
+    def _lonlatbox(self, data, ll_box, unstructured=False):
+        """
+        The data is sliced as grid with given lonlat box.
+
+        Parameters
+        ----------
+        data : numpy.ndarray or xarray.DataArray
+            The data which should be sliced. The shape of the last two
+            dimensions should be the same as the grid dimensions.
+        ll_box : tuple(float)
+            The longitude and latitude box with four entries as degree. The
+            entries are handled in the following way:
+                (left/west, top/north, right/east, bottom/south)
+        unstructured : bool, optional
+            If the output grid should be unstructured.
+
+        Returns
+        -------
+        sliced_data : numpy.ndarray or xarray.DataArray
+            The sliced data with the same type as the input data. If the input
+            data is a xarray.DataArray the output data will use the same
+            attributes and non-grid dimensions as the input data.
+        sliced_grid : Grid
+            A new child instance of Grid with the sliced coordinates as values.
+        """
+        if isinstance(data, xr.DataArray):
+            data_values = data.values
+        else:
+            data_values = data
+        src_lat, src_lon = self._calc_lat_lon()
+        if data_values.shape[-self.len_coords:] != src_lat.shape:
             raise ValueError(
                 'The last two dimension of the data needs the same shape as '
                 'the coordinates of this grid!')
+        if unstructured:
+            sliced_data, new_grid_dict = self._unstructured_box(data_values,
+                                                                ll_box)
+        else:
+            sliced_data, new_grid_dict = self._structured_box(data_values,
+                                                              ll_box)
+        sliced_grid = pymepps.GridBuilder(new_grid_dict).build_grid()
+        if isinstance(data, xr.DataArray):
+            data_dims = [dim for dim in data.dims
+                         if dim not in self.get_coord_names()]
+            data_coords = {dim: data.coords[dim] for dim in data_dims}
+            data_coords.update(sliced_grid.get_coords())
+            data_dims.extend(sliced_grid.get_coord_names())
+            sliced_data = xr.DataArray(
+                sliced_data,
+                coords=data_coords,
+                dims=data_dims,
+                attrs=data.attrs
+            )
+        return sliced_data, sliced_grid
+
+    def _structured_box(self, data, ll_box):
+        calc_lat, calc_lon = self._construct_dim()
         if not len(ll_box) == 4:
             raise ValueError(
                 'The latitude-longitude box doesn\'t have a length of 4, '
@@ -394,12 +448,12 @@ class Grid(object):
         lon_bound = np.logical_and(
             calc_lon >= np.min(lon_box), calc_lon <= np.max(lon_box)
         )
-        sliced_data = data[..., lat_bound, lon_bound]
+        sliced_data = data[..., lat_bound, :][..., lon_bound]
 
         lat_vals = calc_lat[lat_bound]
         lon_vals = calc_lon[lon_bound]
 
-        new_grid_dict = self._grid_dict
+        new_grid_dict = deepcopy(self._grid_dict)
         new_grid_dict['ysize'] = len(lat_vals)
         new_grid_dict['xsize'] = len(lon_vals)
         new_grid_dict['yvals'] = list(lat_vals)

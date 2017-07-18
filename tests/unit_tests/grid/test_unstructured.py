@@ -37,12 +37,17 @@ from pymepps.grid import GridBuilder
 
 logging.basicConfig(level=logging.DEBUG)
 
-BASE_PATH = os.path.dirname(os.path.realpath(__file__))
+BASE_PATH = os.path.join(
+    os.path.dirname(
+        os.path.dirname(
+            os.path.dirname(
+                os.path.realpath(__file__)))),
+    'data')
 
 
 class TestUnstructuredGrid(unittest.TestCase):
     def setUp(self):
-        file = os.path.join(BASE_PATH, 'test_grids', 'unstructured')
+        file = os.path.join(BASE_PATH, 'grids', 'unstructured')
         builder = GridBuilder(file)
         self.grid_dict = builder.griddes
         self.grid = builder.build_grid()

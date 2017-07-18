@@ -28,6 +28,7 @@ import logging
 
 # External modules
 import numpy as np
+import xarray as xr
 
 # Internal modules
 from .grid import Grid
@@ -68,7 +69,8 @@ class LonLatGrid(Grid):
         except KeyError:
             calculated_dim = np.array(
                 self._grid_dict['{0:s}vals'.format(dim_name)])
-        calculated_dim = calculated_dim[:int(steps)]
+        if calculated_dim.ndim >= 1:
+            calculated_dim = calculated_dim[:int(steps)]
         return calculated_dim
 
     def _construct_dim(self):
@@ -83,13 +85,13 @@ class LonLatGrid(Grid):
 
     def lonlatbox(self, data, ll_box):
         """
-        The data is sliced with given lonlat box.
+        The data is sliced as structured grid with given lonlat box.
 
         Parameters
         ----------
-        data : numpy.ndarray
+        data : numpy.ndarray or xarray.DataArray
             The data which should be sliced. The shape of the last two
-            dimensions should be the same as the  grid dimensions.
+            dimensions should be the same as the grid dimensions.
         ll_box : tuple(float)
             The longitude and latitude box with four entries as degree. The
             entries are handled in the following way:
@@ -97,11 +99,12 @@ class LonLatGrid(Grid):
 
         Returns
         -------
-        sliced_data : numpy.ndarray
-            The sliced data. The last two dimensions are sliced.
-        grid : Grid
-            A new child instance of Grid with the sliced coordinates as values.
+        sliced_data : numpy.ndarray or xarray.DataArray
+            The sliced data with the same type as the input data. If the input
+            data is a xarray.DataArray the output data will use the same
+            attributes and non-grid dimensions as the input data.
+        sliced_grid : Grid
+            A new child instance of Grid with the sliced coordinates as values
+            and the same Grid type as this grid.
         """
-        sliced_data, new_grid_dict = self._structured_box(data, ll_box)
-        grid = self.__class__(new_grid_dict)
-        return sliced_data, grid
+        return self._lonlatbox(data, ll_box, unstructured=False)

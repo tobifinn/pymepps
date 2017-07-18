@@ -1,0 +1,24 @@
+name: pymepps-rtd
+channels: !!python/tuple
+  - conda-forge
+  - defaults
+dependencies:
+  - conda-forge::basemap
+  - conda-forge::ipython
+  - conda-forge::matplotlib
+  - conda-forge::numpy
+  - conda-forge::openblas
+  - conda-forge::pygrib
+  - conda-forge::pandas
+  - conda-forge::python=3.6
+  - conda-forge::scipy
+  - conda-forge::sphinx-gallery
+  - conda-forge::tqdm
+  - conda-forge::xarray
+  - conda-forge::pip
+  - conda-forge::pycairo
+  - conda-forge::nbsphinx
+  - pip:
+    - netcdf4
+    - cdo
+#    - git+https://github.com/maestrotf/pymepps.git
