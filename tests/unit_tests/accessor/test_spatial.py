@@ -557,5 +557,13 @@ class TestSpatial(unittest.TestCase):
             np.issubdtype(normalized_array['validtime'].values.dtype,
                           np.timedelta64))
 
+    def test_normalize_coords_sets_grid_if_previous_set(self):
+        returned_array = self.array.pp.normalize_coords()
+        with self.assertRaises(TypeError):
+            self.assertEqual(returned_array.pp.grid, self.grid)
+        self.array = self.array.pp.set_grid(self.grid)
+        returned_array = self.array.pp.normalize_coords()
+        self.assertEqual(returned_array.pp.grid, self.grid)
+
 if __name__ == '__main__':
     unittest.main()

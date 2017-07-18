@@ -222,6 +222,10 @@ class SpatialAccessor(MetData):
         normalized_array = self._get_normalized_order(normalized_array)
         normalized_array = self._transform_datetime(normalized_array)
         normalized_array = self._validtime_to_timedelta(normalized_array)
+        try:
+            normalized_array = normalized_array.pp.set_grid(self.grid)
+        except TypeError:
+            pass
         return normalized_array
 
     def _get_coord_name(self, variants):
