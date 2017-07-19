@@ -79,7 +79,9 @@ Spatial data
 ^^^^^^^^^^^^
 Spatial data is loaded as xarray.DataArray. The SpatialAccessor extends the
 DataArray structure by grid capabilities. With the grid it is possible to remap
-and slice the data based on coordinates and other grids.
+and slice the data based on coordinates and other grids. Every time the
+xarray.DataArray is modified with xarray internal methods a new grid has to be
+set. For more information, please see the example `example_set_grid`_.
 
 Time series data
 ^^^^^^^^^^^^^^^^

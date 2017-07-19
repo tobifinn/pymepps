@@ -31,6 +31,26 @@ how the accessor and the load functions are working.
 
 .. raw:: html
 
+    <div class="sphx-glr-thumbcontainer" tooltip="This example shows how to use the SpatialData accessor to extend the capabilities of xarray.">
+
+.. only:: html
+
+    .. figure:: /examples/images/thumb/sphx_glr_example_plot_xr_accessor_thumb.png
+
+        :ref:`sphx_glr_examples_example_plot_xr_accessor.py`
+
+.. raw:: html
+
+    </div>
+
+
+.. toctree::
+   :hidden:
+
+   /examples/example_plot_xr_accessor
+
+.. raw:: html
+
     <div class="sphx-glr-thumbcontainer" tooltip="In the following example we will load a thredds dataset from the norwegian met.no thredds serve...">
 
 .. only:: html

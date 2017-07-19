@@ -105,24 +105,24 @@ the resulting data
  Out::
 
     <xarray.DataArray 'air_temperature_2m' (runtime: 1, ensemble: 1, validtime: 67, height: 1, y: 929, x: 719)>
-    array([[[[[[ 290.652588, ...,  292.394867],
+    array([[[[[[ 291.478027, ...,  291.090332],
                ..., 
-               [ 278.514404, ...,  279.871826]]],
+               [ 278.397949, ...,  282.883789]]],
 
 
              ..., 
-             [[[ 287.966064, ...,  289.283905],
+             [[[ 291.09082 , ...,  290.721008],
                ..., 
-               [ 278.075928, ...,  280.68335 ]]]]]])
+               [ 278.949707, ...,  279.577637]]]]]])
     Coordinates:
-      * validtime  (validtime) datetime64[ns] 2017-07-14T12:00:00 ...
+      * validtime  (validtime) datetime64[ns] 2017-07-19T06:00:00 ...
       * height     (height) float32 2.0
       * x          (x) float64 -8.974e+05 -8.949e+05 -8.924e+05 -8.899e+05 ...
       * y          (y) float64 -1.104e+06 -1.102e+06 -1.099e+06 -1.097e+06 ...
         longitude  (y, x) float64 1.918 1.954 1.989 2.025 2.06 2.096 2.131 2.167 ...
         latitude   (y, x) float64 52.3 52.31 52.31 52.32 52.32 52.32 52.33 52.33 ...
-      * runtime    (runtime) object None
       * ensemble   (ensemble) int64 0
+      * runtime    (runtime) object None
     Attributes:
         long_name:                       Screen level temperature (T2M)
         standard_name:                   air_temperature
@@ -140,9 +140,9 @@ the resulting data
         references:                      unknown
         license:                         https://www.met.no/en/free-meteorologica...
         comment:                         none
-        history:                         2017-07-14 creation by fimex
-        min_time:                        2017-07-14 12:00 UTC
-        max_time:                        2017-07-17 06:00 UTC
+        history:                         2017-07-19 creation by fimex
+        min_time:                        2017-07-19 06:00 UTC
+        max_time:                        2017-07-22 00:00 UTC
         source:                          meps
         DODS_EXTRA.Unlimited_Dimension:  time
         name:                            air_temperature_2m
@@ -234,14 +234,14 @@ new DataArray with a new grid is created.
     yunits = degrees
     gridsize = 2401
     <xarray.DataArray (runtime: 1, ensemble: 1, validtime: 67, height: 1, ncells: 2401)>
-    array([[[[[ 291.917206, ...,  292.294037]],
+    array([[[[[ 288.434265, ...,  287.86261 ]],
 
              ..., 
-             [[ 287.155975, ...,  288.872559]]]]])
+             [[ 289.025787, ...,  286.954559]]]]])
     Coordinates:
       * runtime    (runtime) object None
       * ensemble   (ensemble) int64 0
-      * validtime  (validtime) datetime64[ns] 2017-07-14T12:00:00 ...
+      * validtime  (validtime) datetime64[ns] 2017-07-19T06:00:00 ...
       * height     (height) float32 2.0
       * ncells     (ncells) int64 0 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 18 ...
     Attributes:
@@ -261,9 +261,9 @@ new DataArray with a new grid is created.
         references:                      unknown
         license:                         https://www.met.no/en/free-meteorologica...
         comment:                         none
-        history:                         2017-07-14 creation by fimex
-        min_time:                        2017-07-14 12:00 UTC
-        max_time:                        2017-07-17 06:00 UTC
+        history:                         2017-07-19 creation by fimex
+        min_time:                        2017-07-19 06:00 UTC
+        max_time:                        2017-07-22 00:00 UTC
         source:                          meps
         DODS_EXTRA.Unlimited_Dimension:  time
         name:                            air_temperature_2m
@@ -399,19 +399,19 @@ remap the data.
  Out::
 
     <xarray.DataArray (runtime: 1, ensemble: 1, validtime: 67, height: 1, lat: 44, lon: 88)>
-    array([[[[[[ 291.611053, ...,  293.319946],
+    array([[[[[[ 288.265228, ...,  288.897858],
                ..., 
-               [ 292.544464, ...,  288.676025]]],
+               [ 287.495361, ...,  289.750275]]],
 
 
              ..., 
-             [[[ 288.698395, ...,  288.312469],
+             [[[ 287.590698, ...,  287.320648],
                ..., 
-               [ 287.748352, ...,  287.476318]]]]]])
+               [ 285.674713, ...,  290.341522]]]]]])
     Coordinates:
       * runtime    (runtime) object None
       * ensemble   (ensemble) int64 0
-      * validtime  (validtime) datetime64[ns] 2017-07-14T12:00:00 ...
+      * validtime  (validtime) datetime64[ns] 2017-07-19T06:00:00 ...
       * height     (height) float32 2.0
       * lat        (lat) float64 53.0 53.02 53.05 53.07 53.09 53.11 53.14 53.16 ...
       * lon        (lon) float64 9.0 9.023 9.045 9.068 9.09 9.113 9.135 9.158 ...
@@ -432,9 +432,9 @@ remap the data.
         references:                      unknown
         license:                         https://www.met.no/en/free-meteorologica...
         comment:                         none
-        history:                         2017-07-14 creation by fimex
-        min_time:                        2017-07-14 12:00 UTC
-        max_time:                        2017-07-17 06:00 UTC
+        history:                         2017-07-19 creation by fimex
+        min_time:                        2017-07-19 06:00 UTC
+        max_time:                        2017-07-22 00:00 UTC
         source:                          meps
         DODS_EXTRA.Unlimited_Dimension:  time
         name:                            air_temperature_2m
@@ -473,6 +473,7 @@ with a bilinear approach.
 .. code-block:: python
 
 
+    # sphinx_gallery_thumbnail_number = 3
     metno_t2m.pp.remapbil(hh_grid).isel(validtime=0).plot()
     plt.show()
 
@@ -483,7 +484,7 @@ with a bilinear approach.
 
 
 
-**Total running time of the script:** ( 0 minutes  56.576 seconds)
+**Total running time of the script:** ( 1 minutes  8.125 seconds)
 
 
 

@@ -151,5 +151,6 @@ plt.show()
 # with a bilinear approach.
 # 
 
+# sphinx_gallery_thumbnail_number = 3
 metno_t2m.pp.remapbil(hh_grid).isel(validtime=0).plot()
 plt.show()
