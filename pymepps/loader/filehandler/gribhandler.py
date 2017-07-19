@@ -122,7 +122,7 @@ class GribHandler(FileHandler):
                 ens = ['det', ]
             valid_date = msg.validDate
             level = [":".join(str(msg).split(':')[4:6]).replace(' ', '_'), ]
-            normalized_array = constructed_array.pp.normalize_coordinates(
+            normalized_array = constructed_array.pp.normalize_coords(
                 height=level,
                 validtime=valid_date,
                 ensemble=ens,

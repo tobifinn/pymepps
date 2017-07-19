@@ -95,7 +95,7 @@ class FileHandler(object):
                 ana = None
         return ana
 
-    def _get_validtime(self, additional_coords, **kwargs):
+    def _get_validtime(self, **kwargs):
         if 'validtime' in kwargs:
             time = kwargs['validtime']
         else:

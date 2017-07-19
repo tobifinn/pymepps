@@ -172,7 +172,7 @@ class NetCDFHandler(FileHandler):
             cube = cube[(...,)+kwargs['sliced_coords']]
         cube.attrs.update(self.ds.attrs)
         cube = cube.load()
-        cube = cube.pp.normalize_coordinates(
+        cube = cube.pp.normalize_coords(
             runtime=self._get_runtime(**kwargs),
             ensemble=self._get_ensemble(**kwargs),
             validtime=self._get_validtime(**kwargs)
