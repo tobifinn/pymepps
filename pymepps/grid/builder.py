@@ -1,11 +1,11 @@
 #!/bin/env python
 # -*- coding: utf-8 -*-
 #
-#Created on 10.04.17
+# Created on 10.04.17
 #
-#Created for pymepps
+# Created for pymepps
 #
-#@author: Tobias Sebastian Finn, tobias.sebastian.finn@studium.uni-hamburg.de
+# @author: Tobias Sebastian Finn, tobias.sebastian.finn@studium.uni-hamburg.de
 #
 #    Copyright (C) {2017}  {Tobias Sebastian Finn}
 #
@@ -103,7 +103,7 @@ class GridBuilder(object):
         else:
             if 'gridtype' not in grid_dict:
                 raise KeyError('There is no gridtype defined. Griddes is no '
-                                 'valid cdo grid definition!')
+                               'valid cdo grid definition!')
             if grid_dict['gridtype'] not in available_grids:
                 raise ValueError('The given gridtype "{0:s}" has no defined '
                                  'decoder yet, please use one of the available '
@@ -176,9 +176,10 @@ class GridBuilder(object):
             raise TypeError('The given grid_str has to be a str or a list of '
                             'str!')
         preprocessed_lines = [re.sub('[^0-9a-zA-Z=#"\_\.\-\+ ]+', '', gs)
-                         for gs in grid_str_lines]
+                              for gs in grid_str_lines]
         splitted_lines = [line.split('=', 1) for line in preprocessed_lines
                           if len(line) > 0 and '#' not in line]
+
         def clean_value(val):
             if '"' in val:
                 val = [val.replace('"', '').strip(), ]
@@ -188,19 +189,20 @@ class GridBuilder(object):
         cleaned_lines = []
         for line in splitted_lines:
             line[-1] = clean_value(line[-1])
-            if len(line)==1 and cleaned_lines:
+            if len(line) == 1 and cleaned_lines:
                 cleaned_lines[-1][-1].extend(line[0])
-            elif len(line)==2:
+            elif len(line) == 2:
                 line[0] = line[0].strip()
                 cleaned_lines.append(line)
         grid_dict = {l[0]: l[1] for l in cleaned_lines}
         for k in grid_dict:
             try:
-                grid_dict[k] = [float(val) if val[-1]!='f' else float(val[:-1])
+                grid_dict[k] = [float(val) if val[-1] != 'f'
+                                else float(val[:-1])
                                 for val in grid_dict[k]]
             except ValueError:
                 pass
-            if len(grid_dict[k])==1:
+            if len(grid_dict[k]) == 1:
                 grid_dict[k] = grid_dict[k][0]
         return grid_dict
 

@@ -51,6 +51,7 @@ class Grid(object):
     """
     The base class for every grid type.
     """
+    # TODO: Normalize lon lat values.
     def __init__(self, grid_dict):
         self._lat_lon = None
         self._grid_dict = None
@@ -331,6 +332,14 @@ class Grid(object):
             )
         return remapped_data
 
+    def nearest_point(self, coord):
+        src_lat, src_lon = self._calc_lat_lon()
+        calc_distance = distance_haversine(
+            coord,
+            (src_lat.flatten(), src_lon.flatten()))
+        nearest_ind = np.unravel_index(calc_distance.argmin(), src_lat.shape)
+        return nearest_ind
+
     def get_nearest_point(self, data, coord):
         """
         Get the nearest neighbour grid point for a given coordinate. The
@@ -361,16 +370,14 @@ class Grid(object):
             raise ValueError(
                 'The last two dimension of the data needs the same shape as '
                 'the coordinates of this grid!')
-        calc_distance = distance_haversine(
-            coord,
-            (src_lat.flatten(), src_lon.flatten()))
-        nearest_ind = np.unravel_index(calc_distance.argmin(), src_lat.shape)
-        logger.info('Selected point {0}'.format(nearest_ind))
+        nearest_ind = self.nearest_point(coord)
         if self.len_coords == 1:
             nearest_data = data[..., nearest_ind[0]]
         else:
             nearest_data = data[..., nearest_ind[0], nearest_ind[1]]
-        return np.atleast_1d(nearest_data)
+        if isinstance(nearest_data, np.ndarray):
+            nearest_data = np.atleast_1d(nearest_data)
+        return nearest_data
 
     @abc.abstractmethod
     def lonlatbox(self, data, ll_box):

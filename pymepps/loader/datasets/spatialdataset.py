@@ -122,9 +122,9 @@ class SpatialDataset(MetDataset):
     @staticmethod
     def _get_grid_from_dataarray(data_array):
         try:
-            grid_attrs = {attr[5:]: data_array.attrs[attr]
+            grid_attrs = {attr[7:]: data_array.attrs[attr]
                           for attr in data_array.attrs
-                          if attr[:5] == 'grid_'}
+                          if attr[:7] == 'ppgrid_'}
             grid_builder = GridBuilder(grid_attrs)
             grid = grid_builder.build_grid()
             logger.info('Got the grid from the data array')
@@ -194,11 +194,12 @@ class SpatialDataset(MetDataset):
         """
         grid = self.get_grid(var_name, data[0])
         merged_array = data[0]
+        merged_array = merged_array.pp.set_grid(grid)
         if len(data)>1:
             merged_array.pp.update(*data[1:])
         loaded_attrs = {attr: merged_array.attrs[attr]
                         for attr in merged_array.attrs
-                        if not attr.startswith('grid_')}
+                        if not attr.startswith('ppgrid_')}
         loaded_attrs['name'] = merged_array._name = var_name
         merged_array.attrs = loaded_attrs
         merged_array = merged_array.pp.set_grid(grid)
