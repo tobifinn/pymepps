@@ -1,7 +1,6 @@
 # -*- coding: utf-8 -*-
 """
 Created on 09.05.16
-Created for pyExtremeLM
 
 Based on: https://github.com/pypa/sampleproject
 

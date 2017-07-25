@@ -565,5 +565,39 @@ class TestSpatial(unittest.TestCase):
         returned_array = self.array.pp.normalize_coords()
         self.assertEqual(returned_array.pp.grid, self.grid)
 
+    def test_selpoint_returns_dataarray(self):
+        self.array = self.array.pp.set_grid(self.grid)
+        sliced_array = self.array.pp.selpoint((10.1, 53.5))
+        self.assertIsInstance(sliced_array, xr.DataArray)
+
+    def test_selpoint_returns_sliced_dataaray(self):
+        coord = (10.1, 53.5)
+        self.array = self.array.pp.set_grid(self.grid)
+        returned_array = self.array.pp.selpoint(coord)
+        sliced_array = self.array.pp.grid.get_nearest_point(self.array, coord)
+        np.testing.assert_equal(returned_array.values.squeeze(),
+                                sliced_array.values.squeeze())
+
+    def test_selpoint_creates_and_set_new_grid(self):
+        coord = (10.1, 53.5)
+        self.array = self.array.pp.set_grid(self.grid)
+        returned_array = self.array.pp.selpoint(coord)
+        grid_dict = {
+            'gridtype': 'lonlat',
+            'xlongname': 'longitude',
+            'xname': 'lon',
+            'xunits': 'degrees',
+            'ylongname': 'latitude',
+            'yname': 'lat',
+            'yunits': 'degrees',
+            'xsize': 1,
+            'ysize': 1,
+            'xvals': [coord[0], ],
+            'yvals': [coord[1], ]
+        }
+        grid = GridBuilder(grid_dict).build_grid()
+        self.assertEqual(grid, returned_array.pp.grid)
+
+
 if __name__ == '__main__':
     unittest.main()

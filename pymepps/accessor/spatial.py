@@ -83,7 +83,10 @@ class SpatialAccessor(MetData):
 
     def set_grid(self, grid=None):
         """
-        Set the grid to the given grid and set the grid coordinates.
+        Set the grid to the given grid and set the grid coordinates. It is
+        assumed that the last n dimensions (n=1 for unstructured grid, n=2 all
+        other grids) are the grid coordinates. Please make sure that this
+        assumption is fulfilled!
 
         Parameters
         ----------
@@ -111,11 +114,11 @@ class SpatialAccessor(MetData):
         rename_dict = {new: old for new, old in zip(
             self.data.dims[-grid.len_coords:], coord_names,)}
         gridded_array = self.data.rename(rename_dict)
-        gridded_array.pp.grid = grid
-        gridded_array = gridded_array.pp.check_data_coordinates(gridded_array)
         new_coordinates = grid.get_coords()
         for coord in coord_names:
-            gridded_array[coord] = new_coordinates[coord]
+            gridded_array.coords[coord] = new_coordinates[coord]
+        gridded_array.pp.grid = grid
+        gridded_array = gridded_array.pp.check_data_coordinates(gridded_array)
         return gridded_array
 
     def check_data_coordinates(self, item):
@@ -193,7 +196,7 @@ class SpatialAccessor(MetData):
         arg_dict = locals()
         coord_dict = OrderedDict(
             height=dict(
-                approx=['height', 'surf', 'sig', 'lev'],
+                approx=['height', 'surf', 'sig', 'lev', 'press'],
                 exact=['height', ]
             ),
             validtime=dict(
@@ -560,6 +563,45 @@ class SpatialAccessor(MetData):
         remapped_array.pp.grid = new_grid
         return remapped_array
 
+    def selpoint(self, lonlat):
+        """
+        Select a longitude, latitude point within this DataArray. A new lonlat
+        grid with a single point is created.
+
+        Parameters
+        ----------
+        lonlat : tuple(float)
+            The longitude and latitude point as degree. The nearest neighbour
+            point to this given coordinate pair is used.
+
+        Returns
+        -------
+        sliced_array : xarray.DataArray
+            The sliced data array with the data for the nearest neighbour point
+            to the given coordinates.
+        """
+        sliced_array = self.grid.get_nearest_point(self.data, lonlat)
+        grid_dict = {
+            'gridtype': 'lonlat',
+            'xlongname': 'longitude',
+            'xname': 'lon',
+            'xunits': 'degrees',
+            'ylongname': 'latitude',
+            'yname': 'lat',
+            'yunits': 'degrees',
+            'xsize': 1,
+            'ysize': 1,
+            'xvals': [lonlat[0], ],
+            'yvals': [lonlat[1], ]
+        }
+        sliced_grid = GridBuilder(grid_dict).build_grid()
+        grid_coords = sliced_grid.get_coord_names()
+        dim_order = list(sliced_array.dims)+list(grid_coords)
+        sliced_array = sliced_array.expand_dims(grid_coords)
+        sliced_array = sliced_array.transpose(*dim_order)
+        sliced_array = sliced_array.pp.set_grid(sliced_grid)
+        return sliced_array
+
     def sellonlatbox(self, lonlatbox):
         """
         This DataArray instance is sliced by given lonlatbox. A new grid is
@@ -582,6 +624,7 @@ class SpatialAccessor(MetData):
         For some grids the new grid is based on an UnstructuredGrid, due to
         technical limitations.
         """
+        # TODO: Normalize lon lat values.
         sliced_array, sliced_grid = self.grid.lonlatbox(self.data, lonlatbox)
         sliced_array.pp.grid = sliced_grid
         return sliced_array
