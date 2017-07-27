@@ -108,7 +108,6 @@ class NetCDFHandler(FileHandler):
         variable : xr.DataArray
             The DataArray of the variable.
         """
-        logger.debug('Get {0:s} from {1:s}'.format(var_name, self.file))
         variable = self.ds[var_name]
         if hasattr(variable, '_FillValue'):
             variable.values[variable.values == variable._FillValue] = np.nan

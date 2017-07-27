@@ -71,7 +71,7 @@ class LonLatGrid(Grid):
                 self._grid_dict['{0:s}vals'.format(dim_name)])
         if calculated_dim.ndim >= 1:
             calculated_dim = calculated_dim[:int(steps)]
-        return calculated_dim
+        return calculated_dim.flatten()
 
     def _construct_dim(self):
         return self._calc_single_dim('y'), self._calc_single_dim('x')

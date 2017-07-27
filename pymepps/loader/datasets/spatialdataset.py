@@ -195,8 +195,9 @@ class SpatialDataset(MetDataset):
         grid = self.get_grid(var_name, data[0])
         merged_array = data[0]
         merged_array = merged_array.pp.set_grid(grid)
-        if len(data)>1:
-            merged_array.pp.update(*data[1:])
+        if len(data) > 1:
+            logger.debug('Number of data items: {0:d}'.format(len(data)))
+            merged_array = merged_array.pp.update(*data[1:])
         loaded_attrs = {attr: merged_array.attrs[attr]
                         for attr in merged_array.attrs
                         if not attr.startswith('ppgrid_')}

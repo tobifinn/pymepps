@@ -437,7 +437,8 @@ class SpatialAccessor(MetData):
         update_data += [self.check_data_coordinates(item) for item in items]
         stack_dims = [dim for dim in self.data.dims
                       if dim not in self.grid.get_coord_names()]
-        stacked_data = [d.stack(merge=stack_dims) for d in update_data]
+        logger.debug('Stack dimension names: {0}'.format(stack_dims))
+        stacked_data = (d.stack(merge=stack_dims) for d in update_data)
         try:
             concated_array = xr.concat(stacked_data, dim='merge')
         except (ValueError, TypeError) as e:
@@ -445,6 +446,8 @@ class SpatialAccessor(MetData):
                               'please see above for the reasons!')
         resolving_indexes = ~concated_array.indexes['merge'].duplicated(
             keep='last')
+        logger.debug('Number of resolving indexes: {0:d}/{1:d}'.format(
+            len(resolving_indexes), len(concated_array.indexes['merge'])))
         resolved_array = concated_array[..., resolving_indexes]
         unstacked_array = resolved_array.unstack('merge')
         updated_array = unstacked_array.transpose(*self.data.dims)
@@ -580,7 +583,7 @@ class SpatialAccessor(MetData):
             The sliced data array with the data for the nearest neighbour point
             to the given coordinates.
         """
-        sliced_array = self.grid.get_nearest_point(self.data, lonlat)
+        sliced_array = self.grid.get_nearest_point(self.data, reversed(lonlat))
         grid_dict = {
             'gridtype': 'lonlat',
             'xlongname': 'longitude',
@@ -677,5 +680,4 @@ class SpatialAccessor(MetData):
                 loaded_array.attrs.pop(key, None)
         except (KeyError, ValueError):
             pass
-        logger.debug(grid_attrs)
         return loaded_array

@@ -574,7 +574,8 @@ class TestSpatial(unittest.TestCase):
         coord = (10.1, 53.5)
         self.array = self.array.pp.set_grid(self.grid)
         returned_array = self.array.pp.selpoint(coord)
-        sliced_array = self.array.pp.grid.get_nearest_point(self.array, coord)
+        sliced_array = self.array.pp.grid.get_nearest_point(
+            self.array, reversed(coord))
         np.testing.assert_equal(returned_array.values.squeeze(),
                                 sliced_array.values.squeeze())
 
