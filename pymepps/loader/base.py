@@ -89,8 +89,10 @@ class BaseLoader(object):
         elif isinstance(self.data_path, str):
             files = [f for f in glob.glob(self.data_path)
                      if not os.path.isdir(f)]
-        elif getattr(self.data_path, 'read'):
+        elif hasattr(self.data_path, 'read'):
             files = [self.data_path]
+        elif hasattr(self.data_path, '__iter__'):
+            files = self.data_path
         else:
             raise TypeError('The data path needs to be either a string '
                             'or an opened file!')
