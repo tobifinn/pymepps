@@ -196,7 +196,7 @@ class SpatialAccessor(MetData):
         arg_dict = locals()
         coord_dict = OrderedDict(
             height=dict(
-                approx=['height', 'surf', 'sig', 'lev', 'press'],
+                approx=['height', 'surf', 'sig', 'lev', 'press', 'alti'],
                 exact=['height', ]
             ),
             validtime=dict(

@@ -194,7 +194,8 @@ class SpatialDataset(MetDataset):
         """
         grid = self.get_grid(var_name, data[0])
         merged_array = data[0]
-        merged_array = merged_array.pp.set_grid(grid)
+        merged_array.pp.grid = grid
+        #merged_array = merged_array.pp.set_grid(grid)
         if len(data) > 1:
             logger.debug('Number of data items: {0:d}'.format(len(data)))
             merged_array = merged_array.pp.update(*data[1:])
