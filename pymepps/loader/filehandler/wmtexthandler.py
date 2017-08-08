@@ -107,7 +107,7 @@ class WMTextHandler(FileHandler):
         wm_df = wm_df.set_index('DATE_TIME')
         # The time is always set to european winter time
         wm_df.index = wm_df.index - pd.to_timedelta('1 hour')
-        wm_df.index.tz_localize('UTC')
+        wm_df.index = wm_df.index.tz_localize('UTC')
         variable = pd.DataFrame(wm_df[var_name], columns=[var_name])
         variable.name = var_name
         return variable
