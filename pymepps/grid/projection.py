@@ -132,20 +132,18 @@ class BaseProj(object):
 
     @staticmethod
     def _check_lat(lat):
-        logger.debug(lat)
         if not np.all(-90<=lat):
             raise ValueError(
                 'The given latitude {0:.4f} is not between -90\° and '
                 '90\°'.format(lat))
         elif not np.all(lat<=90):
             raise ValueError(
-                'The given latitude {0:.4f} is not between -90\° and '
-                '90\°'.format(lat))
+                'The given latitude {0} is not between -90 deg and '
+                '90 deg'.format(lat))
         return lat
 
     @staticmethod
     def _check_lon(lon):
-        logger.debug(lon)
         if not np.all(-180<=lon):
             raise ValueError(
                 'The given longitude {0:.4f} is not between -180\° and '
@@ -179,12 +177,13 @@ class RotPoleProj(BaseProj):
     ----------
     npole_lat: float
         The latitude of the rotated north pole in degrees.
-    npole_lom: float
+    npole_lon: float
         The longitude of the rotated north pole in degrees.
     
     References
     ----------
-    [1] http://de.mathworks.com/matlabcentral/fileexchange/43435-rotated-grid-transform
+    [1] http://de.mathworks.com/matlabcentral/fileexchange/43435-rotated-grid-
+        transform
     """
     def __init__(self, npole_lat, npole_lon):
         self._north_pole = None
@@ -225,13 +224,13 @@ class RotPoleProj(BaseProj):
 
     def _rotate_coords(self, x, y, z, theta, phi):
         x_new = np.cos(theta)*np.cos(phi)*x\
-                +np.cos(theta)*np.sin(phi)*y\
-                +np.sin(theta)*z
+                + np.cos(theta)*np.sin(phi)*y\
+                + np.sin(theta)*z
         y_new = -np.sin(phi)*x\
-                +np.cos(phi)*y
+                + np.cos(phi)*y
         z_new = -np.sin(theta)*np.cos(phi)*x\
-                -np.sin(theta)*np.sin(phi)*y\
-                +np.cos(theta)*z
+                - np.sin(theta)*np.sin(phi)*y\
+                + np.cos(theta)*z
         return x_new, y_new, z_new
 
     def _derotate_coords(self, x, y, z, theta, phi):

@@ -40,10 +40,11 @@ logger = logging.getLogger(__name__)
 
 
 class BaseLoader(object):
-    def __init__(self, data_path, file_type=None, processes=1):
+    def __init__(self, data_path, file_type=None, processes=1, checking=True):
         self.data_path = data_path
         self.file_type = file_type
         self.processes = processes
+        self.checking = checking
         self._available_file_type = {}
 
     @staticmethod
@@ -58,9 +59,13 @@ class BaseLoader(object):
         base_handler = self._available_file_type[file_type]
         logger.info('Started file handler checking for file type: {0:s}'.format(
             file_type))
-        check_fh = partial(self._check_file_handler, base_handler=base_handler)
-        mt = MultiThread(processes=self.processes)
-        file_handlers = mt.map(check_fh, files)
+        if self.checking:
+            check_fh = partial(self._check_file_handler,
+                               base_handler=base_handler)
+            mt = MultiThread(processes=self.processes)
+            file_handlers = mt.map(check_fh, files)
+        else:
+            file_handlers = [base_handler(f) for f in files]
         return file_handlers
 
     def _get_file_handlers(self, files):
