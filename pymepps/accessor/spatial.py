@@ -214,7 +214,8 @@ class SpatialAccessor(MetData):
         )
         normalized_array = self.data
         for key in coord_dict.keys():
-            coord_name = self._get_coord_name(coord_dict[key])
+            coord_name = self._get_coord_name(data=normalized_array,
+                                              variants=coord_dict[key])
             if coord_name is None:
                 normalized_array = self._create_coord(coord=key,
                                                       value=arg_dict[key],
@@ -231,13 +232,16 @@ class SpatialAccessor(MetData):
             pass
         return normalized_array
 
-    def _get_coord_name(self, variants):
+    @staticmethod
+    def _get_coord_name(data, variants):
         """
         Check if the coordinate name variants is any dimensions within the
         DataArray.
 
         Parameters
         ----------
+        data : xarray.DataArray
+            The coordinate is searched within the coordinates of this DataArray.
         variants : dict(str, list(str)) or list(str)
             These variants are checked within the dimensions of the DataArray.
             If variants is a dict, it needs exact and approx as key with a
@@ -254,14 +258,14 @@ class SpatialAccessor(MetData):
         """
         if isinstance(variants, (tuple, list)):
             variants = dict(exact=variants, approx=[])
-        data_dims = [re.sub('[^a-zA-Z]+', '', d) for d in self.data.dims]
+        data_dims = [re.sub('[^a-zA-Z]+', '', d) for d in data.dims]
         for k, dim in enumerate(data_dims):
             for variant in variants['exact']:
                 if variant == dim:
-                    return self.data.dims[k]
+                    return data.dims[k]
             for variant in variants['approx']:
                 if variant in dim:
-                    return self.data.dims[k]
+                    return data.dims[k]
         return None
 
     @staticmethod
@@ -632,6 +636,13 @@ class SpatialAccessor(MetData):
         sliced_array.pp.grid = sliced_grid
         return sliced_array
 
+    def grid_to_attrs(self):
+        grid_array = self.data.copy()
+        grid_attr = {'ppgrid_{0:s}'.format(k): self.grid._grid_dict[k]
+                     for k in self.grid._grid_dict}
+        grid_array.attrs.update(grid_attr)
+        return grid_array
+
     def save(self, save_path):
         """
         Save the DataArray and the grid as attributes together. The grid
@@ -643,13 +654,10 @@ class SpatialAccessor(MetData):
         save_path : str
             The path where the netcdf file should be saved.
         """
-        save_array = self.data.copy()
         try:
-            grid_attr = {'ppgrid_{0:s}'.format(k): self.grid._grid_dict[k]
-                         for k in self.grid._grid_dict}
-            save_array.attrs.update(grid_attr)
+            save_array = self.grid_to_attrs()
         except TypeError:
-            pass
+            save_array = self.data.copy()
         save_array.to_netcdf(save_path)
 
     @staticmethod
