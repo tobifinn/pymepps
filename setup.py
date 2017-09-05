@@ -22,7 +22,7 @@ Based on: https://github.com/pypa/sampleproject
     along with this program.  If not, see <http://www.gnu.org/licenses/>.
 """
 # System modules
-from distutils.core import setup
+from setuptools import setup, find_packages
 from codecs import open
 from os import path
 
@@ -57,6 +57,5 @@ setup(
     # What does your project relate to?
     keywords='statistics meteorology post-processing system forecast '
              'verification plotting',
-    packages=["pymepps"],
-    package_dir={"pymepps": "pymepps"},
+    packages=find_packages(),
 )
