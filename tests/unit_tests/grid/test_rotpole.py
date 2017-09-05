@@ -34,13 +34,13 @@ import numpy as np
 from pymepps.grid.projection import RotPoleProj
 
 
-BASE_DIR = os.path.join(
+BASE_PATH = os.path.join(
     os.path.dirname(
         os.path.dirname(
             os.path.dirname(
-                os.path.realpath(__file__)))),
+                os.path.dirname(
+                    os.path.realpath(__file__))))),
     'data')
-
 
 logging.basicConfig(level=logging.DEBUG)
 

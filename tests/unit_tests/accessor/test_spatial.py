@@ -309,6 +309,14 @@ class TestSpatial(unittest.TestCase):
         opened_grid = GridBuilder(grid_attrs).build_grid()
         self.assertEqual(self.grid, opened_grid)
 
+    def test_grid_to_attrs_adds_grid_to_attrs(self):
+        self.array.pp.grid = self.grid
+        new_array = self.array.pp.grid_to_attrs()
+        grid_attrs = {attr[7:]: new_array.attrs[attr]
+                      for attr in new_array.attrs if attr[:7] == 'ppgrid_'}
+        opened_grid = GridBuilder(grid_attrs).build_grid()
+        self.assertEqual(self.grid, opened_grid)
+
     def test_load_load_data_without_grid(self):
         self.array.to_netcdf('test.nc')
         opened_array = xr.DataArray.pp.load('test.nc')
@@ -334,37 +342,37 @@ class TestSpatial(unittest.TestCase):
 
     def test_get_coord_name_detects_approx_variants(self):
         variant = dict(approx=['ti', ], exact=[])
-        returned_coord = self.array.pp._get_coord_name(variant)
+        returned_coord = self.array.pp._get_coord_name(self.array, variant)
         self.assertEqual(returned_coord, 'time')
 
     def test_get_coord_name_detects_approx_variants_if_exact(self):
         variant = dict(approx=['time', ], exact=[])
-        returned_coord = self.array.pp._get_coord_name(variant)
+        returned_coord = self.array.pp._get_coord_name(self.array, variant)
         self.assertEqual(returned_coord, 'time')
 
     def test_get_coord_name_detects_exact_variants(self):
         variant = dict(exact=['time', ], approx=[])
-        returned_coord = self.array.pp._get_coord_name(variant)
+        returned_coord = self.array.pp._get_coord_name(self.array, variant)
         self.assertEqual(returned_coord, 'time')
 
     def test_get_coord_name_detects_not_exact_variants_if_approx(self):
         variant = dict(exact=['ti', ], approx=[])
-        returned_coord = self.array.pp._get_coord_name(variant)
+        returned_coord = self.array.pp._get_coord_name(self.array, variant)
         self.assertIsNone(returned_coord)
 
     def test_get_coord_name_returns_none_if_no_coord(self):
         variant = dict(exact=['run', ], approx=['runtime', ])
-        returned_coord = self.array.pp._get_coord_name(variant)
+        returned_coord = self.array.pp._get_coord_name(self.array, variant)
         self.assertIsNone(returned_coord)
 
     def test_get_coord_name_resub_non_alpha(self):
         variant = dict(exact=['heightaboveground', ], approx=[])
-        returned_coord = self.array.pp._get_coord_name(variant)
+        returned_coord = self.array.pp._get_coord_name(self.array, variant)
         self.assertEqual(returned_coord, self.array.dims[1])
 
     def test_get_coord_name_uses_list_as_exact(self):
         variant = ['heightaboveground', ]
-        returned_coord = self.array.pp._get_coord_name(variant)
+        returned_coord = self.array.pp._get_coord_name(self.array, variant)
         self.assertEqual(returned_coord, self.array.dims[1])
 
     def test_create_coord_returns_array(self):

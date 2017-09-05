@@ -43,14 +43,14 @@ BASE_PATH = os.path.join(
     os.path.dirname(
         os.path.dirname(
             os.path.dirname(
-                os.path.realpath(__file__)))),
+                os.path.dirname(
+                    os.path.realpath(__file__))))),
     'data')
-
 
 
 class TestProjectionGrid(unittest.TestCase):
     def setUp(self):
-        file = os.path.join(BASE_PATH, 'grids', 'llc')
+        file = os.path.join(BASE_PATH, 'grids', 'rot_lat_lon')
         builder = GridBuilder(file)
         self.grid_dict = builder.griddes
         self.grid = builder.build_grid()
@@ -126,7 +126,6 @@ class TestProjectionGrid(unittest.TestCase):
         self.assertIsInstance(returned_proj, RotPoleProj)
         self.assertEqual(returned_proj.north_pole['lat'], 36.0625)
         self.assertEqual(returned_proj.north_pole['lon'], -170.415)
-
 
 
 if __name__ == '__main__':

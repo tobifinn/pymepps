@@ -291,7 +291,7 @@ class MetDataset(object):
             raw_data.extend(self._multi_select_var(data, var_name))
             logger.info('Finished variable {0:s}'.format(var_name))
         logger.info('Extracted the data, now merge the data!')
-        extracted_data = self.data_merge(raw_data, self.var_names[0])
+        extracted_data = self.data_merge(raw_data, extract_vars[0])
         return extracted_data
 
     @abc.abstractmethod
