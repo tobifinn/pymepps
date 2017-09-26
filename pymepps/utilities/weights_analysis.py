@@ -33,6 +33,7 @@ these.
 import logging
 import os
 import datetime
+import re
 
 # External modules
 import numpy as np
@@ -51,9 +52,9 @@ def process_file(file):
     with open(file, 'r') as fh:
         lines = fh.readlines()
     concat_lines = [lines[l]+lines[l+1] for l in range(0, len(lines), 2)]
-    processed_lines = [list(map(float, l.strip().split()))
+    processed_lines = [re.findall(r"(?<![a-zA-Z:])[-+]?\d*\.?\d+", l)
                        for l in concat_lines]
-    return np.array(processed_lines)
+    return np.array(processed_lines, dtype=np.float32)
 
 
 def extract_date(file):
@@ -69,11 +70,11 @@ def get_weights(files):
     data_array = xr.DataArray(
         data=weights_array,
         coords=dict(
-            date=date,
+            time=date,
             ensemble_1=np.arange(weights_array.shape[1]),
             ensemble_2=np.arange(weights_array.shape[2])
         ),
-        dims=['date', 'ensemble_1', 'ensemble_2']
+        dims=['time', 'ensemble_1', 'ensemble_2']
     )
     ens_weights = data_array[:, :, :-1]
     det_weights = data_array[:, :, -1]
