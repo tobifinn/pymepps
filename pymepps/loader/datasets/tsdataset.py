@@ -106,7 +106,7 @@ class TSDataset(MetDataset):
     def select_by_pattern(self, pattern, return_list=False, **kwargs):
         return_list = super().select_by_pattern(pattern, return_list=True)
         return self.data_merge(
-            [pd.DataFrame(l.data) for l in return_list], pattern)
+            [pd.DataFrame(l) for l in return_list], pattern)
 
     def data_merge(self, data, var_name):
         if isinstance(data, (list, tuple)):
