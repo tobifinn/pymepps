@@ -34,6 +34,7 @@ import logging
 import os
 import datetime
 import re
+from collections import OrderedDict
 
 # External modules
 import numpy as np
@@ -82,11 +83,48 @@ def get_weights(files):
 
 
 def diagonalize_xr(xr_array):
-    return xr_array.where(np.eye(xr_array.shape[1], dtype='bool'))
+    ens_mems = len(xr_array['ensemble_1'])
+    tranposed_dims = ['ensemble_1', 'ensemble_2']
+    tranposed_dims += [d for d in xr_array.dims if d not in tranposed_dims]
+    tr_array = xr_array.transpose(*tranposed_dims)
+    additional_eles = np.product(tr_array.shape[2:])
+    select_axis = np.eye(ens_mems, dtype='bool').reshape(ens_mems, ens_mems, 1)
+    select_axis = np.repeat(select_axis, additional_eles, 2).reshape(
+        tr_array.shape)
+    tr_array = tr_array.where(select_axis)
+    return tr_array.transpose(*xr_array.dims)
 
 
 def antidiagonalize_xr(xr_array):
-    return xr_array.where(~np.eye(xr_array.shape[1], dtype='bool'))
+    ens_mems = len(xr_array['ensemble_1'])
+    tranposed_dims = ['ensemble_1', 'ensemble_2']
+    tranposed_dims += [d for d in xr_array.dims if d not in tranposed_dims]
+    tr_array = xr_array.transpose(*tranposed_dims)
+    additional_eles = np.product(tr_array.shape[2:])
+    select_axis = ~np.eye(ens_mems, dtype='bool').reshape(ens_mems, ens_mems, 1)
+    select_axis = np.repeat(select_axis, additional_eles, 2).reshape(
+        tr_array.shape)
+    tr_array = tr_array.where(select_axis)
+    return tr_array.transpose(*xr_array.dims)
+
+
+def determinant_xr(xr_array, dim_1='ensemble_1', dim_2='ensemble_2'):
+    det_dims = ['stacked', dim_1, dim_2]
+    stacked_coords = OrderedDict(
+        [(d, xr_array[d]) for d in xr_array.dims if d not in det_dims]
+    )
+    unstacked_shape = [len(xr_array[d]) for d in stacked_coords.keys()]
+    stacked = xr_array.stack(stacked=stacked_coords.keys())
+    stacked = stacked.transpose(*det_dims)
+    sign, logdet = np.linalg.slogdet(stacked.values)
+    determinant = sign * np.exp(logdet)
+    determinant = determinant.reshape(unstacked_shape)
+    det_da = xr.DataArray(
+        data=determinant,
+        coords=stacked_coords,
+        dims=stacked_coords.keys()
+    )
+    return det_da
 
 
 def plot_weights(weights, save_path=None, colored_members=None,
