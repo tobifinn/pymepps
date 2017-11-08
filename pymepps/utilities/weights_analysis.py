@@ -82,9 +82,9 @@ def get_weights(files):
     return ens_weights, det_weights
 
 
-def diagonalize_xr(xr_array):
-    ens_mems = len(xr_array['ensemble_1'])
-    tranposed_dims = ['ensemble_1', 'ensemble_2']
+def diagonalize_xr(xr_array, dim_1='ensemble_1', dim_2='ensemble_2'):
+    ens_mems = len(xr_array[dim_1])
+    tranposed_dims = [dim_1, dim_2]
     tranposed_dims += [d for d in xr_array.dims if d not in tranposed_dims]
     tr_array = xr_array.transpose(*tranposed_dims)
     additional_eles = np.product(tr_array.shape[2:])
@@ -95,9 +95,9 @@ def diagonalize_xr(xr_array):
     return tr_array.transpose(*xr_array.dims)
 
 
-def antidiagonalize_xr(xr_array):
-    ens_mems = len(xr_array['ensemble_1'])
-    tranposed_dims = ['ensemble_1', 'ensemble_2']
+def antidiagonalize_xr(xr_array, dim_1='ensemble_1', dim_2='ensemble_2'):
+    ens_mems = len(xr_array[dim_1])
+    tranposed_dims = [dim_1, dim_2]
     tranposed_dims += [d for d in xr_array.dims if d not in tranposed_dims]
     tr_array = xr_array.transpose(*tranposed_dims)
     additional_eles = np.product(tr_array.shape[2:])
