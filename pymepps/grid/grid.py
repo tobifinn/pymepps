@@ -158,9 +158,9 @@ class Grid(object):
         ds = xr.Dataset(
             {
                 'latitude': (
-                    (self._grid_dict['yname'], self._grid_dict['xname']), lat),
+                    (*self.get_coord_names()), lat),
                 'longitude': (
-                    (self._grid_dict['yname'], self._grid_dict['xname']), lon),
+                    (*self.get_coord_names()), lon),
             },
             coords=coords
         )
