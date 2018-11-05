@@ -67,9 +67,7 @@ class GribHandler(FileHandler):
         return return_value
 
     def _get_varnames(self):
-        var_names = [msg['cfVarNameECMF'] for msg in self.ds]
-        for msg in self.ds:
-            var_names.append(msg['cfVarNameECMF'])
+        var_names = [msg['shortName'] for msg in self.ds]
         return set(var_names)
 
     def get_messages(self, var_name, **kwargs):
