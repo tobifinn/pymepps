@@ -87,7 +87,7 @@ class GribHandler(FileHandler):
             have six coordinates (analysis, ensemble, time, level, y, x).
             The shape of DataArray are normally (1,1,1,1,y_size,x_size).
         """
-        msgs = self.ds.select(cfVarNameECMF=var_name)
+        msgs = self.ds.select(shortName=var_name)
         logger.debug('Selected {0:s} from file {1:s}'.format(var_name,
                                                              self.file))
         data = []
